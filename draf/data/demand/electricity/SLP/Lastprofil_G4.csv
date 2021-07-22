@@ -1,0 +1,289 @@
+Jahreszeit;Tagestyp;Zeit von;Zeit bis;Wert;;Jahreszeit;Tagestyp;Zeit von;Zeit bis;Wert;;Jahreszeit;Tagestyp;Zeit von;Zeit bis;Wert
+Sommer;Montag - Freitag;00:00;00:15;0.07448;;Übergangszeit;Montag - Freitag;00:00;00:15;0.0672;;Winter;Montag - Freitag;00:00;00:15;0.06208
+Sommer;Montag - Freitag;00:15;00:30;0.07364;;Übergangszeit;Montag - Freitag;00:15;00:30;0.06604;;Winter;Montag - Freitag;00:15;00:30;0.0608
+Sommer;Montag - Freitag;00:30;00:45;0.07284;;Übergangszeit;Montag - Freitag;00:30;00:45;0.06492;;Winter;Montag - Freitag;00:30;00:45;0.05952
+Sommer;Montag - Freitag;00:45;01:00;0.072;;Übergangszeit;Montag - Freitag;00:45;01:00;0.06388;;Winter;Montag - Freitag;00:45;01:00;0.05848
+Sommer;Montag - Freitag;01:00;01:15;0.071;;Übergangszeit;Montag - Freitag;01:00;01:15;0.06296;;Winter;Montag - Freitag;01:00;01:15;0.05796
+Sommer;Montag - Freitag;01:15;01:30;0.07;;Übergangszeit;Montag - Freitag;01:15;01:30;0.06216;;Winter;Montag - Freitag;01:15;01:30;0.0578
+Sommer;Montag - Freitag;01:30;01:45;0.06908;;Übergangszeit;Montag - Freitag;01:30;01:45;0.06156;;Winter;Montag - Freitag;01:30;01:45;0.05776
+Sommer;Montag - Freitag;01:45;02:00;0.0684;;Übergangszeit;Montag - Freitag;01:45;02:00;0.0612;;Winter;Montag - Freitag;01:45;02:00;0.0576
+Sommer;Montag - Freitag;02:00;02:15;0.068;;Übergangszeit;Montag - Freitag;02:00;02:15;0.06104;;Winter;Montag - Freitag;02:00;02:15;0.05716
+Sommer;Montag - Freitag;02:15;02:30;0.06784;;Übergangszeit;Montag - Freitag;02:15;02:30;0.06108;;Winter;Montag - Freitag;02:15;02:30;0.0566
+Sommer;Montag - Freitag;02:30;02:45;0.06772;;Übergangszeit;Montag - Freitag;02:30;02:45;0.06116;;Winter;Montag - Freitag;02:30;02:45;0.05608
+Sommer;Montag - Freitag;02:45;03:00;0.06748;;Übergangszeit;Montag - Freitag;02:45;03:00;0.0612;;Winter;Montag - Freitag;02:45;03:00;0.0558
+Sommer;Montag - Freitag;03:00;03:15;0.067;;Übergangszeit;Montag - Freitag;03:00;03:15;0.06108;;Winter;Montag - Freitag;03:00;03:15;0.05588
+Sommer;Montag - Freitag;03:15;03:30;0.06644;;Übergangszeit;Montag - Freitag;03:15;03:30;0.06088;;Winter;Montag - Freitag;03:15;03:30;0.0562
+Sommer;Montag - Freitag;03:30;03:45;0.06596;;Übergangszeit;Montag - Freitag;03:30;03:45;0.0606;;Winter;Montag - Freitag;03:30;03:45;0.05656
+Sommer;Montag - Freitag;03:45;04:00;0.06568;;Übergangszeit;Montag - Freitag;03:45;04:00;0.06028;;Winter;Montag - Freitag;03:45;04:00;0.05668
+Sommer;Montag - Freitag;04:00;04:15;0.0658;;Übergangszeit;Montag - Freitag;04:00;04:15;0.06;;Winter;Montag - Freitag;04:00;04:15;0.05648
+Sommer;Montag - Freitag;04:15;04:30;0.06612;;Übergangszeit;Montag - Freitag;04:15;04:30;0.0598;;Winter;Montag - Freitag;04:15;04:30;0.0562
+Sommer;Montag - Freitag;04:30;04:45;0.06644;;Übergangszeit;Montag - Freitag;04:30;04:45;0.05988;;Winter;Montag - Freitag;04:30;04:45;0.05616
+Sommer;Montag - Freitag;04:45;05:00;0.0666;;Übergangszeit;Montag - Freitag;04:45;05:00;0.06028;;Winter;Montag - Freitag;04:45;05:00;0.05668
+Sommer;Montag - Freitag;05:00;05:15;0.06636;;Übergangszeit;Montag - Freitag;05:00;05:15;0.06112;;Winter;Montag - Freitag;05:00;05:15;0.058
+Sommer;Montag - Freitag;05:15;05:30;0.06588;;Übergangszeit;Montag - Freitag;05:15;05:30;0.06208;;Winter;Montag - Freitag;05:15;05:30;0.05984
+Sommer;Montag - Freitag;05:30;05:45;0.06532;;Übergangszeit;Montag - Freitag;05:30;05:45;0.0628;;Winter;Montag - Freitag;05:30;05:45;0.06192
+Sommer;Montag - Freitag;05:45;06:00;0.0648;;Übergangszeit;Montag - Freitag;05:45;06:00;0.063;;Winter;Montag - Freitag;05:45;06:00;0.06388
+Sommer;Montag - Freitag;06:00;06:15;0.0646;;Übergangszeit;Montag - Freitag;06:00;06:15;0.06252;;Winter;Montag - Freitag;06:00;06:15;0.0656
+Sommer;Montag - Freitag;06:15;06:30;0.06536;;Übergangszeit;Montag - Freitag;06:15;06:30;0.06224;;Winter;Montag - Freitag;06:15;06:30;0.06784
+Sommer;Montag - Freitag;06:30;06:45;0.06788;;Übergangszeit;Montag - Freitag;06:30;06:45;0.0632;;Winter;Montag - Freitag;06:30;06:45;0.07144
+Sommer;Montag - Freitag;06:45;07:00;0.07288;;Übergangszeit;Montag - Freitag;06:45;07:00;0.0666;;Winter;Montag - Freitag;06:45;07:00;0.0774
+Sommer;Montag - Freitag;07:00;07:15;0.08092;;Übergangszeit;Montag - Freitag;07:00;07:15;0.07324;;Winter;Montag - Freitag;07:00;07:15;0.0864
+Sommer;Montag - Freitag;07:15;07:30;0.09164;;Übergangszeit;Montag - Freitag;07:15;07:30;0.08328;;Winter;Montag - Freitag;07:15;07:30;0.09844
+Sommer;Montag - Freitag;07:30;07:45;0.10444;;Übergangszeit;Montag - Freitag;07:30;07:45;0.09668;;Winter;Montag - Freitag;07:30;07:45;0.1132
+Sommer;Montag - Freitag;07:45;08:00;0.11876;;Übergangszeit;Montag - Freitag;07:45;08:00;0.11336;;Winter;Montag - Freitag;07:45;08:00;0.13048
+Sommer;Montag - Freitag;08:00;08:15;0.13396;;Übergangszeit;Montag - Freitag;08:00;08:15;0.13292;;Winter;Montag - Freitag;08:00;08:15;0.14968
+Sommer;Montag - Freitag;08:15;08:30;0.1488;;Übergangszeit;Montag - Freitag;08:15;08:30;0.1532;;Winter;Montag - Freitag;08:15;08:30;0.16912
+Sommer;Montag - Freitag;08:30;08:45;0.16216;;Übergangszeit;Montag - Freitag;08:30;08:45;0.1718;;Winter;Montag - Freitag;08:30;08:45;0.1868
+Sommer;Montag - Freitag;08:45;09:00;0.17276;;Übergangszeit;Montag - Freitag;08:45;09:00;0.18628;;Winter;Montag - Freitag;08:45;09:00;0.20068
+Sommer;Montag - Freitag;09:00;09:15;0.17976;;Übergangszeit;Montag - Freitag;09:00;09:15;0.19484;;Winter;Montag - Freitag;09:00;09:15;0.20932
+Sommer;Montag - Freitag;09:15;09:30;0.18392;;Übergangszeit;Montag - Freitag;09:15;09:30;0.19868;;Winter;Montag - Freitag;09:15;09:30;0.21372
+Sommer;Montag - Freitag;09:30;09:45;0.18632;;Übergangszeit;Montag - Freitag;09:30;09:45;0.19968;;Winter;Montag - Freitag;09:30;09:45;0.21544
+Sommer;Montag - Freitag;09:45;10:00;0.18808;;Übergangszeit;Montag - Freitag;09:45;10:00;0.19976;;Winter;Montag - Freitag;09:45;10:00;0.21596
+Sommer;Montag - Freitag;10:00;10:15;0.19004;;Übergangszeit;Montag - Freitag;10:00;10:15;0.2004;;Winter;Montag - Freitag;10:00;10:15;0.2166
+Sommer;Montag - Freitag;10:15;10:30;0.19216;;Übergangszeit;Montag - Freitag;10:15;10:30;0.20156;;Winter;Montag - Freitag;10:15;10:30;0.2174
+Sommer;Montag - Freitag;10:30;10:45;0.194;;Übergangszeit;Montag - Freitag;10:30;10:45;0.20268;;Winter;Montag - Freitag;10:30;10:45;0.21816
+Sommer;Montag - Freitag;10:45;11:00;0.19528;;Übergangszeit;Montag - Freitag;10:45;11:00;0.20336;;Winter;Montag - Freitag;10:45;11:00;0.21868
+Sommer;Montag - Freitag;11:00;11:15;0.19564;;Übergangszeit;Montag - Freitag;11:00;11:15;0.2032;;Winter;Montag - Freitag;11:00;11:15;0.21872
+Sommer;Montag - Freitag;11:15;11:30;0.19528;;Übergangszeit;Montag - Freitag;11:15;11:30;0.20228;;Winter;Montag - Freitag;11:15;11:30;0.2182
+Sommer;Montag - Freitag;11:30;11:45;0.19448;;Übergangszeit;Montag - Freitag;11:30;11:45;0.20076;;Winter;Montag - Freitag;11:30;11:45;0.21704
+Sommer;Montag - Freitag;11:45;12:00;0.19348;;Übergangszeit;Montag - Freitag;11:45;12:00;0.19888;;Winter;Montag - Freitag;11:45;12:00;0.21508
+Sommer;Montag - Freitag;12:00;12:15;0.19232;;Übergangszeit;Montag - Freitag;12:00;12:15;0.19656;;Winter;Montag - Freitag;12:00;12:15;0.21212
+Sommer;Montag - Freitag;12:15;12:30;0.19028;;Übergangszeit;Montag - Freitag;12:15;12:30;0.19332;;Winter;Montag - Freitag;12:15;12:30;0.2078
+Sommer;Montag - Freitag;12:30;12:45;0.18648;;Übergangszeit;Montag - Freitag;12:30;12:45;0.18832;;Winter;Montag - Freitag;12:30;12:45;0.20144
+Sommer;Montag - Freitag;12:45;13:00;0.17996;;Übergangszeit;Montag - Freitag;12:45;13:00;0.18088;;Winter;Montag - Freitag;12:45;13:00;0.19256
+Sommer;Montag - Freitag;13:00;13:15;0.17036;;Übergangszeit;Montag - Freitag;13:00;13:15;0.17068;;Winter;Montag - Freitag;13:00;13:15;0.18108
+Sommer;Montag - Freitag;13:15;13:30;0.15932;;Übergangszeit;Montag - Freitag;13:15;13:30;0.15944;;Winter;Montag - Freitag;13:15;13:30;0.16872
+Sommer;Montag - Freitag;13:30;13:45;0.14888;;Übergangszeit;Montag - Freitag;13:30;13:45;0.1492;;Winter;Montag - Freitag;13:30;13:45;0.15772
+Sommer;Montag - Freitag;13:45;14:00;0.14128;;Übergangszeit;Montag - Freitag;13:45;14:00;0.14216;;Winter;Montag - Freitag;13:45;14:00;0.15028
+Sommer;Montag - Freitag;14:00;14:15;0.13812;;Übergangszeit;Montag - Freitag;14:00;14:15;0.13996;;Winter;Montag - Freitag;14:00;14:15;0.14812
+Sommer;Montag - Freitag;14:15;14:30;0.13916;;Übergangszeit;Montag - Freitag;14:15;14:30;0.14216;;Winter;Montag - Freitag;14:15;14:30;0.15096
+Sommer;Montag - Freitag;14:30;14:45;0.14376;;Übergangszeit;Montag - Freitag;14:30;14:45;0.148;;Winter;Montag - Freitag;14:30;14:45;0.15796
+Sommer;Montag - Freitag;14:45;15:00;0.15116;;Übergangszeit;Montag - Freitag;14:45;15:00;0.15656;;Winter;Montag - Freitag;14:45;15:00;0.16828
+Sommer;Montag - Freitag;15:00;15:15;0.1606;;Übergangszeit;Montag - Freitag;15:00;15:15;0.16692;;Winter;Montag - Freitag;15:00;15:15;0.18092
+Sommer;Montag - Freitag;15:15;15:30;0.17064;;Übergangszeit;Montag - Freitag;15:15;15:30;0.17756;;Winter;Montag - Freitag;15:15;15:30;0.19412
+Sommer;Montag - Freitag;15:30;15:45;0.17972;;Übergangszeit;Montag - Freitag;15:30;15:45;0.18692;;Winter;Montag - Freitag;15:30;15:45;0.20588
+Sommer;Montag - Freitag;15:45;16:00;0.18628;;Übergangszeit;Montag - Freitag;15:45;16:00;0.19348;;Winter;Montag - Freitag;15:45;16:00;0.21416
+Sommer;Montag - Freitag;16:00;16:15;0.18924;;Übergangszeit;Montag - Freitag;16:00;16:15;0.19612;;Winter;Montag - Freitag;16:00;16:15;0.21772
+Sommer;Montag - Freitag;16:15;16:30;0.18948;;Übergangszeit;Montag - Freitag;16:15;16:30;0.196;;Winter;Montag - Freitag;16:15;16:30;0.21816
+Sommer;Montag - Freitag;16:30;16:45;0.18832;;Übergangszeit;Montag - Freitag;16:30;16:45;0.19488;;Winter;Montag - Freitag;16:30;16:45;0.21772
+Sommer;Montag - Freitag;16:45;17:00;0.18716;;Übergangszeit;Montag - Freitag;16:45;17:00;0.19436;;Winter;Montag - Freitag;16:45;17:00;0.21868
+Sommer;Montag - Freitag;17:00;17:15;0.18696;;Übergangszeit;Montag - Freitag;17:00;17:15;0.1956;;Winter;Montag - Freitag;17:00;17:15;0.22248
+Sommer;Montag - Freitag;17:15;17:30;0.18716;;Übergangszeit;Montag - Freitag;17:15;17:30;0.1974;;Winter;Montag - Freitag;17:15;17:30;0.22732
+Sommer;Montag - Freitag;17:30;17:45;0.18692;;Übergangszeit;Montag - Freitag;17:30;17:45;0.19788;;Winter;Montag - Freitag;17:30;17:45;0.23052
+Sommer;Montag - Freitag;17:45;18:00;0.18536;;Übergangszeit;Montag - Freitag;17:45;18:00;0.19528;;Winter;Montag - Freitag;17:45;18:00;0.22944
+Sommer;Montag - Freitag;18:00;18:15;0.18172;;Übergangszeit;Montag - Freitag;18:00;18:15;0.18828;;Winter;Montag - Freitag;18:00;18:15;0.2222
+Sommer;Montag - Freitag;18:15;18:30;0.17568;;Übergangszeit;Montag - Freitag;18:15;18:30;0.17772;;Winter;Montag - Freitag;18:15;18:30;0.20992
+Sommer;Montag - Freitag;18:30;18:45;0.16708;;Übergangszeit;Montag - Freitag;18:30;18:45;0.16492;;Winter;Montag - Freitag;18:30;18:45;0.1946
+Sommer;Montag - Freitag;18:45;19:00;0.15568;;Übergangszeit;Montag - Freitag;18:45;19:00;0.15116;;Winter;Montag - Freitag;18:45;19:00;0.17816
+Sommer;Montag - Freitag;19:00;19:15;0.14172;;Übergangszeit;Montag - Freitag;19:00;19:15;0.13776;;Winter;Montag - Freitag;19:00;19:15;0.16228
+Sommer;Montag - Freitag;19:15;19:30;0.12716;;Übergangszeit;Montag - Freitag;19:15;19:30;0.12556;;Winter;Montag - Freitag;19:15;19:30;0.1476
+Sommer;Montag - Freitag;19:30;19:45;0.11424;;Übergangszeit;Montag - Freitag;19:30;19:45;0.11536;;Winter;Montag - Freitag;19:30;19:45;0.13448
+Sommer;Montag - Freitag;19:45;20:00;0.10528;;Übergangszeit;Montag - Freitag;19:45;20:00;0.108;;Winter;Montag - Freitag;19:45;20:00;0.12328
+Sommer;Montag - Freitag;20:00;20:15;0.10184;;Übergangszeit;Montag - Freitag;20:00;20:15;0.10388;;Winter;Montag - Freitag;20:00;20:15;0.1142
+Sommer;Montag - Freitag;20:15;20:30;0.10228;;Übergangszeit;Montag - Freitag;20:15;20:30;0.10208;;Winter;Montag - Freitag;20:15;20:30;0.107
+Sommer;Montag - Freitag;20:30;20:45;0.1042;;Übergangszeit;Montag - Freitag;20:30;20:45;0.1012;;Winter;Montag - Freitag;20:30;20:45;0.10116
+Sommer;Montag - Freitag;20:45;21:00;0.10528;;Übergangszeit;Montag - Freitag;20:45;21:00;0.09988;;Winter;Montag - Freitag;20:45;21:00;0.09628
+Sommer;Montag - Freitag;21:00;21:15;0.10368;;Übergangszeit;Montag - Freitag;21:00;21:15;0.09712;;Winter;Montag - Freitag;21:00;21:15;0.09196
+Sommer;Montag - Freitag;21:15;21:30;0.09996;;Übergangszeit;Montag - Freitag;21:15;21:30;0.09324;;Winter;Montag - Freitag;21:15;21:30;0.08796
+Sommer;Montag - Freitag;21:30;21:45;0.09532;;Übergangszeit;Montag - Freitag;21:30;21:45;0.08884;;Winter;Montag - Freitag;21:30;21:45;0.08408
+Sommer;Montag - Freitag;21:45;22:00;0.09088;;Übergangszeit;Montag - Freitag;21:45;22:00;0.0846;;Winter;Montag - Freitag;21:45;22:00;0.08008
+Sommer;Montag - Freitag;22:00;22:15;0.08756;;Übergangszeit;Montag - Freitag;22:00;22:15;0.081;;Winter;Montag - Freitag;22:00;22:15;0.07592
+Sommer;Montag - Freitag;22:15;22:30;0.0852;;Übergangszeit;Montag - Freitag;22:15;22:30;0.07808;;Winter;Montag - Freitag;22:15;22:30;0.07184
+Sommer;Montag - Freitag;22:30;22:45;0.08344;;Übergangszeit;Montag - Freitag;22:30;22:45;0.07572;;Winter;Montag - Freitag;22:30;22:45;0.06832
+Sommer;Montag - Freitag;22:45;23:00;0.08188;;Übergangszeit;Montag - Freitag;22:45;23:00;0.0738;;Winter;Montag - Freitag;22:45;23:00;0.06568
+Sommer;Montag - Freitag;23:00;23:15;0.08024;;Übergangszeit;Montag - Freitag;23:00;23:15;0.07216;;Winter;Montag - Freitag;23:00;23:15;0.06424
+Sommer;Montag - Freitag;23:15;23:30;0.07856;;Übergangszeit;Montag - Freitag;23:15;23:30;0.0708;;Winter;Montag - Freitag;23:15;23:30;0.06364
+Sommer;Montag - Freitag;23:30;23:45;0.07696;;Übergangszeit;Montag - Freitag;23:30;23:45;0.06956;;Winter;Montag - Freitag;23:30;23:45;0.0634
+Sommer;Montag - Freitag;23:45;00:00;0.0756;;Übergangszeit;Montag - Freitag;23:45;00:00;0.0684;;Winter;Montag - Freitag;23:45;00:00;0.063
+Sommer;Samstag;00:00;00:15;0.07532;;Übergangszeit;Samstag;00:00;00:15;0.06716;;Winter;Samstag;00:00;00:15;0.0622
+Sommer;Samstag;00:15;00:30;0.07548;;Übergangszeit;Samstag;00:15;00:30;0.06592;;Winter;Samstag;00:15;00:30;0.06116
+Sommer;Samstag;00:30;00:45;0.07572;;Übergangszeit;Samstag;00:30;00:45;0.0648;;Winter;Samstag;00:30;00:45;0.06012
+Sommer;Samstag;00:45;01:00;0.0756;;Übergangszeit;Samstag;00:45;01:00;0.06388;;Winter;Samstag;00:45;01:00;0.0594
+Sommer;Samstag;01:00;01:15;0.07484;;Übergangszeit;Samstag;01:00;01:15;0.0632;;Winter;Samstag;01:00;01:15;0.05912
+Sommer;Samstag;01:15;01:30;0.07364;;Übergangszeit;Samstag;01:15;01:30;0.06272;;Winter;Samstag;01:15;01:30;0.0592
+Sommer;Samstag;01:30;01:45;0.07228;;Übergangszeit;Samstag;01:30;01:45;0.06236;;Winter;Samstag;01:30;01:45;0.05936
+Sommer;Samstag;01:45;02:00;0.07108;;Übergangszeit;Samstag;01:45;02:00;0.06208;;Winter;Samstag;01:45;02:00;0.0594
+Sommer;Samstag;02:00;02:15;0.07028;;Übergangszeit;Samstag;02:00;02:15;0.0618;;Winter;Samstag;02:00;02:15;0.05908
+Sommer;Samstag;02:15;02:30;0.0698;;Übergangszeit;Samstag;02:15;02:30;0.06156;;Winter;Samstag;02:15;02:30;0.05856
+Sommer;Samstag;02:30;02:45;0.06952;;Übergangszeit;Samstag;02:30;02:45;0.06136;;Winter;Samstag;02:30;02:45;0.058
+Sommer;Samstag;02:45;03:00;0.06928;;Übergangszeit;Samstag;02:45;03:00;0.0612;;Winter;Samstag;02:45;03:00;0.0576
+Sommer;Samstag;03:00;03:15;0.06904;;Übergangszeit;Samstag;03:00;03:15;0.06112;;Winter;Samstag;03:00;03:15;0.05744
+Sommer;Samstag;03:15;03:30;0.0688;;Übergangszeit;Samstag;03:15;03:30;0.06112;;Winter;Samstag;03:15;03:30;0.05752
+Sommer;Samstag;03:30;03:45;0.06856;;Übergangszeit;Samstag;03:30;03:45;0.06112;;Winter;Samstag;03:30;03:45;0.0576
+Sommer;Samstag;03:45;04:00;0.0684;;Übergangszeit;Samstag;03:45;04:00;0.0612;;Winter;Samstag;03:45;04:00;0.0576
+Sommer;Samstag;04:00;04:15;0.06832;;Übergangszeit;Samstag;04:00;04:15;0.06124;;Winter;Samstag;04:00;04:15;0.0574
+Sommer;Samstag;04:15;04:30;0.06832;;Übergangszeit;Samstag;04:15;04:30;0.0614;;Winter;Samstag;04:15;04:30;0.05716
+Sommer;Samstag;04:30;04:45;0.06832;;Übergangszeit;Samstag;04:30;04:45;0.06164;;Winter;Samstag;04:30;04:45;0.05716
+Sommer;Samstag;04:45;05:00;0.0684;;Übergangszeit;Samstag;04:45;05:00;0.06208;;Winter;Samstag;04:45;05:00;0.0576
+Sommer;Samstag;05:00;05:15;0.0684;;Übergangszeit;Samstag;05:00;05:15;0.06272;;Winter;Samstag;05:00;05:15;0.05864
+Sommer;Samstag;05:15;05:30;0.06832;;Übergangszeit;Samstag;05:15;05:30;0.06328;;Winter;Samstag;05:15;05:30;0.0602
+Sommer;Samstag;05:30;05:45;0.06804;;Übergangszeit;Samstag;05:30;05:45;0.06348;;Winter;Samstag;05:30;05:45;0.062
+Sommer;Samstag;05:45;06:00;0.06748;;Übergangszeit;Samstag;05:45;06:00;0.063;;Winter;Samstag;05:45;06:00;0.06388
+Sommer;Samstag;06:00;06:15;0.06688;;Übergangszeit;Samstag;06:00;06:15;0.06192;;Winter;Samstag;06:00;06:15;0.06592
+Sommer;Samstag;06:15;06:30;0.06768;;Übergangszeit;Samstag;06:15;06:30;0.06196;;Winter;Samstag;06:15;06:30;0.06928
+Sommer;Samstag;06:30;06:45;0.0718;;Übergangszeit;Samstag;06:30;06:45;0.0652;;Winter;Samstag;06:30;06:45;0.0756
+Sommer;Samstag;06:45;07:00;0.081;;Übergangszeit;Samstag;06:45;07:00;0.0738;;Winter;Samstag;06:45;07:00;0.0864
+Sommer;Samstag;07:00;07:15;0.09628;;Übergangszeit;Samstag;07:00;07:15;0.08896;;Winter;Samstag;07:00;07:15;0.10244
+Sommer;Samstag;07:15;07:30;0.11544;;Übergangszeit;Samstag;07:15;07:30;0.10856;;Winter;Samstag;07:15;07:30;0.12188
+Sommer;Samstag;07:30;07:45;0.13536;;Übergangszeit;Samstag;07:30;07:45;0.12972;;Winter;Samstag;07:30;07:45;0.142
+Sommer;Samstag;07:45;08:00;0.15296;;Übergangszeit;Samstag;07:45;08:00;0.14936;;Winter;Samstag;07:45;08:00;0.16016
+Sommer;Samstag;08:00;08:15;0.16592;;Übergangszeit;Samstag;08:00;08:15;0.1652;;Winter;Samstag;08:00;08:15;0.1744
+Sommer;Samstag;08:15;08:30;0.17472;;Übergangszeit;Samstag;08:15;08:30;0.17716;;Winter;Samstag;08:15;08:30;0.18504
+Sommer;Samstag;08:30;08:45;0.18048;;Übergangszeit;Samstag;08:30;08:45;0.1858;;Winter;Samstag;08:30;08:45;0.19316
+Sommer;Samstag;08:45;09:00;0.18448;;Übergangszeit;Samstag;08:45;09:00;0.19168;;Winter;Samstag;08:45;09:00;0.19976
+Sommer;Samstag;09:00;09:15;0.18764;;Übergangszeit;Samstag;09:00;09:15;0.19532;;Winter;Samstag;09:00;09:15;0.20568
+Sommer;Samstag;09:15;09:30;0.19024;;Übergangszeit;Samstag;09:15;09:30;0.19732;;Winter;Samstag;09:15;09:30;0.21096
+Sommer;Samstag;09:30;09:45;0.19248;;Übergangszeit;Samstag;09:30;09:45;0.19832;;Winter;Samstag;09:30;09:45;0.21532
+Sommer;Samstag;09:45;10:00;0.19436;;Übergangszeit;Samstag;09:45;10:00;0.19888;;Winter;Samstag;09:45;10:00;0.21868
+Sommer;Samstag;10:00;10:15;0.19604;;Übergangszeit;Samstag;10:00;10:15;0.19948;;Winter;Samstag;10:00;10:15;0.2208
+Sommer;Samstag;10:15;10:30;0.19748;;Übergangszeit;Samstag;10:15;10:30;0.2002;;Winter;Samstag;10:15;10:30;0.22196
+Sommer;Samstag;10:30;10:45;0.19872;;Übergangszeit;Samstag;10:30;10:45;0.20092;;Winter;Samstag;10:30;10:45;0.22236
+Sommer;Samstag;10:45;11:00;0.19976;;Übergangszeit;Samstag;10:45;11:00;0.20156;;Winter;Samstag;10:45;11:00;0.22224
+Sommer;Samstag;11:00;11:15;0.2006;;Übergangszeit;Samstag;11:00;11:15;0.20212;;Winter;Samstag;11:00;11:15;0.22188
+Sommer;Samstag;11:15;11:30;0.2014;;Übergangszeit;Samstag;11:15;11:30;0.20264;;Winter;Samstag;11:15;11:30;0.2214
+Sommer;Samstag;11:30;11:45;0.20228;;Übergangszeit;Samstag;11:30;11:45;0.20332;;Winter;Samstag;11:30;11:45;0.22088
+Sommer;Samstag;11:45;12:00;0.20336;;Übergangszeit;Samstag;11:45;12:00;0.20428;;Winter;Samstag;11:45;12:00;0.22048
+Sommer;Samstag;12:00;12:15;0.20468;;Übergangszeit;Samstag;12:00;12:15;0.20544;;Winter;Samstag;12:00;12:15;0.22016
+Sommer;Samstag;12:15;12:30;0.20552;;Übergangszeit;Samstag;12:15;12:30;0.20612;;Winter;Samstag;12:15;12:30;0.2194
+Sommer;Samstag;12:30;12:45;0.20508;;Übergangszeit;Samstag;12:30;12:45;0.20544;;Winter;Samstag;12:30;12:45;0.21764
+Sommer;Samstag;12:45;13:00;0.20248;;Übergangszeit;Samstag;12:45;13:00;0.20248;;Winter;Samstag;12:45;13:00;0.21416
+Sommer;Samstag;13:00;13:15;0.197;;Übergangszeit;Samstag;13:00;13:15;0.19652;;Winter;Samstag;13:00;13:15;0.20844
+Sommer;Samstag;13:15;13:30;0.18868;;Übergangszeit;Samstag;13:15;13:30;0.18768;;Winter;Samstag;13:15;13:30;0.2002
+Sommer;Samstag;13:30;13:45;0.17756;;Übergangszeit;Samstag;13:30;13:45;0.17608;;Winter;Samstag;13:30;13:45;0.18928
+Sommer;Samstag;13:45;14:00;0.16376;;Übergangszeit;Samstag;13:45;14:00;0.16196;;Winter;Samstag;13:45;14:00;0.17548
+Sommer;Samstag;14:00;14:15;0.14772;;Übergangszeit;Samstag;14:00;14:15;0.1458;;Winter;Samstag;14:00;14:15;0.15892
+Sommer;Samstag;14:15;14:30;0.13096;;Übergangszeit;Samstag;14:15;14:30;0.129;;Winter;Samstag;14:15;14:30;0.1412
+Sommer;Samstag;14:30;14:45;0.11532;;Übergangszeit;Samstag;14:30;14:45;0.11316;;Winter;Samstag;14:30;14:45;0.1242
+Sommer;Samstag;14:45;15:00;0.1026;;Übergangszeit;Samstag;14:45;15:00;0.09988;;Winter;Samstag;14:45;15:00;0.1098
+Sommer;Samstag;15:00;15:15;0.09412;;Übergangszeit;Samstag;15:00;15:15;0.0904;;Winter;Samstag;15:00;15:15;0.0994
+Sommer;Samstag;15:15;15:30;0.0892;;Übergangszeit;Samstag;15:15;15:30;0.08416;;Winter;Samstag;15:15;15:30;0.09252
+Sommer;Samstag;15:30;15:45;0.08672;;Übergangszeit;Samstag;15:30;15:45;0.08012;;Winter;Samstag;15:30;15:45;0.0882
+Sommer;Samstag;15:45;16:00;0.08548;;Übergangszeit;Samstag;15:45;16:00;0.0774;;Winter;Samstag;15:45;16:00;0.08548
+Sommer;Samstag;16:00;16:15;0.08448;;Übergangszeit;Samstag;16:00;16:15;0.07512;;Winter;Samstag;16:00;16:15;0.08356
+Sommer;Samstag;16:15;16:30;0.08348;;Übergangszeit;Samstag;16:15;16:30;0.07332;;Winter;Samstag;16:15;16:30;0.08248
+Sommer;Samstag;16:30;16:45;0.08236;;Übergangszeit;Samstag;16:30;16:45;0.0722;;Winter;Samstag;16:30;16:45;0.08244
+Sommer;Samstag;16:45;17:00;0.081;;Übergangszeit;Samstag;16:45;17:00;0.072;;Winter;Samstag;16:45;17:00;0.08368
+Sommer;Samstag;17:00;17:15;0.07936;;Übergangszeit;Samstag;17:00;17:15;0.07276;;Winter;Samstag;17:00;17:15;0.0862
+Sommer;Samstag;17:15;17:30;0.07784;;Übergangszeit;Samstag;17:15;17:30;0.074;;Winter;Samstag;17:15;17:30;0.08932
+Sommer;Samstag;17:30;17:45;0.07676;;Übergangszeit;Samstag;17:30;17:45;0.07516;;Winter;Samstag;17:30;17:45;0.09208
+Sommer;Samstag;17:45;18:00;0.07648;;Übergangszeit;Samstag;17:45;18:00;0.0756;;Winter;Samstag;17:45;18:00;0.0936
+Sommer;Samstag;18:00;18:15;0.07728;;Übergangszeit;Samstag;18:00;18:15;0.07488;;Winter;Samstag;18:00;18:15;0.09324
+Sommer;Samstag;18:15;18:30;0.07872;;Übergangszeit;Samstag;18:15;18:30;0.07368;;Winter;Samstag;18:15;18:30;0.0918
+Sommer;Samstag;18:30;18:45;0.08016;;Übergangszeit;Samstag;18:30;18:45;0.07272;;Winter;Samstag;18:30;18:45;0.09036
+Sommer;Samstag;18:45;19:00;0.081;;Übergangszeit;Samstag;18:45;19:00;0.07288;;Winter;Samstag;18:45;19:00;0.09
+Sommer;Samstag;19:00;19:15;0.08088;;Übergangszeit;Samstag;19:00;19:15;0.07468;;Winter;Samstag;19:00;19:15;0.0914
+Sommer;Samstag;19:15;19:30;0.08032;;Übergangszeit;Samstag;19:15;19:30;0.0776;;Winter;Samstag;19:15;19:30;0.09372
+Sommer;Samstag;19:30;19:45;0.08008;;Übergangszeit;Samstag;19:30;19:45;0.08084;;Winter;Samstag;19:30;19:45;0.09576
+Sommer;Samstag;19:45;20:00;0.081;;Übergangszeit;Samstag;19:45;20:00;0.08368;;Winter;Samstag;19:45;20:00;0.09628
+Sommer;Samstag;20:00;20:15;0.08344;;Übergangszeit;Samstag;20:00;20:15;0.08544;;Winter;Samstag;20:00;20:15;0.09444
+Sommer;Samstag;20:15;20:30;0.08664;;Übergangszeit;Samstag;20:15;20:30;0.08612;;Winter;Samstag;20:15;20:30;0.09076
+Sommer;Samstag;20:30;20:45;0.08952;;Übergangszeit;Samstag;20:30;20:45;0.0858;;Winter;Samstag;20:30;20:45;0.08628
+Sommer;Samstag;20:45;21:00;0.09088;;Übergangszeit;Samstag;20:45;21:00;0.0846;;Winter;Samstag;20:45;21:00;0.08188
+Sommer;Samstag;21:00;21:15;0.09;;Übergangszeit;Samstag;21:00;21:15;0.08264;;Winter;Samstag;21:00;21:15;0.07836
+Sommer;Samstag;21:15;21:30;0.08748;;Übergangszeit;Samstag;21:15;21:30;0.08016;;Winter;Samstag;21:15;21:30;0.07548
+Sommer;Samstag;21:30;21:45;0.08416;;Übergangszeit;Samstag;21:30;21:45;0.07744;;Winter;Samstag;21:30;21:45;0.07288
+Sommer;Samstag;21:45;22:00;0.081;;Übergangszeit;Samstag;21:45;22:00;0.07468;;Winter;Samstag;21:45;22:00;0.0702
+Sommer;Samstag;22:00;22:15;0.07868;;Übergangszeit;Samstag;22:00;22:15;0.07216;;Winter;Samstag;22:00;22:15;0.06712
+Sommer;Samstag;22:15;22:30;0.07708;;Übergangszeit;Samstag;22:15;22:30;0.06988;;Winter;Samstag;22:15;22:30;0.06404
+Sommer;Samstag;22:30;22:45;0.07588;;Übergangszeit;Samstag;22:30;22:45;0.06804;;Winter;Samstag;22:30;22:45;0.06128
+Sommer;Samstag;22:45;23:00;0.07468;;Übergangszeit;Samstag;22:45;23:00;0.0666;;Winter;Samstag;22:45;23:00;0.0594
+Sommer;Samstag;23:00;23:15;0.07328;;Übergangszeit;Samstag;23:00;23:15;0.0656;;Winter;Samstag;23:00;23:15;0.05856
+Sommer;Samstag;23:15;23:30;0.07176;;Übergangszeit;Samstag;23:15;23:30;0.06496;;Winter;Samstag;23:15;23:30;0.05852
+Sommer;Samstag;23:30;23:45;0.07036;;Übergangszeit;Samstag;23:30;23:45;0.06444;;Winter;Samstag;23:30;23:45;0.05864
+Sommer;Samstag;23:45;00:00;0.06928;;Übergangszeit;Samstag;23:45;00:00;0.06388;;Winter;Samstag;23:45;00:00;0.05848
+Sommer;Sonntag;00:00;00:15;0.06864;;Übergangszeit;Sonntag;00:00;00:15;0.06312;;Winter;Sonntag;00:00;00:15;0.05764
+Sommer;Sonntag;00:15;00:30;0.06828;;Übergangszeit;Sonntag;00:15;00:30;0.06224;;Winter;Sonntag;00:15;00:30;0.05636
+Sommer;Sonntag;00:30;00:45;0.068;;Übergangszeit;Sonntag;00:30;00:45;0.06128;;Winter;Sonntag;00:30;00:45;0.055
+Sommer;Sonntag;00:45;01:00;0.06748;;Übergangszeit;Sonntag;00:45;01:00;0.06028;;Winter;Sonntag;00:45;01:00;0.054
+Sommer;Sonntag;01:00;01:15;0.06664;;Übergangszeit;Sonntag;01:00;01:15;0.0594;;Winter;Sonntag;01:00;01:15;0.05356
+Sommer;Sonntag;01:15;01:30;0.0656;;Übergangszeit;Sonntag;01:15;01:30;0.0586;;Winter;Sonntag;01:15;01:30;0.05356
+Sommer;Sonntag;01:30;01:45;0.0646;;Übergangszeit;Sonntag;01:30;01:45;0.058;;Winter;Sonntag;01:30;01:45;0.0538
+Sommer;Sonntag;01:45;02:00;0.06388;;Übergangszeit;Sonntag;01:45;02:00;0.0576;;Winter;Sonntag;01:45;02:00;0.054
+Sommer;Sonntag;02:00;02:15;0.06364;;Übergangszeit;Sonntag;02:00;02:15;0.0574;;Winter;Sonntag;02:00;02:15;0.05396
+Sommer;Sonntag;02:15;02:30;0.06372;;Übergangszeit;Sonntag;02:15;02:30;0.0574;;Winter;Sonntag;02:15;02:30;0.05372
+Sommer;Sonntag;02:30;02:45;0.06388;;Übergangszeit;Sonntag;02:30;02:45;0.05748;;Winter;Sonntag;02:30;02:45;0.0534
+Sommer;Sonntag;02:45;03:00;0.06388;;Übergangszeit;Sonntag;02:45;03:00;0.0576;;Winter;Sonntag;02:45;03:00;0.05308
+Sommer;Sonntag;03:00;03:15;0.06356;;Übergangszeit;Sonntag;03:00;03:15;0.05768;;Winter;Sonntag;03:00;03:15;0.05284
+Sommer;Sonntag;03:15;03:30;0.06304;;Übergangszeit;Sonntag;03:15;03:30;0.05772;;Winter;Sonntag;03:15;03:30;0.05268
+Sommer;Sonntag;03:30;03:45;0.06248;;Übergangszeit;Sonntag;03:30;03:45;0.05768;;Winter;Sonntag;03:30;03:45;0.05248
+Sommer;Sonntag;03:45;04:00;0.06208;;Übergangszeit;Sonntag;03:45;04:00;0.0576;;Winter;Sonntag;03:45;04:00;0.0522
+Sommer;Sonntag;04:00;04:15;0.06196;;Übergangszeit;Sonntag;04:00;04:15;0.0574;;Winter;Sonntag;04:00;04:15;0.05184
+Sommer;Sonntag;04:15;04:30;0.06204;;Übergangszeit;Sonntag;04:15;04:30;0.05728;;Winter;Sonntag;04:15;04:30;0.0516
+Sommer;Sonntag;04:30;04:45;0.06212;;Übergangszeit;Sonntag;04:30;04:45;0.05728;;Winter;Sonntag;04:30;04:45;0.05164
+Sommer;Sonntag;04:45;05:00;0.06208;;Übergangszeit;Sonntag;04:45;05:00;0.0576;;Winter;Sonntag;04:45;05:00;0.0522
+Sommer;Sonntag;05:00;05:15;0.06184;;Übergangszeit;Sonntag;05:00;05:15;0.0582;;Winter;Sonntag;05:00;05:15;0.0534
+Sommer;Sonntag;05:15;05:30;0.06148;;Übergangszeit;Sonntag;05:15;05:30;0.05892;;Winter;Sonntag;05:15;05:30;0.05516
+Sommer;Sonntag;05:30;05:45;0.0612;;Übergangszeit;Sonntag;05:30;05:45;0.0594;;Winter;Sonntag;05:30;05:45;0.05724
+Sommer;Sonntag;05:45;06:00;0.0612;;Übergangszeit;Sonntag;05:45;06:00;0.0594;;Winter;Sonntag;05:45;06:00;0.0594
+Sommer;Sonntag;06:00;06:15;0.0616;;Übergangszeit;Sonntag;06:00;06:15;0.05868;;Winter;Sonntag;06:00;06:15;0.06148
+Sommer;Sonntag;06:15;06:30;0.06244;;Übergangszeit;Sonntag;06:15;06:30;0.05772;;Winter;Sonntag;06:15;06:30;0.06332
+Sommer;Sonntag;06:30;06:45;0.0638;;Übergangszeit;Sonntag;06:30;06:45;0.05716;;Winter;Sonntag;06:30;06:45;0.06476
+Sommer;Sonntag;06:45;07:00;0.06568;;Übergangszeit;Sonntag;06:45;07:00;0.0576;;Winter;Sonntag;06:45;07:00;0.06568
+Sommer;Sonntag;07:00;07:15;0.068;;Übergangszeit;Sonntag;07:00;07:15;0.05936;;Winter;Sonntag;07:00;07:15;0.066
+Sommer;Sonntag;07:15;07:30;0.07036;;Übergangszeit;Sonntag;07:15;07:30;0.06196;;Winter;Sonntag;07:15;07:30;0.06572
+Sommer;Sonntag;07:30;07:45;0.07216;;Übergangszeit;Sonntag;07:30;07:45;0.0646;;Winter;Sonntag;07:30;07:45;0.065
+Sommer;Sonntag;07:45;08:00;0.07288;;Übergangszeit;Sonntag;07:45;08:00;0.0666;;Winter;Sonntag;07:45;08:00;0.06388
+Sommer;Sonntag;08:00;08:15;0.0722;;Übergangszeit;Sonntag;08:00;08:15;0.06732;;Winter;Sonntag;08:00;08:15;0.06252
+Sommer;Sonntag;08:15;08:30;0.07048;;Übergangszeit;Sonntag;08:15;08:30;0.06696;;Winter;Sonntag;08:15;08:30;0.06104
+Sommer;Sonntag;08:30;08:45;0.06844;;Übergangszeit;Sonntag;08:30;08:45;0.066;;Winter;Sonntag;08:30;08:45;0.05964
+Sommer;Sonntag;08:45;09:00;0.0666;;Übergangszeit;Sonntag;08:45;09:00;0.0648;;Winter;Sonntag;08:45;09:00;0.05848
+Sommer;Sonntag;09:00;09:15;0.06548;;Übergangszeit;Sonntag;09:00;09:15;0.06368;;Winter;Sonntag;09:00;09:15;0.05772
+Sommer;Sonntag;09:15;09:30;0.06508;;Übergangszeit;Sonntag;09:15;09:30;0.06284;;Winter;Sonntag;09:15;09:30;0.05732
+Sommer;Sonntag;09:30;09:45;0.0652;;Übergangszeit;Sonntag;09:30;09:45;0.06228;;Winter;Sonntag;09:30;09:45;0.05728
+Sommer;Sonntag;09:45;10:00;0.06568;;Übergangszeit;Sonntag;09:45;10:00;0.06208;;Winter;Sonntag;09:45;10:00;0.0576
+Sommer;Sonntag;10:00;10:15;0.06644;;Übergangszeit;Sonntag;10:00;10:15;0.06232;;Winter;Sonntag;10:00;10:15;0.05824
+Sommer;Sonntag;10:15;10:30;0.06732;;Übergangszeit;Sonntag;10:15;10:30;0.06292;;Winter;Sonntag;10:15;10:30;0.0592
+Sommer;Sonntag;10:30;10:45;0.06828;;Übergangszeit;Sonntag;10:30;10:45;0.0638;;Winter;Sonntag;10:30;10:45;0.06048
+Sommer;Sonntag;10:45;11:00;0.06928;;Übergangszeit;Sonntag;10:45;11:00;0.0648;;Winter;Sonntag;10:45;11:00;0.06208
+Sommer;Sonntag;11:00;11:15;0.07024;;Übergangszeit;Sonntag;11:00;11:15;0.06584;;Winter;Sonntag;11:00;11:15;0.06392
+Sommer;Sonntag;11:15;11:30;0.07108;;Übergangszeit;Sonntag;11:15;11:30;0.06672;;Winter;Sonntag;11:15;11:30;0.06572
+Sommer;Sonntag;11:30;11:45;0.07168;;Übergangszeit;Sonntag;11:30;11:45;0.06732;;Winter;Sonntag;11:30;11:45;0.06704
+Sommer;Sonntag;11:45;12:00;0.072;;Übergangszeit;Sonntag;11:45;12:00;0.06748;;Winter;Sonntag;11:45;12:00;0.06748
+Sommer;Sonntag;12:00;12:15;0.07192;;Übergangszeit;Sonntag;12:00;12:15;0.06708;;Winter;Sonntag;12:00;12:15;0.06684
+Sommer;Sonntag;12:15;12:30;0.07156;;Übergangszeit;Sonntag;12:15;12:30;0.0662;;Winter;Sonntag;12:15;12:30;0.06544
+Sommer;Sonntag;12:30;12:45;0.07096;;Übergangszeit;Sonntag;12:30;12:45;0.06508;;Winter;Sonntag;12:30;12:45;0.06372
+Sommer;Sonntag;12:45;13:00;0.0702;;Übergangszeit;Sonntag;12:45;13:00;0.06388;;Winter;Sonntag;12:45;13:00;0.06208
+Sommer;Sonntag;13:00;13:15;0.06932;;Übergangszeit;Sonntag;13:00;13:15;0.0628;;Winter;Sonntag;13:00;13:15;0.06096
+Sommer;Sonntag;13:15;13:30;0.06848;;Übergangszeit;Sonntag;13:15;13:30;0.06196;;Winter;Sonntag;13:15;13:30;0.06032
+Sommer;Sonntag;13:30;13:45;0.06784;;Übergangszeit;Sonntag;13:30;13:45;0.0614;;Winter;Sonntag;13:30;13:45;0.06012
+Sommer;Sonntag;13:45;14:00;0.06748;;Übergangszeit;Sonntag;13:45;14:00;0.0612;;Winter;Sonntag;13:45;14:00;0.06028
+Sommer;Sonntag;14:00;14:15;0.06756;;Übergangszeit;Sonntag;14:00;14:15;0.0614;;Winter;Sonntag;14:00;14:15;0.06072
+Sommer;Sonntag;14:15;14:30;0.06788;;Übergangszeit;Sonntag;14:15;14:30;0.06188;;Winter;Sonntag;14:15;14:30;0.06136
+Sommer;Sonntag;14:30;14:45;0.06824;;Übergangszeit;Sonntag;14:30;14:45;0.06248;;Winter;Sonntag;14:30;14:45;0.06216
+Sommer;Sonntag;14:45;15:00;0.0684;;Übergangszeit;Sonntag;14:45;15:00;0.063;;Winter;Sonntag;14:45;15:00;0.063
+Sommer;Sonntag;15:00;15:15;0.0682;;Übergangszeit;Sonntag;15:00;15:15;0.06328;;Winter;Sonntag;15:00;15:15;0.06384
+Sommer;Sonntag;15:15;15:30;0.06784;;Übergangszeit;Sonntag;15:15;15:30;0.06336;;Winter;Sonntag;15:15;15:30;0.0646
+Sommer;Sonntag;15:30;15:45;0.06752;;Übergangszeit;Sonntag;15:30;15:45;0.06328;;Winter;Sonntag;15:30;15:45;0.06524
+Sommer;Sonntag;15:45;16:00;0.06748;;Übergangszeit;Sonntag;15:45;16:00;0.063;;Winter;Sonntag;15:45;16:00;0.06568
+Sommer;Sonntag;16:00;16:15;0.06788;;Übergangszeit;Sonntag;16:00;16:15;0.0626;;Winter;Sonntag;16:00;16:15;0.06596
+Sommer;Sonntag;16:15;16:30;0.06848;;Übergangszeit;Sonntag;16:15;16:30;0.06232;;Winter;Sonntag;16:15;16:30;0.06648
+Sommer;Sonntag;16:30;16:45;0.06904;;Übergangszeit;Sonntag;16:30;16:45;0.06236;;Winter;Sonntag;16:30;16:45;0.06772
+Sommer;Sonntag;16:45;17:00;0.06928;;Übergangszeit;Sonntag;16:45;17:00;0.063;;Winter;Sonntag;16:45;17:00;0.0702
+Sommer;Sonntag;17:00;17:15;0.06908;;Übergangszeit;Sonntag;17:00;17:15;0.06428;;Winter;Sonntag;17:00;17:15;0.07416
+Sommer;Sonntag;17:15;17:30;0.06872;;Übergangszeit;Sonntag;17:15;17:30;0.06592;;Winter;Sonntag;17:15;17:30;0.07884
+Sommer;Sonntag;17:30;17:45;0.06864;;Übergangszeit;Sonntag;17:30;17:45;0.06744;;Winter;Sonntag;17:30;17:45;0.08324
+Sommer;Sonntag;17:45;18:00;0.06928;;Übergangszeit;Sonntag;17:45;18:00;0.0684;;Winter;Sonntag;17:45;18:00;0.0864
+Sommer;Sonntag;18:00;18:15;0.07088;;Übergangszeit;Sonntag;18:00;18:15;0.06844;;Winter;Sonntag;18:00;18:15;0.0876
+Sommer;Sonntag;18:15;18:30;0.07304;;Übergangszeit;Sonntag;18:15;18:30;0.06804;;Winter;Sonntag;18:15;18:30;0.08748
+Sommer;Sonntag;18:30;18:45;0.07512;;Übergangszeit;Sonntag;18:30;18:45;0.06784;;Winter;Sonntag;18:30;18:45;0.08704
+Sommer;Sonntag;18:45;19:00;0.07648;;Übergangszeit;Sonntag;18:45;19:00;0.0684;;Winter;Sonntag;18:45;19:00;0.08728
+Sommer;Sonntag;19:00;19:15;0.0768;;Übergangszeit;Sonntag;19:00;19:15;0.07016;;Winter;Sonntag;19:00;19:15;0.0888
+Sommer;Sonntag;19:15;19:30;0.07652;;Übergangszeit;Sonntag;19:15;19:30;0.07276;;Winter;Sonntag;19:15;19:30;0.09092
+Sommer;Sonntag;19:30;19:45;0.07648;;Übergangszeit;Sonntag;19:30;19:45;0.07564;;Winter;Sonntag;19:30;19:45;0.09256
+Sommer;Sonntag;19:45;20:00;0.0774;;Übergangszeit;Sonntag;19:45;20:00;0.07828;;Winter;Sonntag;19:45;20:00;0.09268
+Sommer;Sonntag;20:00;20:15;0.07968;;Übergangszeit;Sonntag;20:00;20:15;0.0802;;Winter;Sonntag;20:00;20:15;0.09056
+Sommer;Sonntag;20:15;20:30;0.08268;;Übergangszeit;Sonntag;20:15;20:30;0.08128;;Winter;Sonntag;20:15;20:30;0.08684
+Sommer;Sonntag;20:30;20:45;0.08524;;Übergangszeit;Sonntag;20:30;20:45;0.08152;;Winter;Sonntag;20:30;20:45;0.08244
+Sommer;Sonntag;20:45;21:00;0.0864;;Übergangszeit;Sonntag;20:45;21:00;0.081;;Winter;Sonntag;20:45;21:00;0.07828
+Sommer;Sonntag;21:00;21:15;0.08536;;Übergangszeit;Sonntag;21:00;21:15;0.07964;;Winter;Sonntag;21:00;21:15;0.07512
+Sommer;Sonntag;21:15;21:30;0.08276;;Übergangszeit;Sonntag;21:15;21:30;0.07772;;Winter;Sonntag;21:15;21:30;0.07268
+Sommer;Sonntag;21:30;21:45;0.07948;;Übergangszeit;Sonntag;21:30;21:45;0.0754;;Winter;Sonntag;21:30;21:45;0.0706
+Sommer;Sonntag;21:45;22:00;0.07648;;Übergangszeit;Sonntag;21:45;22:00;0.07288;;Winter;Sonntag;21:45;22:00;0.0684
+Sommer;Sonntag;22:00;22:15;0.07444;;Übergangszeit;Sonntag;22:00;22:15;0.0704;;Winter;Sonntag;22:00;22:15;0.06576
+Sommer;Sonntag;22:15;22:30;0.07316;;Übergangszeit;Sonntag;22:15;22:30;0.06804;;Winter;Sonntag;22:15;22:30;0.063
+Sommer;Sonntag;22:30;22:45;0.0722;;Übergangszeit;Sonntag;22:30;22:45;0.06584;;Winter;Sonntag;22:30;22:45;0.06044
+Sommer;Sonntag;22:45;23:00;0.07108;;Übergangszeit;Sonntag;22:45;23:00;0.06388;;Winter;Sonntag;22:45;23:00;0.05848
+Sommer;Sonntag;23:00;23:15;0.06956;;Übergangszeit;Sonntag;23:00;23:15;0.0622;;Winter;Sonntag;23:00;23:15;0.05744
+Sommer;Sonntag;23:15;23:30;0.068;;Übergangszeit;Sonntag;23:15;23:30;0.06096;;Winter;Sonntag;23:15;23:30;0.05708
+Sommer;Sonntag;23:30;23:45;0.06684;;Übergangszeit;Sonntag;23:30;23:45;0.06028;;Winter;Sonntag;23:30;23:45;0.05724
+Sommer;Sonntag;23:45;00:00;0.0666;;Übergangszeit;Sonntag;23:45;00:00;0.06028;;Winter;Sonntag;23:45;00:00;0.0576

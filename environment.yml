@@ -1,0 +1,20 @@
+name: draf
+channels:
+  - conda-forge
+  - gurobi
+  - plotly
+dependencies:
+  - gurobi
+  - ipython
+  - ipywidgets
+  - matplotlib
+  - numpy
+  - pandas
+  - pip
+  - plotly
+  - python=3.7  # gurobi has problems with python >3.7
+  - seaborn
+  - pip:
+    - holidays
+    - elmada
+    - '--editable=.'  # installs an editable version of draf

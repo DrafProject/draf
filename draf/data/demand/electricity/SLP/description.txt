@@ -1,0 +1,86 @@
+downloaded at 2018-07-10 from http://www.gipsprojekt.de/featureGips/Gips?SessionMandant=sw_unna&Anwendung=EnWGKnotenAnzeigen&PrimaryId=133029&Mandantkuerzel=sw_unna&Navigation=J 
+
+
+VDEW-Lastprofile
+Die folgenden VDEW-Lastprofile werden seit dem 01.01.2002 verwendet:
+Profil	 Datei
+H0: Haushalt allgemein
+
+ Lastprofil_H0.xls
+G0: Gewerbe allgemein
+
+ Lastprofil_G0.xls
+G1: Gewerbe werktags 08-18 Uhr
+
+ Lastprofil_G1.xls
+G2: Gewerbe mit starkem Verbrauch am Abend      
+
+ Lastprofil_G2.xls
+G3: Gewerbe durchlaufend
+
+ Lastprofil_G3.xls
+G4: Laden/Friseur
+
+ Lastprofil_G4.xls
+G5: Bäckereien mit Backstube
+
+ Lastprofil_G5.xls
+G6: Wochenendbetrieb
+
+ Lastprofil_G6.xls
+L0: Landwirtschaftsbetriebe
+
+ Lastprofil_L0.xls
+L1: Landwirtschaftsbetriebe mit Milch und Vieh   
+
+ Lastprofil_L1.xls
+L2: übrige Landwirtschaftsbetriebe
+
+ Lastprofil_L2.xls
+ 
+Download
+
+ 
+Lastprofil_H0.xls
+ 
+ Das Haushaltsprofil H0 wird mit der Dynamisierungsfunktion des BDEW dynamisiert.
+
+ 
+Lastprofil_G0.xls
+Lastprofil_G1.xls
+Lastprofil_G2.xls
+Lastprofil_G3.xls
+Lastprofil_G4.xls
+Lastprofil_G5.xls
+Lastprofil-G6.xls
+Lastprofil_L0.xls
+Lastprofil_L1.xls
+Lastprofil_L2.xls
+ 
+Der Jahresverlauf der BDEW Standardlastprofile wird durch Aneinanderreihung von Tagesprofilen
+
+generiert, die durch Tagesarten und Saisonarten charakterisiert sind:
+
+
+
+Tagesarten:      
+
+Werktag, Samstag, Sonntag
+
+Feiertage erhalten das Sonntagsprofil.
+
+ 
+
+Als Feiertage gelten alle gesetzlichen Feiertage am Standort Unna:
+Neujahrstag, Karfreitag, Ostersonntag, Ostermontag, Maifeiertag, Christi Himmelfahrt, Pfingstsonntag, Pfingstmontag, Fronleichnam, Tag der Deutschen Einheit, Allerheiligen, 1. Weihnachtstag, 2. Weihnachtstag
+
+ 
+
+Saisonarten:    
+
+Winter:         01.11. bis 20.03.
+
+Sommer:      15.05. bis 14.09.
+
+Übergang:    21.03. bis 14.05. und 15.09. bis 31.10.
+

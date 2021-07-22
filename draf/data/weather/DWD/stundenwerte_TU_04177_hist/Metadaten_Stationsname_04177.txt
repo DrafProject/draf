@@ -1,0 +1,3 @@
+Stations_ID;Stationsname;Von_Datum;Bis_Datum
+  4177;Rheinstetten-Forchheim                  ;19230501;19850630
+  4177;Rheinstetten                            ;20081028;

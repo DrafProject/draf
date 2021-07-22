@@ -1,0 +1,5 @@
+Stations_ID;Von_Datum;Bis_Datum;Stationsname;Parameter;Parameterbeschreibung;Einheit;Datenquelle (Strukturversion=SV);Zusatz-Info;Besonderheiten;Literaturhinweis;eor;
+4177;20081101;20200331;Rheinstetten;RF_TU;relative Feuchte;%;Daten der Temperatur und relativen Feuchte (Stundenwerte) generiert aus SYNOP-Meldungen (nach dem 01.04.2001);Stundenwerte in UTC;;;eor;
+4177;20081101;20200331;Rheinstetten;TT_TU;Lufttemperatur;°C;Daten der Temperatur und relativen Feuchte (Stundenwerte) generiert aus SYNOP-Meldungen (nach dem 01.04.2001);Stundenwerte in UTC;;;eor;
+Legende: FT  = Folgetag; GZ = Gesetzliche Zeit
+generiert: 01.04.2020 --  Deutscher Wetterdienst  --

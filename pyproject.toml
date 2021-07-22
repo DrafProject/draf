@@ -1,0 +1,20 @@
+[tool.black]
+line-length = 100
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.github
+  | \.mypy_cache
+  | \.pytest_cache
+  | \.vscode
+  | .*\.egg-info
+  # directories without python source files
+  | doc
+)/
+'''
+
+[tool.isort]
+line_length = 100
+include_trailing_comma = true
+profile = "black"

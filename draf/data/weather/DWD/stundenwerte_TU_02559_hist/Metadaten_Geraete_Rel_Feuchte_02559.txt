@@ -1,0 +1,9 @@
+Stations_ID;Stationsname;Geo. Laenge [Grad];Geo. Breite [Grad];Stationshoehe [m];Geberhoehe ueber Grund [m];Von_Datum;Bis_Datum;Geraetetyp Name;Messverfahren;eor;
+2559;Kempten;10.34;47.72;705;2;19550101;19751001;Hygrograph nach Frankenberg;Feuchteregistrieung, konv.;eor;
+2559;Kempten;10.34;47.72;705;2;19620429;20061121;HYGROMER MP100;Feuchtemessung, elektr.;eor;
+2559;Kempten;10.34;47.72;705;2;19750905;20040125;Thermohygrograph;Temperatur- und Feuchtereg., konv.;eor;
+2559;Kempten;10.34;47.72;705;2;20061122;20061126;Feuchtesonde HMP45D;Feuchtemessung, elektr.;eor;
+2559;Kempten;10.33;47.72;705.2;2;20061127;20140406;Feuchtesonde HMP45D;Feuchtemessung, elektr.;eor;
+2559;Kempten;10.33;47.72;705.2;2;20140407;20140820;Feuchtesonde HMP45D;Feuchtemessung, elektr.;eor;
+2559;Kempten;10.33;47.72;705.2;2;20140821;20190312;EE33;Feuchtemessung, elektr.;eor;
+generiert: 14.03.2019 --  Deutscher Wetterdienst  --
