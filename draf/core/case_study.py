@@ -12,6 +12,8 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import gurobipy as gp
 import numpy as np
 import pandas as pd
+from tqdm.auto import tqdm
+
 from draf import helper as hp
 from draf import paths
 from draf.core.draf_base_class import DrafBaseClass
@@ -20,7 +22,6 @@ from draf.core.scenario import Scenario
 from draf.plotting.cs_plotting import CsPlotter
 from draf.plotting.scen_plotting import ScenPlotter
 from draf.prep.params_prepping import Prepper
-from tqdm.auto import tqdm
 
 # TODO: put all logging functionality into a logger.py file.
 fmt = "%(levelname)s:%(name)s:%(funcName)s():%(lineno)i:\n    %(message)s"

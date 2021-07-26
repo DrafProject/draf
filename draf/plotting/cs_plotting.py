@@ -8,12 +8,13 @@ import plotly as py
 import plotly.figure_factory as ff
 import plotly.graph_objs as go
 import seaborn as sns
-from draf import helper as hp
-from draf.plotting.base_plotter import BasePlotter
-from draf.plotting.scen_plotting import COLORS, ScenPlotter
 from elmada import plots
 from ipywidgets import interact
 from pandas.io.formats.style import Styler as pdStyler
+
+from draf import helper as hp
+from draf.plotting.base_plotter import BasePlotter
+from draf.plotting.scen_plotting import COLORS, ScenPlotter
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)

@@ -1,5 +1,5 @@
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import textwrap
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 
 class DrafBaseClass:
@@ -9,8 +9,9 @@ class DrafBaseClass:
     def _get_dims(ent: str) -> str:
         """Returns the dimensions of a given entity name, based on its name."""
         lst = ent.split("_")
-        assert len(
-            lst) > 0, "Every entity must contain at least one underscore which '{ent}' has not."
+        assert (
+            len(lst) > 0
+        ), "Every entity must contain at least one underscore which '{ent}' has not."
         return lst[-1]
 
     def _build_repr(self, layout: str = None, which_metadata: Optional[List] = None) -> str:
@@ -44,7 +45,7 @@ class DrafBaseClass:
 
     def get_all(self) -> Dict:
         """Returns a Dict with all public non-callable attributes from this container."""
-        return {k: v for k, v in vars(self).items() if not (k.startswith('_') or callable(v))}
+        return {k: v for k, v in vars(self).items() if not (k.startswith("_") or callable(v))}
 
     def get(self, name: str):
         """Returns entity"""

@@ -56,8 +56,8 @@ def params_func(sc):
 
     # BES
     sc.add_par("E_BES_CAPx_", 0, "existing capacity BES", "kW_el")
-    sc.add_par("eta_BES_time_", .999, "storing efficiency", "")
-    sc.add_par("eta_BES_in_", .999, "loading efficiency", "")
+    sc.add_par("eta_BES_time_", 0.999, "storing efficiency", "")
+    sc.add_par("eta_BES_in_", 0.999, "loading efficiency", "")
     sc.add_par("k_BES_in_per_capa_", 1, "ratio of charging power / capacity", "")
     sc.add_par("k_BES_out_per_capa_", 1, "ratio of discharging power / capacity (aka C rate)", "")
     sc.add_var("E_BES_T", "electricity stored", "kWh_el")
@@ -78,18 +78,19 @@ def model_func(m, d, p, v):
     m.addConstr(v.C_op_ == v.C_GRID_peak_ + v.C_GRID_buy_ - v.C_GRID_sell_, "DEF_C_op_")
     m.addConstr(v.C_GRID_peak_ == v.P_GRID_peak_ * p.c_GRID_peak_ / 1e3, "DEF_C_el_peak_")
     m.addConstr(
-        v.C_GRID_buy_ == quicksum(v.E_GRID_buy_T[t] * (p.c_GRID_T[t] + p.c_GRID_addon_T[t]) / 1e3
-                                  for t in T), "DEF_C_GRID_buy_")
-    m.addConstr(v.C_GRID_sell_ == quicksum(v.E_GRID_sell_T[t] * p.c_GRID_T[t] / 1e3 for t in T),
-                "DEF_C_GRID_sell_")
+        v.C_GRID_buy_ == quicksum(v.E_GRID_buy_T[t] * (p.c_GRID_T[t] + p.c_GRID_addon_T[t]) / 1e3 for t in T),
+        "DEF_C_GRID_buy_",
+    )
+    m.addConstr(
+        v.C_GRID_sell_ == quicksum(v.E_GRID_sell_T[t] * p.c_GRID_T[t] / 1e3 for t in T), "DEF_C_GRID_sell_",
+    )
     m.addConstr(v.C_inv_ == 0, "DEF_C_inv_")
 
     # CARBON BALANCE
     m.addConstr(v.CE_ == quicksum(v.E_GRID_buy_T[t] * p.ce_GRID_T[t] for t in T), "DEF_CE_op_")
 
     # ELECTRICITY BALANCE
-    m.addConstrs((v.E_GRID_buy_T[t] + v.E_PV_OC_T[t] == p.E_dem_T[t] + v.E_BES_in_T[t] for t in T),
-                 "BAL_el")
+    m.addConstrs((v.E_GRID_buy_T[t] + v.E_PV_OC_T[t] == p.E_dem_T[t] + v.E_BES_in_T[t] for t in T), "BAL_el")
     m.addConstrs((v.E_GRID_sell_T[t] == v.E_PV_FI_T[t] for t in T), "DEF_E_sell")
     m.addConstrs((v.E_GRID_buy_T[t] <= v.P_GRID_peak_ for t in T), "DEF_peakPrice")
 
@@ -99,12 +100,12 @@ def model_func(m, d, p, v):
 
     # BES
     m.addConstrs(
-        (v.E_BES_T[t] == p.eta_BES_time_ * v.E_BES_T[t - 1] + p.eta_BES_in_ * v.E_BES_in_T[t]
-         for t in T[1:]), "BAL_BES")
+        (v.E_BES_T[t] == p.eta_BES_time_ * v.E_BES_T[t - 1] + p.eta_BES_in_ * v.E_BES_in_T[t] for t in T[1:]),
+        "BAL_BES",
+    )
     m.addConstrs((v.E_BES_T[t] <= p.E_BES_CAPx_ for t in T), "MAX_BES_E")
     m.addConstrs((v.E_BES_in_T[t] <= p.E_BES_CAPx_ * p.k_BES_in_per_capa_ for t in T), "MAX_BES_IN")
-    m.addConstrs((v.E_BES_in_T[t] >= -(p.E_BES_CAPx_ * p.k_BES_out_per_capa_) for t in T),
-                 "MAX_BES_OUT")
+    m.addConstrs((v.E_BES_in_T[t] >= -(p.E_BES_CAPx_ * p.k_BES_out_per_capa_) for t in T), "MAX_BES_OUT")
     m.addConstrs((v.E_BES_T[t] == 0 for t in [min(T), max(T)]), "INI_BES")
 
 

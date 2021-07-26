@@ -2,6 +2,7 @@ import logging
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import pandas as pd
+
 from draf.core.draf_base_class import DrafBaseClass
 
 logger = logging.getLogger(__name__)
@@ -144,9 +145,11 @@ class Results(EntityStore):
             which_metas = ["doc", "unit", "dims"]
 
         for meta_type in which_metas:
-            self._set_meta(ent_name=target_ent,
-                           meta_type=meta_type,
-                           value=self._get_meta(ent_name=source_ent, meta_type=meta_type))
+            self._set_meta(
+                ent_name=target_ent,
+                meta_type=meta_type,
+                value=self._get_meta(ent_name=source_ent, meta_type=meta_type),
+            )
 
     def make_pos_ent(self, source: str, target_neg: str = None, doc_target: str = None) -> None:
         """Makes entities positive.
@@ -165,9 +168,9 @@ class Results(EntityStore):
             if target_neg is not None:
                 setattr(self, target_neg, -source_ser.where(cond=source_ser < 0, other=0))
 
-                self._copy_meta(source_ent=source,
-                                target_ent=target_neg,
-                                which_metas=["doc", "unit", "dims"])
+                self._copy_meta(
+                    source_ent=source, target_ent=target_neg, which_metas=["doc", "unit", "dims"]
+                )
 
                 if isinstance(doc_target, str):
                     self._set_meta(target_neg, meta_type="doc", value=doc_target)
@@ -180,5 +183,5 @@ class Results(EntityStore):
     def set_threshold(self, ent_name: str, threshold: float = 1e-10) -> None:
         """Set results to zero if value range is between zero an a given threshold."""
         ser = self.get(ent_name)
-        setattr(self, ent_name, ser.where(cond=ser > threshold, other=0.))
+        setattr(self, ent_name, ser.where(cond=ser > threshold, other=0.0))
         self._changed_since_last_dic_export = True

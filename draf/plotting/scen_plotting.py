@@ -11,11 +11,12 @@ import plotly.express as px
 import plotly.graph_objs as go
 import plotly.offline as po
 import seaborn as sns
-from draf import helper as hp
-from draf.plotting.base_plotter import BasePlotter
 from elmada import plots
 from IPython.display import display
 from plotly.tools import make_subplots
+
+from draf import helper as hp
+from draf.plotting.base_plotter import BasePlotter
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
@@ -462,7 +463,6 @@ class ScenPlotter(BasePlotter):
 
         return go.Figure(data=[data], layout=layout)
 
-    @hp.copy_doc(plots.merit_order)
     def merit_order(self, **kwargs) -> Tuple["fig", "ax", "ax_right"]:
         return plots.merit_order(year=self.cs.year, country=self.cs.country, **kwargs)
 

@@ -13,7 +13,7 @@ GRB_OPT_STATUS = {
     12: "NUMERIC",
     13: "SUBOPTIMAL",
     14: "INPROGRESS",
-    15: "USER_OBJ_LIMIT"
+    15: "USER_OBJ_LIMIT",
 }
 
 VAR_PAR = {

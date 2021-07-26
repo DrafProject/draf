@@ -399,4 +399,3 @@ def bordered(text: str) -> str:
         res.append("│" + (s + " " * width)[:width] + "│")
     res.append(f"└{'─' * width}┘")
     return "\n".join(res)
-

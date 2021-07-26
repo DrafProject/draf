@@ -14,8 +14,8 @@ def params_func(sc):
 
     sc.add_par("pv_capa_", 0)
 
-    sc.add_par("k_BES_in_per_capa_", .5, doc="ratio loading power / capacity")
-    sc.add_par("k_BES_out_per_capa_", .5, doc="ratio unloading power / capacity")
+    sc.add_par("k_BES_in_per_capa_", 0.5, doc="ratio loading power / capacity")
+    sc.add_par("k_BES_out_per_capa_", 0.5, doc="ratio unloading power / capacity")
     sc.add_par("E_BES_capa_", 0, doc="Capacity of battery energy storage.")
 
     sc.prep.add_c_GRID_RTP_T()
@@ -28,7 +28,9 @@ def params_func(sc):
     sc.add_par("c_GRID_T", sc.params.c_GRID_RTP_T)
 
     sc.add_var("C_", lb=-GRB.INFINITY, doc="total costs", unit="k€/a")
-    sc.add_var("CE_", lb=-GRB.INFINITY, doc="total carbon emissions", )
+    sc.add_var(
+        "CE_", lb=-GRB.INFINITY, doc="total carbon emissions",
+    )
     sc.add_var("E_pur_T", lb=-GRB.INFINITY)
     sc.add_var("E_BES_delta_pos_")
     sc.add_var("E_BES_delta_neg_")
@@ -39,19 +41,22 @@ def params_func(sc):
 def model_func(d, p, v, m):
     T = d.T
 
-    m.setObjective(((1 - p.alpha_) * v.C_ / p.n_C_ + p.alpha_ * v.CE_ / p.n_CE_ +
-                    v.E_BES_delta_pos_ + v.E_BES_delta_neg_), GRB.MINIMIZE)
+    m.setObjective(
+        ((1 - p.alpha_) * v.C_ / p.n_C_ + p.alpha_ * v.CE_ / p.n_CE_ + v.E_BES_delta_pos_ + v.E_BES_delta_neg_),
+        GRB.MINIMIZE,
+    )
 
     m.addConstr((v.C_ == quicksum(v.E_pur_T[t] * p.c_GRID_T[t] / 1e3 for t in T)), "BAL_C_")
     m.addConstr((v.CE_ == quicksum(v.E_pur_T[t] * p.ce_GRID_T[t] for t in T)), "BAL_CE_")
-    m.addConstrs((v.E_pur_T[t] + p.E_PV_profile_T[t] * p.pv_capa_ - v.E_BES_in_T[t] == p.E_dem_T[t]
-                  for t in T), "BAL_TOT")
-    m.addConstrs((v.E_BES_T[t] == 0.9994 * v.E_BES_T[t - 1] + 0.9994 * v.E_BES_in_T[t]
-                  for t in T[1:]), "BAL_BES")
+    m.addConstrs(
+        (v.E_pur_T[t] + p.E_PV_profile_T[t] * p.pv_capa_ - v.E_BES_in_T[t] == p.E_dem_T[t] for t in T), "BAL_TOT",
+    )
+    m.addConstrs(
+        (v.E_BES_T[t] == 0.9994 * v.E_BES_T[t - 1] + 0.9994 * v.E_BES_in_T[t] for t in T[1:]), "BAL_BES",
+    )
     m.addConstrs((v.E_BES_T[t] <= p.E_BES_capa_ for t in T), "MAX_BES_E")
     m.addConstrs((v.E_BES_in_T[t] <= p.k_BES_in_per_capa_ * p.E_BES_capa_ for t in T), "MAX_BES_IN")
-    m.addConstrs((v.E_BES_in_T[t] >= -p.k_BES_out_per_capa_ * p.E_BES_capa_ for t in T),
-                 "MAX_BES_OUT")
+    m.addConstrs((v.E_BES_in_T[t] >= -p.k_BES_out_per_capa_ * p.E_BES_capa_ for t in T), "MAX_BES_OUT")
     m.addConstr(v.E_BES_in_T[min(T)] == 0, "INI_BES")
     m.addConstr(v.E_BES_T[min(T)] == 0, "INI_BES_0")
     m.addConstr(v.E_BES_T[max(T)] == 0, "END_BES_0")

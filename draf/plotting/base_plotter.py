@@ -2,7 +2,6 @@ from IPython import get_ipython
 
 
 class BasePlotter:
-
     def script_type(self) -> str:
         """Returns script type to determine if interactive plots are available."""
         if get_ipython() is not None:

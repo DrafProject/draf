@@ -1,2 +1,1 @@
-
 from draf.models import *

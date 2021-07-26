@@ -25,8 +25,7 @@ def model_func(m, d, p, v):
     m.setObjective((1 - p.alpha_) * v.C_ + p.alpha_ * v.CE_, GRB.MINIMIZE)
     m.addConstr(v.C_ == quicksum(v.E_pur_T[t] * p.c_GRID_RTP_T[t] / 1e3 for t in d.T), "DEF_C_")
     m.addConstr(v.CE_ == quicksum(v.E_pur_T[t] * p.ce_GRID_T[t] for t in d.T), "DEF_CE_")
-    m.addConstrs((v.E_pur_T[t] + p.P_PV_CAPx_ * p.E_PV_profile_T[t] == p.E_dem_T[t] for t in d.T),
-                 "BAL_pur")
+    m.addConstrs((v.E_pur_T[t] + p.P_PV_CAPx_ * p.E_PV_profile_T[t] == p.E_dem_T[t] for t in d.T), "BAL_pur")
 
 
 def main():

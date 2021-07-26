@@ -9,8 +9,7 @@ def params_func(sc):
     T = sc.add_dim("T", infer=True)
 
     sc.add_par("alpha_", 0, "pareto weighting factor", "")
-    sc.add_par("n_comp_", 8760 / len(T), "cost weighting factor to compensate part year analysis",
-               "")
+    sc.add_par("n_comp_", 8760 / len(T), "cost weighting factor to compensate part year analysis", "")
     sc.add_par("n_C_", 1, "normalization factor", "")
     sc.add_par("n_CE_", 1 / 1e4, "normalization factor", "")
     sc.add_par("AF_", 0.1, "annuitiy factor (it pays off in 1/AF_ years)", "")
@@ -36,8 +35,8 @@ def params_func(sc):
     sc.prep.add_E_dem_T(profile="G3", annual_energy=10.743e6)
 
     # EFFICIENCIES
-    sc.add_par("eta_BES_time_", .999, "storing efficiency", "")
-    sc.add_par("eta_BES_in_", .999, "loading efficiency", "")
+    sc.add_par("eta_BES_time_", 0.999, "storing efficiency", "")
+    sc.add_par("eta_BES_in_", 0.999, "loading efficiency", "")
     sc.add_par("k_BES_in_per_capa_", 1, "ratio loading power / capacity", "")
 
     sc.add_var("C_", "total costs", "k€/a", lb=-GRB.INFINITY)
@@ -62,20 +61,24 @@ def params_func(sc):
 
 def model_func(m, d, p, v):
     T = d.T
-    m.setObjective(((1 - p.alpha_) * v.C_op_ * p.n_C_ +
-                    p.alpha_ * v.CE_op_ * p.n_CE_), GRB.MINIMIZE)
+    m.setObjective(((1 - p.alpha_) * v.C_op_ * p.n_C_ + p.alpha_ * v.CE_op_ * p.n_CE_), GRB.MINIMIZE)
 
     m.addConstr(
-        v.C_op_ == (v.P_pur_peak_ * p.c_el_peak_ / 1e3 + p.n_comp_ *
-                    quicksum(v.E_pur_T[t] *
-                             (p.c_GRID_T[t] + p.c_GRID_addon_T[t]) / 1e3
-                             - v.E_sell_T[t] * p.c_GRID_T[t] / 1e3
-                             for t in T)), "DEF_C_op")
+        v.C_op_
+        == (
+            v.P_pur_peak_ * p.c_el_peak_ / 1e3
+            + p.n_comp_
+            * quicksum(
+                v.E_pur_T[t] * (p.c_GRID_T[t] + p.c_GRID_addon_T[t]) / 1e3 - v.E_sell_T[t] * p.c_GRID_T[t] / 1e3
+                for t in T
+            )
+        ),
+        "DEF_C_op",
+    )
 
     m.addConstr(v.CE_op_ == quicksum(v.E_pur_T[t] * p.ce_GRID_T[t] for t in T), "DEF_CE_op_")
 
-    m.addConstrs((v.E_pur_T[t] + v.E_PV_OC_T[t] == p.E_dem_T[t] + v.E_BES_in_T[t] for t in T),
-                 "BAL_el")
+    m.addConstrs((v.E_pur_T[t] + v.E_PV_OC_T[t] == p.E_dem_T[t] + v.E_BES_in_T[t] for t in T), "BAL_el")
 
     m.addConstrs((v.E_sell_T[t] == v.E_PV_FI_T[t] for t in T), "DEF_E_sell")
     m.addConstrs((v.E_pur_T[t] <= v.P_pur_peak_ for t in T), "DEF_peakPrice")
@@ -84,8 +87,9 @@ def model_func(m, d, p, v):
     m.addConstrs((v.E_PV_T[t] == v.E_PV_FI_T[t] + v.E_PV_OC_T[t] for t in T), "PV_OC_FI")
 
     m.addConstrs(
-        (v.E_BES_T[t] == p.eta_BES_time_ * v.E_BES_T[t - 1] + p.eta_BES_in_ * v.E_BES_in_T[t]
-         for t in T[1:]), "BAL_BES")
+        (v.E_BES_T[t] == p.eta_BES_time_ * v.E_BES_T[t - 1] + p.eta_BES_in_ * v.E_BES_in_T[t] for t in T[1:]),
+        "BAL_BES",
+    )
     m.addConstrs((v.E_BES_T[t] <= p.E_BES_CAPx_ for t in T), "MAX_BES_E")
     m.addConstrs((v.E_BES_in_T[t] <= v.E_BES_in_max_ for t in T), "MAX_BES_IN")
     m.addConstrs((v.E_BES_in_T[t] >= -v.E_BES_out_max_ for t in T), "MAX_BES_OUT")

@@ -1,11 +1,12 @@
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1)](https://pycqa.github.io/isort/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 <img src="doc/images/all.svg" width="200" alt="draf logo">
 
 # **D**emand **r**esponse **a**nalysis **f**ramework
 
-Draf is a Python library for analyzing price-based demand response. It is developed by [Markus Fleschutz](https://www.linkedin.com/in/markus-fleschutz/) in a cooperative PhD between [MTU](https://www.mtu.ie/) and the [University of Applied Sciences Karlsruhe](https://www.h-ka.de/en/). An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showcase/).
+draf is a Python library for analyzing price-based demand response. It is developed by [Markus Fleschutz](https://www.linkedin.com/in/markus-fleschutz/) in a cooperative PhD between [MTU](https://www.mtu.ie/) and the [University of Applied Sciences Karlsruhe](https://www.h-ka.de/en/). An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showcase/).
 
 # Quick start
 
@@ -23,8 +24,8 @@ conda activate draf
 pytest
 ```
 
-- Draf can run on Windows, macOS and Linux.
-- Several example models are included with Draf under draf > models.
+- draf can run on Windows, macOS and Linux.
+- Several example models are included with draf under [draf/models](draf/models).
 - For the full functionality of draf you need a valid gurobi licence.
 
 # Structure
