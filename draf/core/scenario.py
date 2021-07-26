@@ -399,6 +399,11 @@ class Scenario(DrafBaseClass):
                 f"PicklingError {e}: Try deactivate Ipython's autoreload to save the scenario."
             )
 
+    def trim_to_datetimeindex(
+        self, data: Union[pd.DataFrame, pd.Series]
+    ) -> Union[pd.DataFrame, pd.Series]:
+        return data[self._t1 : self._t2 + 1]
+
     def get_xarray_dataset(self, include_vars: bool = True, include_params: bool = True):
         """Get an xarray dataset with all parameters and results."""
         import xarray as xr
@@ -531,8 +536,6 @@ class Scenario(DrafBaseClass):
         unit: str = "",
         fill: Optional[float] = None,
         update: bool = False,
-        fp: Optional[str] = None,
-        **read_kwargs,
     ) -> pd.Series:
         """Add a parameter to the scenario.
 
@@ -547,13 +550,9 @@ class Scenario(DrafBaseClass):
             fill: if a float is given here, for all relevant dimensions inferred from the name the
                 series is filled.
             update: if True, the meta-data will not be touched, just the data changed.
-            fp: a file path can be given to read a h5 or csv-file.
             read_kwargs: keyword arguments handed onto the pandas read-function.
 
         """
-
-        if fp is not None:
-            data = hp.read_array(fp=fp, asType="s", **read_kwargs)
 
         dims = self._get_dims(name)
 

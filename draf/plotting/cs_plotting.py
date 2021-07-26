@@ -8,7 +8,6 @@ import plotly as py
 import plotly.figure_factory as ff
 import plotly.graph_objs as go
 import seaborn as sns
-from elmada import plots
 from ipywidgets import interact
 from pandas.io.formats.style import Styler as pdStyler
 
@@ -18,6 +17,8 @@ from draf.plotting.scen_plotting import COLORS, ScenPlotter
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
+
+NAN_REPRESENTATION = "-"
 
 
 class CsPlotter(BasePlotter):
@@ -688,7 +689,7 @@ def _get_capa_heatmap(df) -> go.Figure:
         data.values,
         x=data.columns.tolist(),
         y=data.index.tolist(),
-        annotation_text=data.applymap(plots.float_to_int_to_string).values,
+        annotation_text=data.applymap(float_to_int_to_string).values,
         showscale=False,
         colorscale="OrRd",
         font_colors=["white", "black"],
@@ -699,10 +700,43 @@ def _get_capa_heatmap(df) -> go.Figure:
         width=900,
         height=400,
     )
-    plots.set_font_size(fig=fig, size=9)
-    plots.make_high_values_white(fig=fig, data=data)
+    set_font_size(fig=fig, size=9)
+    make_high_values_white(fig=fig, data=data)
     return fig
+
+
+def make_high_values_white(fig, data, diverging: bool = False) -> None:
+    if diverging:
+        data = data.abs()
+    minz = data.min().min()
+    maxz = data.max().max()
+    threshold = (minz + maxz) / 2
+    for i in range(len(fig.layout.annotations)):
+        ann_text = fig.layout.annotations[i].text
+        if ann_text != NAN_REPRESENTATION:
+            f = float(ann_text.replace(",", ""))
+            if diverging:
+                f = abs(f)
+            if f > threshold:
+                fig.layout.annotations[i].font.color = "white"
+
+
+def set_font_size(fig, size: int = 9) -> None:
+    for i in range(len(fig.layout.annotations)):
+        fig.layout.annotations[i].font.size = size
 
 
 def grey(s: str):
     return f"<span style='font-size:small;color:grey;font-family:monospace;'>{s}</span>"
+
+
+def float_to_int_to_string(afloat):
+    return f"{afloat:,.0f}".replace("nan", NAN_REPRESENTATION)
+
+
+def float_to_string_with_precision_1(afloat):
+    return f"{afloat:.1f}".replace("nan", NAN_REPRESENTATION)
+
+
+def float_to_string_with_precision_2(afloat):
+    return f"{afloat:.2f}".replace("nan", NAN_REPRESENTATION)

@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import holidays
 import pandas as pd
+from elmada.helper import read, write
 
 from draf import helper as hp
 from draf import paths
@@ -185,7 +186,7 @@ def get_ambient_temp(
     assert year in range(2008, 2100), f"{year} is not a valid year"
     assert freq in ["60min"], f"{freq} is not a valid freq"
 
-    fp = paths.DATA / f"weather/cache/{year}_{freq}_t_ambient_{location}.h5"
+    fp = paths.DATA / f"weather/cache/{year}_{freq}_t_ambient_{location}.parquet"
 
     station_ids = {
         "Rheinstetten": "04177",
@@ -193,7 +194,7 @@ def get_ambient_temp(
     }
 
     if cache and fp.exists():
-        ser = pd.read_hdf(fp)
+        ser = read(fp)
 
     else:
         # German Data downloaded from
@@ -210,7 +211,7 @@ def get_ambient_temp(
         ser.reset_index(drop=True, inplace=True)
         ser.name = "t_amb"
         if cache:
-            hp.write_array(ser, fp)
+            write(ser, fp)
 
     hp.warn_if_incorrect_index_length(ser, year, freq)
     return ser
@@ -263,4 +264,4 @@ def get_PV_profile() -> pd.Series:
     """Experimental. Get a default PV profile for 1 kWh_peak."""
     # TODO: implement some PV module.
     fp = paths.DATA / "renewables/pv_el.csv"
-    return hp.read_array(fp=fp, asType="s")
+    return read(fp=fp)

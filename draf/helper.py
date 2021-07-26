@@ -7,6 +7,8 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from elmada.helper import read, write
+from numpy.core.fromnumeric import squeeze
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.CRITICAL)
@@ -22,93 +24,6 @@ def datetime_to_int(freq: str, year: int, month: int, day: int) -> int:
 def int_to_datetime(freq: str, year: int, pos: int) -> "datetime":
     dtindex = make_datetimeindex(year=year, freq=freq)
     return dtindex[pos]
-
-
-def read_array(
-    fp: Path, col: int = 0, asType: str = "a", verbose: bool = False, **kwargs
-) -> Union[np.ndarray, pd.Series, pd.DataFrame]:
-    """Standardized way of reading arrays in draf.
-
-    Args:
-        fp: Filepath
-        col: Columns can be passed to usecols, file is a csv.
-        asType: Specifies the return data format. Must be one 'a'=numpy.ndarray, 's'=pandas.Series,
-             or 'df'=pandas.DataFrame
-        verbose: If true, tries to print further information of the data.
-
-    """
-
-    assert asType in {"a", "s", "df"}
-    suffix = Path(fp).suffix
-
-    if suffix == ".h5":
-        data = pd.read_hdf(fp, key="default", **kwargs)
-
-    elif suffix == ".csv":
-        data = pd.read_csv(fp, usecols=[col], squeeze=True, **kwargs)
-
-    if verbose:
-        try:
-            print(f"name\t {data.name}\nsum\t  {data.sum():>.6f}")
-            print(data.describe())
-            data.plot()
-        except BaseException:
-            pass
-
-    if isinstance(data, pd.Series):
-        if asType == "a":
-            return data.values
-
-        elif asType == "s":
-            return data
-
-        elif asType == "df":
-            return pd.DataFrame(data)
-
-    elif isinstance(data, pd.DataFrame):
-        if asType == "a":
-            return data.values
-
-        elif asType == "s":
-            return data.stack()
-
-        elif asType == "df":
-            return pd.DataFrame(data)
-
-    elif isinstance(data, np.ndarray):
-        if asType == "a":
-            return data
-
-        elif asType == "s":
-            return data.stack()
-
-        elif asType == "df":
-            return pd.DataFrame(data)
-    else:
-        raise RuntimeError(f"The data cannot be converted into the type {asType}")
-
-
-def write_array(data: Union[np.ndarray, pd.Series, pd.DataFrame], fp: Path) -> None:
-    """Standardized way of writing arrays in draf
-
-    Args:
-        data: One of numpy.ndarray, pandas.Series, pandas.DataFrame.
-        fp: Filepath of a .h5 or .csv file.
-    """
-
-    fp = Path(fp)
-
-    if isinstance(data, np.ndarray):
-        data = pd.Series(data, name="data")
-
-    if fp.suffix == ".h5":
-        data.to_hdf(fp, key="default", mode="w")
-
-    elif fp.suffix == ".csv":
-        data.to_csv(fp, header=True, index=False)
-
-    else:
-        raise RuntimeError(f"suffix {fp.suffix} not supported")
 
 
 def make_gif(fp: Path, duration: float = 0.5) -> None:
@@ -252,10 +167,10 @@ def _append_rows(
 
 def make_quarterhourly_file_hourly(fp: Path, year: str = "2017", aggfunc: str = "mean") -> None:
     fp = Path(fp)
-    ser = read_array(fp=fp, asType="s")
+    ser = read(fp=fp, squeeze=True)
     sh = downsample(ser, year=year, aggfunc=aggfunc)
     filepath_new = Path(fp.as_posix().replace("15min", "60min"))
-    write_array(sh, fp=filepath_new)
+    write(sh, fp=filepath_new)
 
 
 def sizeof_fmt(num: float, suffix: str = "B") -> str:

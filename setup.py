@@ -18,7 +18,16 @@ setup(
     license="LGPLv3",
     packages=find_packages(exclude=["tests"]),
     python_requires=">=3.7",
-    install_requires=["numpy", "holidays", "pandas", "matplotlib", "seaborn", "pyomo>=5.7"],
+    install_requires=[
+        "elmada",
+        "holidays",
+        "matplotlib",
+        "numpy",
+        "pandas",
+        "pyomo>=5.7",
+        "seaborn",
+        "tqdm",
+    ],
     extras_require={"dev": ["pytest", "pytest-cov", "pytest-mock", "mypy"]},
     classifiers=[
         "Development Status :: 4 - Alpha",

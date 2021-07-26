@@ -65,7 +65,7 @@ All data will be placed in the `draf/data`-folder. There are common data that co
 Local data can be added (e.g. through a symbolic link).
 
 ``` None
-Raw-data    h5-files     pd.Series
+Raw-data  parquet-files  pd.Series
      |--prep--^   |--get--^
 ```
 
@@ -134,6 +134,11 @@ cs.improve_pareto_and_set_model(mod.model_func).optimize(mod.postprocess_func).s
 # Status
 
 This piece of software is in a very early stage. Use at your own risk.
+
+<!--
+# TODO: Write about conventions
+# Conventions
+ -->
 
 # License
 

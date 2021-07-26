@@ -1,12 +1,13 @@
 import logging
 from typing import Any, List, Optional
 
-import draf.helper as hp
 import holidays
 import numpy as np
 import pandas as pd
-from draf.io import get_ambient_temp, get_PV_profile, get_SLP, get_thermal_demand
 from elmada import get_emissions, get_prices
+
+import draf.helper as hp
+from draf.io import get_ambient_temp, get_PV_profile, get_SLP, get_thermal_demand
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
@@ -42,10 +43,12 @@ class Prepper:
             name=name,
             unit="kgCO2eq/kWh_el",
             doc=f"{method} for {sc.year}, {sc.freq}, {sc.country}",
-            data=get_emissions(
-                year=sc.year, freq=sc.freq, country=sc.country, method=method, **kwargs,
-            )[sc._t1 : sc._t2 + 1]
-            / 1e3,
+            data=sc.trim_to_datetimeindex(
+                get_emissions(
+                    year=sc.year, freq=sc.freq, country=sc.country, method=method, **kwargs,
+                )
+                / 1e3
+            ),
         )
 
     def add_c_GRID_RTP_T(self, name="c_GRID_RTP_T", method="hist_EP", **kwargs):
@@ -55,10 +58,10 @@ class Prepper:
             name=name,
             unit="€/kWh_el",
             doc=f"Day-ahead-market-prices {sc.year}, {sc.freq}, {sc.country}",
-            data=get_prices(
-                year=sc.year, freq=sc.freq, method=method, country=sc.country, **kwargs
-            )[sc._t1 : sc._t2 + 1]
-            / 1000,
+            data=sc.trim_to_datetimeindex(
+                get_prices(year=sc.year, freq=sc.freq, method=method, country=sc.country, **kwargs)
+                / 1000
+            ),
         )
 
     def add_c_GRID_PP_T(self, name="c_GRID_PP_T", method="PP"):
@@ -80,9 +83,9 @@ class Prepper:
             name=name,
             unit="€/kWh_el",
             doc=f"Marginal Costs {sc.year}, {sc.freq}, {sc.country}",
-            data=get_prices(
-                year=sc.year, freq=sc.freq, country=sc.country, method=method, **kwargs
-            )[sc._t1 : sc._t2 + 1],
+            data=sc.trim_to_datetimeindex(
+                get_prices(year=sc.year, freq=sc.freq, country=sc.country, method=method, **kwargs)
+            ),
         )
 
     def add_c_GRID_TOU_T(
@@ -165,16 +168,18 @@ class Prepper:
             name=name,
             unit="kWh_el",
             doc=f"Electricity demand from standard load profile {profile}",
-            data=get_SLP(
-                year=sc.year,
-                freq=sc.freq,
-                profile=profile,
-                peak_load=peak_load,
-                annual_energy=annual_energy,
-                offset=offset,
-                country=sc.country,
-                province=province,
-            )[sc._t1 : sc._t2 + 1],
+            data=sc.trim_to_datetimeindex(
+                get_SLP(
+                    year=sc.year,
+                    freq=sc.freq,
+                    profile=profile,
+                    peak_load=peak_load,
+                    annual_energy=annual_energy,
+                    offset=offset,
+                    country=sc.country,
+                    province=province,
+                )
+            ),
         )
 
     @hp.copy_doc(get_thermal_demand)
@@ -195,12 +200,14 @@ class Prepper:
             name=name,
             unit="kWh_th",
             doc=f"Heat demand derived from ambient temperatur in {location}",
-            data=get_thermal_demand(
-                ser_amb_temp=ser_amb_temp,
-                annual_energy=annual_energy,
-                target_temp=target_temp,
-                threshold_temp=threshold_temp,
-            )[sc._t1 : sc._t2 + 1],
+            data=sc.trim_to_datetimeindex(
+                get_thermal_demand(
+                    ser_amb_temp=ser_amb_temp,
+                    annual_energy=annual_energy,
+                    target_temp=target_temp,
+                    threshold_temp=threshold_temp,
+                )
+            ),
         )
 
     def add_E_PV_profile_T(self, name="E_PV_profile_T"):
@@ -210,7 +217,7 @@ class Prepper:
             name=name,
             unit="kW_el/kW_peak",
             doc=f"Produced PV-power for 1 kW_peak",
-            data=get_PV_profile()[sc._t1 : sc._t2 + 1],
+            data=sc.trim_to_datetimeindex(get_PV_profile()),
         )
 
     def add_c_GRID_addon_T(
