@@ -7,11 +7,13 @@ dependencies:
   - gurobi
   - ipython
   - ipywidgets
+  - jupyter
   - matplotlib
   - numpy
   - pandas
   - pip
   - plotly
+  - pyomo>=5.7
   - python=3.7  # gurobi has problems with python >3.7
   - seaborn
   - pip:

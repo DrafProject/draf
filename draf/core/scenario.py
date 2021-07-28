@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import gurobipy as gp
 import numpy as np
 import pandas as pd
+import pyomo.environ as pyo
 
 from draf import helper as hp
 from draf.core.draf_base_class import DrafBaseClass
@@ -61,6 +62,7 @@ class Scenario(DrafBaseClass):
         self.dims = Dimensions()
         self.params = Params()
         self.mdl = None
+        self.mdl_language = "gp"
         self.plot = ScenPlotter(sc=self)
         self.prep = Prepper(sc=self)
         self.vars = Vars()
@@ -101,7 +103,7 @@ class Scenario(DrafBaseClass):
         d.pop("_meta", None)
         return d
 
-    def set_default_solver_params(self) -> None:
+    def _set_default_solver_params(self) -> None:
         defaults = {
             "LogFile": str(self._cs._res_fp / "gurobi.log"),
             "LogToConsole": 1,
@@ -125,6 +127,18 @@ class Scenario(DrafBaseClass):
 
     def update_res_dic(self):
         self._res_dic = self.res._to_dims_dic()
+
+    @property
+    def _is_optimal(self):
+
+        if self.mdl_language == "gp":
+            return self.mdl.Status == gp.GRB.OPTIMAL
+
+        elif self.mdl_language == "pyo":
+            return self._termination_condition == pyo.TerminationCondition.optimal
+
+        else:
+            RuntimeError("`mdl_language` must be 'gp' or 'pyo'.")
 
     @property
     def res_dic(self):
@@ -208,8 +222,10 @@ class Scenario(DrafBaseClass):
         )
         return self
 
-    def set_model(self, model_builder_func: Callable, speed_up: bool = True) -> Scenario:
-        """Instantiates a Gurobipy model and sets the model_builder_func on top of the given
+    def set_model(
+        self, model_builder_func: Callable, speed_up: bool = True, mdl_language: str = "gp"
+    ) -> Scenario:
+        """Instantiates an optimization model and sets the model_builder_func on top of the given
         parameters and meta-informations for variables.
 
         Args:
@@ -217,8 +233,13 @@ class Scenario(DrafBaseClass):
                 parameters and variable meta data.
             speed_up: If speed increases should be exploited by converting the parameter objects to
                 tuple-dicts before building the constraints.
+            mdl_language: Choose either 'gp' or 'pyo'.
         """
-        self._instantiate_model(mdl_language="gurobipy")
+        self.mdl_language = mdl_language
+        self._instantiate_model()
+
+        if self.mdl_language == "gp":
+            self._set_default_solver_params()
 
         self._cs._set_time_trace()
         self._activate_vars()
@@ -231,13 +252,15 @@ class Scenario(DrafBaseClass):
 
         self._cs._set_time_trace()
 
-        if speed_up:
+        if speed_up and self.mdl_language == "gp":
             params = self.get_tuple_dict_container()
         else:
             params = self.params
 
         logger.info(f"Set model for scenario {self.id}.")
+
         model_builder_func(m=self.mdl, d=self.dims, p=params, v=self.vars)
+
         self.add_par(
             "timelog_model_",
             self._cs._get_time_diff(),
@@ -262,29 +285,62 @@ class Scenario(DrafBaseClass):
             setattr(td, name, data)
         return td
 
-    def _instantiate_model(self, mdl_language: str = "gurobipy"):
-        if mdl_language == "gurobipy":
-            self.mdl = gp.Model(self.id)
-            self.set_default_solver_params()
+    def _instantiate_model(self):
+
+        if self.mdl_language == "gp":
+            self.mdl = gp.Model(name=self.id)
+
+        elif self.mdl_language == "pyo":
+            self.mdl = pyo.ConcreteModel(name=self.id)
 
     def _activate_vars(self) -> Scenario:
         """Instantiate variables according to the meta-data in `vars._meta`."""
-        mdl = self.mdl
+        if self.mdl_language == "gp":
+            self._activate_gurobipy_vars()
 
+        elif self.mdl_language == "pyo":
+            self._activate_pyomo_vars()
+
+        return self
+
+    def _activate_gurobipy_vars(self):
         for name, metas in self.vars._meta.items():
 
             kwargs = dict(lb=metas["lb"], ub=metas["ub"], name=name, vtype=metas["vtype"])
 
             if metas["is_scalar"]:
-                var_obj = mdl.addVar(**kwargs)
+                var_obj = self.mdl.addVar(**kwargs)
 
             else:
                 dims = self._get_dims(ent=name)
                 dims_list = self.get_coords(dims=dims)
-                var_obj = mdl.addVars(*dims_list, **kwargs)
+                var_obj = self.mdl.addVars(*dims_list, **kwargs)
 
             setattr(self.vars, name, var_obj)
-        return self
+
+    def _activate_pyomo_vars(self):
+        def get_domain(vtype: str):
+            vtype_mapper = {"C": pyo.Reals, "B": pyo.Binary, "I": pyo.Integers}
+            return vtype_mapper[vtype]
+
+        for name, metas in self.vars._meta.items():
+
+            kwargs = dict(
+                bounds=(metas.get("lb"), metas.get("ub")),
+                within=get_domain(metas.get("vtype")),
+                initialize=metas.get("initialize"),
+            )
+
+            if metas["is_scalar"]:
+                var_obj = pyo.Var(**kwargs)
+
+            else:
+                dims = self._get_dims(ent=name)
+                dims_list = self.get_coords(dims=dims)
+                var_obj = pyo.Var(*dims_list, **kwargs)
+
+            setattr(self.vars, name, var_obj)
+            setattr(self.mdl, name, var_obj)
 
     def optimize(
         self,
@@ -293,6 +349,7 @@ class Scenario(DrafBaseClass):
         show_results: bool = False,
         keep_vars: bool = True,
         postprocess_func: Optional[Callable] = None,
+        which_solver="gurobi",
     ) -> Scenario:
         """Solves the optimization problem and does postprocessing if the function is given.
         Results are stored in the Results-object of the scenario.
@@ -305,6 +362,26 @@ class Scenario(DrafBaseClass):
             postprocess_func: Function which is executed with the results container object as
                 argument.
         """
+        kwargs = dict(
+            logToConsole=logToConsole,
+            outputFlag=outputFlag,
+            show_results=show_results,
+            keep_vars=keep_vars,
+            postprocess_func=postprocess_func,
+        )
+
+        if self.mdl_language == "gp":
+            assert which_solver == "gurobi"
+            self._optimize_gurobipy(**kwargs)
+
+        elif self.mdl_language == "pyo":
+            self._optimize_pyomo(**kwargs, which_solver=which_solver)
+
+        return self
+
+    def _optimize_gurobipy(
+        self, logToConsole, outputFlag, show_results, keep_vars, postprocess_func
+    ):
         logger.info(f"Optimize {self.id}.")
         self._cs._set_time_trace()
         self.mdl.setParam("LogToConsole", int(logToConsole), verbose=False)
@@ -348,7 +425,50 @@ class Scenario(DrafBaseClass):
                 f"ERROR solving scenario {self.name}: mdl.Status= {status} ({GRB_OPT_STATUS[status]}) --> {self.mdl.Params.LogFile}"
             )
 
-        return self
+    def _optimize_pyomo(
+        self, logToConsole, outputFlag, show_results, keep_vars, postprocess_func, which_solver
+    ):
+        logger.info(f"Optimize {self.id}.")
+        self._cs._set_time_trace()
+        solver = pyo.SolverFactory(which_solver)
+
+        logfile = str(self._cs._res_fp / "pyomo.log") if outputFlag else None
+
+        results = solver.solve(self.mdl, tee=logToConsole, load_solutions=False, logfile=logfile)
+
+        self.add_par(
+            "timelog_solve_",
+            self._cs._get_time_diff(),
+            doc="Time for solving the model",
+            unit="seconds",
+        )
+
+        status = results.solver.status
+        tc = results.solver.termination_condition
+        self._termination_condition = tc
+
+        if status == pyo.SolverStatus.ok:
+            self.res = Results(self)
+            if not keep_vars:
+                del self.vars
+
+            if postprocess_func is not None:
+                postprocess_func(self.res)
+
+            if tc == pyo.TerminationCondition.maxTimeLimit:
+                logger.warning("Time-limit reached")
+
+            if show_results:
+                try:
+                    print(f"{self.id}: C_={self.res.C_:.2f}, CE_={self.res.CE_:.2f} ({tc})")
+                except ValueError:
+                    logger.warning("res.C_ or res.CE_ not found.")
+
+        else:
+            raise RuntimeError(
+                f"ERROR solving scenario {self.name}: status= {status}, ",
+                f"termination condition={tc}) --> logfile: {logfile}",
+            )
 
     def calculate_IIS(self):
         """Calculate and print the Irreducible Inconsistent Subsystem (IIS)."""
@@ -438,24 +558,22 @@ class Scenario(DrafBaseClass):
         lb: float = 0.0,
         ub: float = 1e100,
         vtype: str = "C",
-        dims: Optional[str] = None,
     ) -> None:
         """Add metadata of one or more variables to the scenario.
 
         Note:
-            * This does not yet create a gurobipy-variable-object.
-            * If dims == None, dims are inferred from name suffix.
+            * This does not yet create a gurobipy or pyomo-variable-object.
+            * Dims are inferred from name suffix
 
         """
 
-        if dims is None:
-            dims = self._get_dims(name)
+        dims = self._get_dims(name)
         is_scalar = dims == ""
         self.vars._meta[name] = dict(
-            doc=doc, unit=unit, lb=lb, ub=ub, dims=dims, is_scalar=is_scalar, vtype=vtype
+            doc=doc, unit=unit, vtype=vtype, lb=lb, ub=ub, dims=dims, is_scalar=is_scalar,
         )
 
-    def _infer_dimension_from_name(self, name: str) -> (str, str, Union[float, pd.Series]):
+    def _infer_dimension_from_name(self, name: str) -> Tuple[str, str, Union[float, pd.Series]]:
         if name == "T":
             doc = f"{self._cs.freq} time steps"
             unit = self._cs._freq_unit

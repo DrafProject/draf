@@ -58,8 +58,8 @@ class CsPlotter(BasePlotter):
                 ("_Relative savings_", "Costs"): rel_savings["C_"],
                 ("_Relative savings_", "Emissions"): rel_savings["CE_"],
                 ("", "Emission avoidance costs"): avoid_cost,
-                ("", "CAPEX"): pd.Series(cs.get_res_of("C_inv_")),
-                ("", "OPEX"): pd.Series(cs.get_res_of("C_op_")),
+                ("", "CAPEX"): pd.Series(cs.get_ent("C_inv_")),
+                ("", "OPEX"): pd.Series(cs.get_ent("C_op_")),
             }
         )
         df[("", "Payback time")] = df[("", "CAPEX")] / (df[("", "OPEX")].iloc[0] - df[("", "OPEX")])
@@ -603,10 +603,10 @@ class CsPlotter(BasePlotter):
         cs = self.cs
         df = pd.DataFrame(
             {
-                "Params": pd.Series(cs.get_res_of("timelog_params_")),
-                "Vars": pd.Series(cs.get_res_of("timelog_vars_")),
-                "Model": pd.Series(cs.get_res_of("timelog_model_")),
-                "Solve": pd.Series(cs.get_res_of("timelog_solve_")),
+                "Params": pd.Series(cs.get_ent("timelog_params_")),
+                "Vars": pd.Series(cs.get_ent("timelog_vars_")),
+                "Model": pd.Series(cs.get_ent("timelog_model_")),
+                "Solve": pd.Series(cs.get_ent("timelog_solve_")),
             }
         )
 
@@ -641,12 +641,12 @@ class CsPlotter(BasePlotter):
 
         fig = _get_capa_heatmap(df)
 
-        ser = pd.Series(cs.get_res_of("C_inv_"))
+        ser = pd.Series(cs.get_ent("C_inv_"))
         fig.add_trace(
             go.Bar(y=ser.index.tolist(), x=ser.values, xaxis="x2", yaxis="y2", orientation="h")
         )
 
-        ser = pd.Series(cs.get_res_of("C_op_"))
+        ser = pd.Series(cs.get_ent("C_op_"))
         fig.add_trace(
             go.Bar(y=ser.index.tolist(), x=ser.values, xaxis="x3", yaxis="y3", orientation="h")
         )

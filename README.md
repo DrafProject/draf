@@ -101,12 +101,16 @@ import draf.models.PV_BES as mod
 cs = draf.CaseStudy(name="ShowCase", year=2017, freq="60min", country="DE")
 
 cs.add_REF_scen(doc="no BES").set_params(mod.params_func).update_params(
-    P_PV_CAPx_=100, c_GRID_peak_=50)
+     P_PV_CAPx_=100, c_GRID_peak_=50
+)
 
-cs.add_scens([("c_GRID_T", "t", ["c_GRID_RTP_T", "c_GRID_TOU_T"]),
-              ("E_BES_CAPx_", "b", [1000])], nParetoPoints=4)
+cs.add_scens(
+    scen_vars=[("c_GRID_T", "t", ["c_GRID_RTP_T", "c_GRID_TOU_T"]), ("E_BES_CAPx_", "b", [1000])],
+    nParetoPoints=4,
+)
 
 cs.improve_pareto_and_set_model(mod.model_func).optimize(mod.postprocess_func).save()
+
 ```
 
 # Common Abbreviations

@@ -261,7 +261,7 @@ class CaseStudy(DrafBaseClass):
 
     def add_scens(
         self,
-        scen_vars: List[Tuple],
+        scen_vars: Optional[List[Tuple[str, str, List]]] = None,
         nParetoPoints: int = 0,
         del_REF: bool = False,
         based_on: str = "REF",
@@ -275,8 +275,10 @@ class CaseStudy(DrafBaseClass):
             scen_vars: List of tuples containing a long and short entity name and its
                 desired variations. The syntax can be taken from this example:
                 ```
-                scen_vars = [("c_GRID_T", "t", ["c_GRID_RTP_T", "c_GRID_TOU_T"]]),
-                            ("P_PV_CAPx_", "p", [0, 10, 20])]
+                scen_vars = [
+                    ("c_GRID_T", "t", ["c_GRID_RTP_T", "c_GRID_TOU_T"]]),
+                    ("P_PV_CAPx_", "p", [0, 10, 20])
+                ]
                 ```
                 In the first tuple the parameter 'c_GRID_T' is set to the parameter 'c_GRID_RTP_T'
                 and then to the parameter 'c_GRID_TOU_T'. In the second tuple, the parameter
@@ -291,8 +293,15 @@ class CaseStudy(DrafBaseClass):
             The attributes `scen_vars` and `scen_df` are set to the CaseStudy.
 
         """
+        if scen_vars is None:
+            if nParetoPoints > 0:
+                scen_vars = []
+            else:
+                RuntimeError("If `nParetoPoints` = 0, scens_vars must not be None.")
+
         if nParetoPoints > 0:
             scen_vars.append(("alpha_", "a", np.linspace(0, 1, nParetoPoints)))
+
         self.scen_vars = scen_vars
 
         names_long, names_short, value_lists = zip(*scen_vars)
@@ -474,7 +483,11 @@ class CaseStudy(DrafBaseClass):
         return self
 
     def set_model(
-        self, model_func: Callable, speed_up: bool = True, scens: Optional[List] = None
+        self,
+        model_func: Callable,
+        speed_up: bool = True,
+        scens: Optional[List] = None,
+        mdl_language: str = "gp",
     ) -> CaseStudy:
         """Set model for multiple scenarios at once."""
         if scens is None:
@@ -483,7 +496,7 @@ class CaseStudy(DrafBaseClass):
         pbar = tqdm(scens)
         for sc in pbar:
             pbar.set_description(f"Build model for {sc.id}")
-            sc.set_model(model_func, speed_up=speed_up)
+            sc.set_model(model_func, speed_up=speed_up, mdl_language=mdl_language)
 
         return self
 
@@ -507,7 +520,7 @@ class CaseStudy(DrafBaseClass):
             pbar.set_description(f"Solve {sc.id}")
             sc.optimize(postprocess_func=postprocess_func, **optimize_kwargs)
 
-        if all([sc.mdl.Status == gp.GRB.OPTIMAL for sc in scens]):
+        if all([sc._is_optimal for sc in scens]):
             mean = np.array([sc.params.timelog_solve_ for sc in scens]).mean()
             print(
                 f"Successfully solved {len(scens)} scenarios with an average solving time "
@@ -539,7 +552,7 @@ class CaseStudy(DrafBaseClass):
             logger.warning(f"Dated function could not add date-time index to data: {e}")
             return df
 
-    def get_res_of(self, ent_name: str) -> Dict:
+    def get_ent(self, ent_name: str) -> Dict:
         """Returns a desired result entity for all scenarios."""
         return {name: sc.get_entity(ent_name) for name, sc in self.scens_dic.items()}
 

@@ -78,11 +78,13 @@ def model_func(m, d, p, v):
     m.addConstr(v.C_op_ == v.C_GRID_peak_ + v.C_GRID_buy_ - v.C_GRID_sell_, "DEF_C_op_")
     m.addConstr(v.C_GRID_peak_ == v.P_GRID_peak_ * p.c_GRID_peak_ / 1e3, "DEF_C_el_peak_")
     m.addConstr(
-        v.C_GRID_buy_ == quicksum(v.E_GRID_buy_T[t] * (p.c_GRID_T[t] + p.c_GRID_addon_T[t]) / 1e3 for t in T),
+        v.C_GRID_buy_
+        == quicksum(v.E_GRID_buy_T[t] * (p.c_GRID_T[t] + p.c_GRID_addon_T[t]) / 1e3 for t in T),
         "DEF_C_GRID_buy_",
     )
     m.addConstr(
-        v.C_GRID_sell_ == quicksum(v.E_GRID_sell_T[t] * p.c_GRID_T[t] / 1e3 for t in T), "DEF_C_GRID_sell_",
+        v.C_GRID_sell_ == quicksum(v.E_GRID_sell_T[t] * p.c_GRID_T[t] / 1e3 for t in T),
+        "DEF_C_GRID_sell_",
     )
     m.addConstr(v.C_inv_ == 0, "DEF_C_inv_")
 
@@ -90,7 +92,9 @@ def model_func(m, d, p, v):
     m.addConstr(v.CE_ == quicksum(v.E_GRID_buy_T[t] * p.ce_GRID_T[t] for t in T), "DEF_CE_op_")
 
     # ELECTRICITY BALANCE
-    m.addConstrs((v.E_GRID_buy_T[t] + v.E_PV_OC_T[t] == p.E_dem_T[t] + v.E_BES_in_T[t] for t in T), "BAL_el")
+    m.addConstrs(
+        (v.E_GRID_buy_T[t] + v.E_PV_OC_T[t] == p.E_dem_T[t] + v.E_BES_in_T[t] for t in T), "BAL_el"
+    )
     m.addConstrs((v.E_GRID_sell_T[t] == v.E_PV_FI_T[t] for t in T), "DEF_E_sell")
     m.addConstrs((v.E_GRID_buy_T[t] <= v.P_GRID_peak_ for t in T), "DEF_peakPrice")
 
@@ -100,12 +104,17 @@ def model_func(m, d, p, v):
 
     # BES
     m.addConstrs(
-        (v.E_BES_T[t] == p.eta_BES_time_ * v.E_BES_T[t - 1] + p.eta_BES_in_ * v.E_BES_in_T[t] for t in T[1:]),
+        (
+            v.E_BES_T[t] == p.eta_BES_time_ * v.E_BES_T[t - 1] + p.eta_BES_in_ * v.E_BES_in_T[t]
+            for t in T[1:]
+        ),
         "BAL_BES",
     )
     m.addConstrs((v.E_BES_T[t] <= p.E_BES_CAPx_ for t in T), "MAX_BES_E")
     m.addConstrs((v.E_BES_in_T[t] <= p.E_BES_CAPx_ * p.k_BES_in_per_capa_ for t in T), "MAX_BES_IN")
-    m.addConstrs((v.E_BES_in_T[t] >= -(p.E_BES_CAPx_ * p.k_BES_out_per_capa_) for t in T), "MAX_BES_OUT")
+    m.addConstrs(
+        (v.E_BES_in_T[t] >= -(p.E_BES_CAPx_ * p.k_BES_out_per_capa_) for t in T), "MAX_BES_OUT"
+    )
     m.addConstrs((v.E_BES_T[t] == 0 for t in [min(T), max(T)]), "INI_BES")
 
 
@@ -135,7 +144,9 @@ def main():
     cs.set_datetime_filter(start="Jan-02 00", steps=24 * 2)
     sc = cs.add_REF_scen()
     sc.set_params(params_func)
-    cs.add_scens([("c_GRID_T", "t", [f"c_GRID_{ix}_T" for ix in ["RTP"]])], nParetoPoints=3)
+    cs.add_scens(
+        scen_vars=[("c_GRID_T", "t", [f"c_GRID_{ix}_T" for ix in ["RTP"]])], nParetoPoints=3
+    )
     cs.improve_pareto_and_set_model(model_func)
     cs.optimize(logToConsole=False, postprocess_func=postprocess_func)
     return cs

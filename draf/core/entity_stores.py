@@ -117,6 +117,15 @@ class Results(EntityStore):
         self._get_results_from_variables(sc=sc)
 
     def _get_results_from_variables(self, sc: "Scenario") -> None:
+        if sc.mdl_language == "gp":
+            self._from_gurobipy(sc)
+        else:
+            self._from_pyomo(sc)
+
+        self._changed_since_last_dic_export = True
+        self._meta = sc.vars._meta
+
+    def _from_gurobipy(self, sc: "Scenario") -> None:
         for name, var in sc.vars.get_all().items():
             dims = self._get_dims(name)
             if dims == "":
@@ -128,8 +137,17 @@ class Results(EntityStore):
 
             setattr(self, name, data)
 
-        self._changed_since_last_dic_export = True
-        self._meta = sc.vars._meta
+    def _from_pyomo(self, sc: "Scenario") -> None:
+        for name, var in sc.vars.get_all().items():
+            dims = self._get_dims(name)
+            if dims == "":
+                data = var.value
+            else:
+                dic = {index: var[index].value for index in var}
+                data = pd.Series(dic, name=name)
+                data.index = data.index.set_names(list(dims))
+
+            setattr(self, name, data)
 
     def _get_meta(self, ent_name: str, meta_type: str) -> Any:
         try:

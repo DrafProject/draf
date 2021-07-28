@@ -6,7 +6,7 @@ from draf import CaseStudy, Scenario
 
 @pytest.fixture
 def cs() -> CaseStudy:
-    return CaseStudy()
+    return CaseStudy(year=2019)
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def test_get_var_par_dic(what: str, expected: str, sc):
             assert exc_info == expected
 
 
-def test_activate_vars(sc):
+def test__activate_vars(sc):
     assert isinstance(sc._activate_vars(), Scenario)
     assert sc._activate_vars().year == 2019
 

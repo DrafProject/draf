@@ -30,7 +30,10 @@ def test_parameterize_existing_model():
     )
 
     cs.add_scens(
-        [("c_GRID_T", "t", ["c_GRID_RTP_T", "c_GRID_TOU_T"]), ("E_BES_CAPx_", "b", [1000])],
+        scen_vars=[
+            ("c_GRID_T", "t", ["c_GRID_RTP_T", "c_GRID_TOU_T"]),
+            ("E_BES_CAPx_", "b", [1000]),
+        ],
         nParetoPoints=4,
     )
 
