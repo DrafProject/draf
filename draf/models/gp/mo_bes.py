@@ -86,9 +86,8 @@ def sankey_func(sc):
 
 def main():
     cs = draf.CaseStudy("MO_BES", year=2019, freq="60min")
-    cs.set_datetime_filter(start="Apr-01 00", steps=24 * 2)
-    sc = cs.add_REF_scen()
-    sc.set_params(params_func)
+    cs.set_time_horizon(start="Apr-01 00", steps=24 * 2)
+    cs.add_REF_scen().set_params(params_func)
     cs.add_scens(scen_vars=[("E_BES_capa_", "s", [100])], nParetoPoints=2)
     cs.improve_pareto_and_set_model(model_func)
     cs.optimize(logToConsole=False)

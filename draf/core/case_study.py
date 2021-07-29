@@ -9,7 +9,6 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
-import gurobipy as gp
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
@@ -18,10 +17,10 @@ from draf import helper as hp
 from draf import paths
 from draf.core.draf_base_class import DrafBaseClass
 from draf.core.entity_stores import Dimensions, Params, Scenarios
+from draf.core.params_prepping import Prepper
 from draf.core.scenario import Scenario
 from draf.plotting.cs_plotting import CsPlotter
 from draf.plotting.scen_plotting import ScenPlotter
-from draf.prep.params_prepping import Prepper
 
 # TODO: put all logging functionality into a logger.py file.
 fmt = "%(levelname)s:%(name)s:%(funcName)s():%(lineno)i:\n    %(message)s"
@@ -382,13 +381,6 @@ class CaseStudy(DrafBaseClass):
         size = hp.sizeof_fmt(fp.stat().st_size)
         print(f"CaseStudy saved to {fp.as_posix()} ({size})")
 
-    def set_time_horizon(
-        self, start: Union[int, str], steps: int = None, end: Union[int, str] = None
-    ) -> None:
-        """e.g. cs.set_time_horizon(start="May1 00:00", end="Jun1 23:00")
-        or cs.set_time_horizon(start="May1 00:00", steps=24*30)"""
-        self.set_datetime_filter(start=start, steps=steps, end=end)
-
     def _get_datetime_int_loc_from_string(self, s: str) -> int:
         return self.dtindex.get_loc(f"{self.year}-{s}")
 
@@ -405,12 +397,12 @@ class CaseStudy(DrafBaseClass):
             raise ValueError("One of steps or end must be given.")
         return t1, t2
 
-    def set_datetime_filter(
+    def set_time_horizon(
         self,
         start: Union[int, str],
         steps: Optional[int] = None,
         end: Optional[Union[int, str]] = None,
-    ) -> None:
+    ) -> CaseStudy:
         """Reduces the time horizon for the analysis from the whole year.
 
         Examples:
@@ -424,6 +416,7 @@ class CaseStudy(DrafBaseClass):
         assert self.dtindex_custom[-1] == self.dtindex[t2]
         self._t1 = t1
         self._t2 = t2
+        return self
 
     def get_ent_info(self, ent_name: str, show_doc: bool = True, **kwargs) -> str:
         """Returns a string with available information about an entity."""

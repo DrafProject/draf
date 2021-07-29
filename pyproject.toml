@@ -19,3 +19,25 @@ exclude = '''
 line_length = 100
 include_trailing_comma = true
 profile = "black"
+
+[tool.pytest.ini_options]
+addopts = [
+    "--strict-markers",
+    "--cov=draf",
+    # "--cov-report=term:skip-covered",
+    # "--cov-report=html",
+    "--durations=4",
+    # "-m=not slow",
+    "--disable-pytest-warnings",
+]
+markers = [
+  "slow: marks slow tests > 1sec"
+]
+python_files = "test_*.py"
+python_functions = "test_*"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+omit = [
+    "draf/models/*"
+    ]

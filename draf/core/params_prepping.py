@@ -7,7 +7,7 @@ import pandas as pd
 from elmada import get_emissions, get_prices
 
 import draf.helper as hp
-from draf.io import get_ambient_temp, get_PV_profile, get_SLP, get_thermal_demand
+from draf import prep
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
@@ -151,7 +151,7 @@ class Prepper:
             fill=price,
         )
 
-    @hp.copy_doc(get_SLP)
+    @hp.copy_doc(prep.get_el_SLP)
     def add_E_dem_T(
         self,
         name="E_dem_T",
@@ -169,7 +169,7 @@ class Prepper:
             unit="kWh_el",
             doc=f"Electricity demand from standard load profile {profile}",
             data=sc.trim_to_datetimeindex(
-                get_SLP(
+                prep.get_el_SLP(
                     year=sc.year,
                     freq=sc.freq,
                     profile=profile,
@@ -182,7 +182,7 @@ class Prepper:
             ),
         )
 
-    @hp.copy_doc(get_thermal_demand)
+    @hp.copy_doc(prep.get_thermal_demand)
     def add_H_dem_T(
         self,
         name="H_dem_T",
@@ -194,14 +194,14 @@ class Prepper:
         """Add a heat demand based on the `target_temp`, `threshold_temp`, `annual_energy`."""
         sc = self.sc
 
-        ser_amb_temp = get_ambient_temp(year=sc.year, freq=sc.freq, location=location)
+        ser_amb_temp = prep.get_ambient_temp(year=sc.year, freq=sc.freq, location=location)
 
         return self.sc.add_par(
             name=name,
             unit="kWh_th",
             doc=f"Heat demand derived from ambient temperatur in {location}",
             data=sc.trim_to_datetimeindex(
-                get_thermal_demand(
+                prep.get_thermal_demand(
                     ser_amb_temp=ser_amb_temp,
                     annual_energy=annual_energy,
                     target_temp=target_temp,
@@ -217,7 +217,7 @@ class Prepper:
             name=name,
             unit="kW_el/kW_peak",
             doc=f"Produced PV-power for 1 kW_peak",
-            data=sc.trim_to_datetimeindex(get_PV_profile()),
+            data=sc.trim_to_datetimeindex(prep.get_PV_profile()),
         )
 
     def add_c_GRID_addon_T(

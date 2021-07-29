@@ -16,8 +16,8 @@ from draf import helper as hp
 from draf.core.draf_base_class import DrafBaseClass
 from draf.core.entity_stores import Dimensions, Params, Results, Vars
 from draf.core.mappings import GRB_OPT_STATUS, VAR_PAR
+from draf.core.params_prepping import Prepper
 from draf.plotting import ScenPlotter
-from draf.prep.params_prepping import Prepper
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)

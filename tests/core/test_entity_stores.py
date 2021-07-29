@@ -1,4 +1,5 @@
 import pytest
+
 from draf.core import entity_stores
 
 
@@ -73,4 +74,3 @@ def test_ent_vars___repr__(ent_vars):
 
 def test_ent_vars___getstate__(ent_vars):
     assert ent_vars.__getstate__() == {"_meta": {}}
-

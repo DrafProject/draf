@@ -32,10 +32,9 @@ def model_func(m: Model, d: Dimensions, p: Params, v: Vars):
 
 def main():
     cs = CaseStudy("minimal", year=2019, freq="60min")
-    cs.set_datetime_filter(start="Apr-01 00", steps=24 * 10)
+    cs.set_time_horizon(start="Apr-01 00", steps=24 * 2)
     cs.add_REF_scen().set_params(params_func)
     cs.add_scen("REF_PV", doc="REF plus PV").update_params(P_PV_CAPx_=100)
-    cs.add_scens(nParetoPoints=2, based_on="REF_PV")
     cs.set_model(model_func).optimize()
     return cs
 

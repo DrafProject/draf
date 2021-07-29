@@ -128,9 +128,8 @@ def sankey_func(sc):
 
 def main():
     cs = draf.CaseStudy("MO_BES2", year=2019, freq="60min")
-    cs.set_datetime_filter(start="Apr-01 00", steps=24 * 10)
-    sc = cs.add_REF_scen()
-    sc.set_params(params_func)
+    cs.set_time_horizon(start="Apr-01 00", steps=24 * 2)
+    cs.add_REF_scen().set_params(params_func)
     cs.add_scens(
         scen_vars=[("c_GRID_T", "t", [f"c_GRID_{ix}_T" for ix in ["RTP"]])], nParetoPoints=3
     )

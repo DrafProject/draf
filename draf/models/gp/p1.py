@@ -8,42 +8,50 @@ import draf
 def params_func(sc):
     p = sc.params
     T = sc.add_dim("T", infer=True)
-    F = sc.add_dim("F", ["ng", "bio"], doc="types of fuel")
-    E = sc.add_dim("E", ["priv", "busi"], doc="types of electric vehicle")
+    F = sc.add_dim("F", [1, 2], doc="types of fuel [1:bio, 2:ng]")
+    # E = sc.add_dim("E", ["priv", "busi"], "types of electric vehicle")
     L = sc.add_dim("L", [1, 2], doc="waste heat streams")
     N = sc.add_dim("N", [1, 2], doc="cooling temperature level [1:7°C/12°C, 2:35°C/30°C]")
     C = sc.add_dim("C", [1, 2, 3], doc="condensing temperature levels [1:25°C, 2:35°C, 3:60°C]")
     H = sc.add_dim("H", [1, 2], doc="heating temperature levels [1: 40°C/60°C, 2: 70°C/90°]")
 
-    sc.add_par("alpha_", 0, doc="weighting factor", unit="")
+    sc.add_par("alpha_", 0, doc="pareto weighting factor", unit="")
     sc.add_par(
-        "n_c_", 8760 / len(T), doc="cost weighting factor to compensate part year analysis", unit=""
+        "n_comp_",
+        8760 / len(T),
+        doc="cost weighting factor to compensate part year analysis",
+        unit="",
     )
     sc.add_par("n_C_", 1, doc="normalization factor", unit="")
-    sc.add_par("n_CE_", 1 / 1e4, doc="normalization factor", unit="")
+    sc.add_par("n_CE_", 1, doc="normalization factor", unit="")
     sc.add_par("AF_", 0.1, doc="annuitiy factor (it pays off in 1/AF_ years)", unit="")
 
     doc_CAPx = "existing capacity"
-    sc.add_par("P_HP_CAPx_N", [5000, 0], doc=doc_CAPx, unit="kW_el")
+    sc.add_par("P_HP_CAPx_N", [0, 0], doc=doc_CAPx, unit="kW_el")
     sc.add_par("P_CHP_CAPx_", 0, doc=doc_CAPx, unit="kW_el")
     sc.add_par("P_PV_CAPx_", 0, doc=doc_CAPx, unit="kW_peak")
-    sc.add_par("P_BEV_CAPx_E", doc=doc_CAPx, unit="kWh_el", fill=18 * 38)
-    sc.add_par("Q_BOI_CAPx_", 10000, doc=doc_CAPx, unit="kW_th")
-    sc.add_par("Q_P2H_CAPx_", 10000, doc=doc_CAPx, unit="kW_th")
+    # sc.add_par("P_BEV_CAPx_E", doc=doc_CAPx, unit="kWh_el", fill=18 * 38)
+    sc.add_par("Q_BOI_CAPx_", 0, doc=doc_CAPx, unit="kW_th")
+    sc.add_par("Q_P2H_CAPx_", 0, doc=doc_CAPx, unit="kW_th")
+    sc.add_par("E_BES_CAPx_", 0, doc=doc_CAPx, unit="kW_el")
 
     # bounds for new capacities
     sc.add_par("P_HP_max_N", doc="Big-M number (upper bound for CAPn)", unit="kW_el", fill=5000)
 
-    doc_z = "allowance for new capacity"
-    sc.add_par("z_PV_", 0, doc=doc_z)
-    sc.add_par("z_HP_", 0, doc=doc_z)
-    sc.add_par("z_HS_", 0, doc=doc_z)
-    sc.add_par("z_CHP_", 0, doc=doc_z)
-    sc.add_par("z_BES_", 0, doc=doc_z)
+    sc.add_par("z_PV_", 0, doc="maximum new capacity")
+    sc.add_par("z_HP_", 0, doc="maximum new capacity")
+    sc.add_par("z_HS_", 0, doc="maximum new capacity")
+    sc.add_par("z_CHP_", 0, doc="maximum new capacity")
+    sc.add_par("z_BES_", 0, doc="maximum new capacity")
+    sc.add_par("z_BOI_", 0, doc="maximum new capacity")
 
     # COSTS
     sc.add_par("c_th_F", [0.04, 0.04], doc="fuel cost", unit="€/kWh")
     sc.add_par("c_el_peak_", 40, doc="peak price", unit="€/kW_el")
+    rtp = sc.prep.add_c_GRID_RTP_T()
+    tou = sc.prep.add_c_GRID_TOU_T()
+    flat = sc.prep.add_c_GRID_FLAT_T()
+    sc.add_par("c_GRID_T", rtp, doc="chosen electricity tariff", unit="€/kWh_el")
     sc.prep.add_c_GRID_addon_T()
 
     sc.add_par(
@@ -82,12 +90,13 @@ def params_func(sc):
     # sc.add_par("c_CHP_inv_", 250, "invest cost, valid for: (~2000 kW_el), source: Armin Bez(2012)", "€/kW_el")
 
     # ENVIRONMENT
-    sc.prep.add_ce_GRID_T()
+    sc.prep.add_ce_GRID_T(method="XEF_PWL")
+    sc.prep.add_ce_GRID_T(name="ce_GRID_MEF_T", method="MEF_PWL")
     sc.add_par(
         "ce_th_F",
-        [202, 71],
+        [0.202, 0.071],
         doc="fuel carbon emissions, source: https://lfu.brandenburg.de/cms/detail.php/bb1.c.523833.de",
-        unit="gCO2eq/kWh_el",
+        unit="kgCO2eq/kWh_el",
     )
 
     # TEMPERATURES
@@ -98,24 +107,24 @@ def params_func(sc):
     sc.add_par("T_H_in_H", offset + pd.Series([40, 70], H), doc="temperature", unit="K")
     sc.add_par("T_H_out_H", offset + pd.Series([60, 90], H), doc="temperature", unit="K")
 
-    # ENVIRONMENT
+    # PV
     sc.prep.add_E_PV_profile_T()
 
     # DEMANDS
-    sc.prep.add_E_dem_T(profile="G1", annual_energy=4.8e6)
-    sc.add_par("Q_dem_C_TN", doc="cooling demand", unit="kWh_th", fill=0)
-    sc.add_par("Q_dem_H_TH", doc="heating demand", unit="kWh_th", fill=0)
-    p.Q_dem_H_TH.loc[:, 1] = draf.io.get_thermal_demand(
-        ser_amb_temp=draf.io.get_ambient_temp(2017, "60min"),
-        annual_energy=1743000,
-        target_temp=22,
-        threshold_temp=13,
-    )[T].values
+    sc.add_par("E_dem_T", doc="Electricity demand", unit="kWh_el", fill=0)
+    # sc.prep.add_E_dem_T(profile="G3", annual_energy=10.743e6)
+    sc.add_par("Q_dem_C_TN", doc="Cooling demand", unit="kWh_th", fill=0)
+    sc.add_par("Q_dem_H_TH", doc="Heating demand", unit="kWh_th", fill=0)
+    # p.Q_dem_H_TH.loc[:, 1] = draf.prep.demand.get_thermal_demand(
+    #     ser_amb_temp=draf.prep.weather.get_ambient_temp(2018, "60min", "Rheinstetten"),
+    #     annual_energy=65e3, target_temp=22, threshold_temp=13)[T].values
+    # p.Q_dem_H_TH.loc[:, 2] = draf.prep.demand.get_el_SLP(
+    #     profile="G3", freq="60min", annual_energy=16.821e6)[T].values
 
     # EFFICIENCIES
     sc.add_par("eta_HP_", 0.5, doc="ratio of reaching the ideal COP")
     z = sc.add_par("eta_CHP_el_", 0.35, doc="el. efficiency of CHP")
-    sc.add_par("eta_CHP_th_", 0.98 - z, doc="thermal efficiency")
+    sc.add_par("eta_CHP_th_", 0.90 - z, doc="thermal efficiency")
 
     sc.add_par(
         "cop_HP_ideal_CN",
@@ -126,6 +135,7 @@ def params_func(sc):
                 for n in N
             }
         ),
+        doc="ideal COP",
     )
     sc.add_par(
         "cop_HP_CN",
@@ -136,28 +146,27 @@ def params_func(sc):
                 for n in N
             }
         ),
+        doc="calculated COP",
     )
     sc.add_par("eta_HS_time_", 0.995, doc="storing efficiency", unit="")
     sc.add_par("eta_HS_in_", 0.995, doc="loading efficiency", unit="")
-    sc.add_par("k_HS_in_per_capa_", 0.5, doc="ratio loading power / capacity", unit="")
+    sc.add_par("k_HS_in_per_capa_", 0.2, doc="ratio loading power / capacity", unit="")
 
     sc.add_par("eta_BES_time_", 0.999, doc="storing efficiency", unit="")
     sc.add_par("eta_BES_in_", 0.999, doc="loading efficiency", unit="")
-    sc.add_par("k_BES_in_per_capa_", 0.5, doc="ratio loading power / capacity", unit="")
+    sc.add_par("k_BES_in_per_capa_", 1, doc="ratio loading power / capacity", unit="")
 
-    ###### VARIABLES ######
+    sc.add_var("C_", doc="total costs", unit="k€/a", lb=-GRB.INFINITY)
+    sc.add_var("C_inv_", doc="investment costs", unit="k€/a")
+    sc.add_var("C_op_", doc="operating costs", unit="k€/a", lb=-GRB.INFINITY)
+    sc.add_var("CE_", doc="total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
+    sc.add_var("CE_op_", doc="operating emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
+    sc.add_var("E_pur_T", doc="purchased electricity", unit="kWh_el", lb=-GRB.INFINITY)
 
-    sc.add_var("C_", doc="total costs", unit="€/a", lb=-GRB.INFINITY)
-    sc.add_var("C_inv_", doc="investment costs", unit="€")
-    sc.add_var("C_op_", doc="operating costs", unit="€/a", lb=-GRB.INFINITY)
-    sc.add_var("CE_", doc="total emissions", unit="tCO2eq/a", lb=-GRB.INFINITY)
-    sc.add_var("CE_op_", doc="operating emissions", unit="tCO2eq/a", lb=-GRB.INFINITY)
+    sc.add_var("Q_WH_TL", doc="absorbed waste-heat", unit="kWh_th")
+    sc.add_var("A_WH_EX_L", doc="area of heat exchanger", unit="m^2")
 
-    sc.add_var("E_GRID_buy_T", doc="purchased el.", unit="kWh_el")
-    sc.add_var("E_GRID_sell_T", doc="purchased el.", unit="kWh_el")
-    sc.add_var("P_GRID_buy_peak_", doc="peak el.", unit="kW_el")
-
-    sc.add_var("P_PV_CAPn_", doc="new capacity", unit="kW_el", ub=1e20 * p.z_PV_)
+    sc.add_var("P_PV_CAPn_", doc="new capacity", unit="kW_el")
     sc.add_var("E_PV_T", doc="produced el.", unit="kWh_el")
     sc.add_var("E_PV_OC_T", doc="own consumption", unit="kWh_el")
     sc.add_var("E_PV_FI_T", doc="feed-in", unit="kWh_el")
@@ -168,7 +177,7 @@ def params_func(sc):
     sc.add_var("E_BES_in_max_", doc="maximum loading rate el.", unit="kWh_el")
     sc.add_var("E_BES_out_max_", doc="maximum unloading rate el.", unit="kWh_el")
 
-    sc.add_var("P_HP_CAPn_N", doc="new capacity", unit="kW_el", ub=1e20 * p.z_HP_)
+    sc.add_var("P_HP_CAPn_N", doc="new capacity", unit="kW_el")
     sc.add_var("Q_HP_E_TCN", doc="heat absorbed on evaporation side", unit="kWh_th")
     sc.add_var("Q_HP_C_TCN", doc="heat released on condensation side", unit="kWh_th")
     sc.add_var("E_HP_TCN", doc="consumed el.", unit="kWh_el")
@@ -183,29 +192,27 @@ def params_func(sc):
     sc.add_var("Q_BOI_T", doc="produced heat", unit="kWh_th")
     sc.add_var("F_BOI_TF", doc="consumed fuel", unit="kWh")
 
+    sc.add_var("E_pur_T", doc="purchased el.", unit="kWh_el")
+    sc.add_var("E_sell_T", doc="purchased el.", unit="kWh_el")
+    sc.add_var("P_pur_peak_", doc="peak el.", unit="kW_el")
+
     sc.add_var("Q_H2H1_T", doc="heat down-grading", unit="kWh_th")
     sc.add_var("Q_sell_TH", doc="sold heat", unit="kWh_th")
     sc.add_var("Q_P2H_T", doc="produced heat", unit="kWh_th")
     sc.add_var("E_P2H_T", doc="consumed el.", unit="kWh_el")
 
-    sc.add_var("P_CHP_CAPn_", doc="new capacity", unit="kW_el", ub=1e20 * p.z_CHP_)
+    sc.add_var("P_CHP_CAPn_", doc="new capacity", unit="kW_el")
     sc.add_var("E_CHP_T", doc="produced el.", unit="kWh_el")
     sc.add_var("Q_CHP_T", doc="produced heat", unit="kWh_th")
     sc.add_var("F_CHP_TF", doc="consumed fuel", unit="kWh")
     sc.add_var("E_CHP_OC_T", doc="own consumption", unit="kWh_el")
     sc.add_var("E_CHP_FI_T", doc="feed-in", unit="kWh_el")
 
-    sc.add_var("Q_HS_CAPn_H", doc="new capacity", unit="kWh_th", ub=1e20 * p.z_HS_)
+    sc.add_var("Q_HS_CAPn_H", doc="new capacity", unit="kWh_th")
     sc.add_var("Q_HS_TH", doc="storage level", unit="kWh_th")
     sc.add_var("Q_HS_in_TH", doc="storage input", unit="kWh_th", lb=-GRB.INFINITY)
-    sc.add_var("Q_HS_in_max_")
-    sc.add_var("Q_HS_out_max_")
-
-    sc.add_var("Q_WH_TL", doc="absorbed waste-heat", unit="kWh_th")
-    sc.add_var("A_WH_EX_L", doc="area of heat exchanger", unit="m^2")
-
-    sc.prep.add_c_GRID_RTP_T()
-    sc.add_par("c_GRID_T", sc.params.c_GRID_RTP_T)
+    sc.add_var("Q_HS_in_max_", doc="maximum loading rate th.", unit="kWh_th")
+    sc.add_var("Q_HS_out_max_", doc="maximum unloading rate th.", unit="kWh_th")
 
 
 def model_func(m, d, p, v):
@@ -215,7 +222,7 @@ def model_func(m, d, p, v):
     N = d.N
     C = d.C
     H = d.H
-    E = d.E
+    # E = d.E
 
     m.setObjective(((1 - p.alpha_) * v.C_ * p.n_C_ + p.alpha_ * v.CE_ * p.n_CE_), GRB.MINIMIZE)
 
@@ -224,11 +231,11 @@ def model_func(m, d, p, v):
     m.addConstr(
         v.C_op_
         == (
-            v.P_GRID_buy_peak_ * p.c_el_peak_
-            + p.n_c_
+            v.P_pur_peak_ * p.c_el_peak_
+            + p.n_comp_
             * quicksum(
-                v.E_GRID_buy_T[t] * (p.c_GRID_T[t] + p.c_GRID_addon_T[t])
-                - v.E_GRID_sell_T[t] * (p.c_GRID_T[t])
+                v.E_pur_T[t] * (p.c_GRID_T[t] + p.c_GRID_addon_T[t])
+                - v.E_sell_T[t] * (p.c_GRID_T[t])
                 + quicksum((v.F_BOI_TF[t, f] + v.F_CHP_TF[t, f]) * p.c_th_F[f] for f in F)
                 for t in T
             )
@@ -253,25 +260,24 @@ def model_func(m, d, p, v):
     m.addConstr(
         v.CE_op_
         == quicksum(
-            v.E_GRID_buy_T[t] * p.ce_GRID_T[t]
+            v.E_pur_T[t] * p.ce_GRID_T[t]
             + quicksum((v.F_BOI_TF[t, f] + v.F_CHP_TF[t, f]) * p.ce_th_F[f] for f in F)
             for t in T
-        )
-        / 1e6,
+        ),
         "DEF_CE_op_",
     )
 
     m.addConstrs(
         (
-            v.E_GRID_buy_T[t] + v.E_CHP_OC_T[t] + v.E_PV_OC_T[t]
+            v.E_pur_T[t] + v.E_CHP_OC_T[t] + v.E_PV_OC_T[t]
             == p.E_dem_T[t] + v.E_HP_TCN.sum(t, "*", "*") + v.E_P2H_T[t] + v.E_BES_in_T[t]
             for t in T
         ),
         "BAL_el",
     )
 
-    m.addConstrs((v.E_GRID_sell_T[t] == v.E_CHP_FI_T[t] + v.E_PV_FI_T[t] for t in T), "DEF_E_sell")
-    m.addConstrs((v.E_GRID_buy_T[t] <= v.P_GRID_buy_peak_ for t in T), "DEF_peakPrice")
+    m.addConstrs((v.E_sell_T[t] == v.E_CHP_FI_T[t] + v.E_PV_FI_T[t] for t in T), "DEF_E_sell")
+    m.addConstrs((v.E_pur_T[t] <= v.P_pur_peak_ for t in T), "DEF_peakPrice")
 
     m.addConstrs(
         (v.E_PV_T[t] == (p.P_PV_CAPx_ + v.P_PV_CAPn_) * p.E_PV_profile_T[t] for t in T), "PV1"
@@ -285,11 +291,17 @@ def model_func(m, d, p, v):
         ),
         "BAL_BES",
     )
-    m.addConstrs((v.E_BES_T[t] <= v.E_BES_CAPn_ for t in T), "MAX_BES_E")
+    m.addConstrs((v.E_BES_T[t] <= p.E_BES_CAPx_ + v.E_BES_CAPn_ for t in T), "MAX_BES_E")
     m.addConstrs((v.E_BES_in_T[t] <= v.E_BES_in_max_ for t in T), "MAX_BES_IN")
     m.addConstrs((v.E_BES_in_T[t] >= -v.E_BES_out_max_ for t in T), "MAX_BES_OUT")
-    m.addConstr(v.E_BES_in_max_ == v.E_BES_CAPn_ * p.k_BES_in_per_capa_, "DEF_E_BES_in_max_")
-    m.addConstr(v.E_BES_out_max_ == v.E_BES_CAPn_ * p.k_BES_in_per_capa_, "DEF_E_BES_out_max_")
+    m.addConstr(
+        v.E_BES_in_max_ == (v.E_BES_CAPn_ + p.E_BES_CAPx_) * p.k_BES_in_per_capa_,
+        "DEF_E_BES_in_max_",
+    )
+    m.addConstr(
+        v.E_BES_out_max_ == (v.E_BES_CAPn_ + p.E_BES_CAPx_) * p.k_BES_in_per_capa_,
+        "DEF_E_BES_out_max_",
+    )
     m.addConstr(v.E_BES_T[min(T)] == 0, "INI_BES_0")
     m.addConstr(v.E_BES_T[max(T)] == 0, "END_BES_0")
 
@@ -387,11 +399,19 @@ def model_func(m, d, p, v):
     # m.addConstrs((v.Q_WH_TL[t, l] <= p.U_WH_L[l] * p.dt_WH_2_L[l]
     #               * v.A_WH_EX_L[l] for t in T for l in L), "WH2")
 
+    m.addConstr(v.P_CHP_CAPn_ <= p.z_CHP_, "CAPn_CHP")
+    m.addConstrs((v.Q_HS_CAPn_H[h] <= p.z_HS_ for h in H), "CAPn_HS")
+    m.addConstrs((v.P_HP_CAPn_N[n] <= p.z_HP_ for n in N), "CAPn_HP")
+    m.addConstr(v.E_BES_CAPn_ <= p.z_BES_, "CAPn_BES")
+    m.addConstr(v.P_PV_CAPn_ <= p.z_PV_, "CAPn_PV")
+    m.addConstr(v.Q_BOI_CAPn_ <= p.z_BOI_, "CAPn_BOI")
+
 
 def postprocess_func(r):
     r.make_pos_ent("E_BES_in_T", "E_BES_out_T")
     r.make_pos_ent("Q_HS_in_TH", "Q_HS_out_TH")
     r.make_pos_ent("E_CHP_OC_T")
+    r.make_pos_ent("E_pur_T")
 
 
 def sankey_func(sc):
@@ -401,7 +421,7 @@ def sankey_func(sc):
     type source target value
     F GAS CHP {r.F_CHP_TF.sum()}
     F GAS BOI {r.F_BOI_TF.sum()}
-    E PUR EL {r.E_GRID_buy_T.sum()}
+    E PUR EL {r.E_pur_T.sum()}
     E PV EL {r.E_PV_OC_T.sum()}
     E CHP EL {r.E_CHP_OC_T.sum()}
     E PV SELL_el {r.E_PV_FI_T.sum()}
@@ -426,13 +446,12 @@ def sankey_func(sc):
 
 def main():
     cs = draf.CaseStudy("DER_HUT", year=2019, freq="60min")
-    cs.set_datetime_filter(start="Jan-02 00", steps=24 * 2)
-    sc = cs.add_REF_scen()
-    sc.set_params(params_func)
+    cs.set_time_horizon(start="Jan-02 00", steps=24 * 2)
+    cs.add_REF_scen().set_params(params_func)
     cs.add_scens(
         scen_vars=[("c_GRID_T", "t", [f"c_GRID_{ix}_T" for ix in ["RTP"]])], nParetoPoints=3
     )
-    cs.improve_pareto_and_set_model(model_func)
+    cs.set_model(model_func)
     cs.optimize(logToConsole=False, postprocess_func=postprocess_func)
     return cs
 

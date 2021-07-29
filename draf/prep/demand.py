@@ -1,23 +1,22 @@
-"""Interface functions between draf core and its modules prep and data."""
+"""Functions to prepare energy demand time series."""
 
 import datetime
 import logging
 import warnings
-from io import StringIO
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import holidays
 import pandas as pd
-from elmada.helper import read, write
 
 from draf import helper as hp
 from draf import paths
+from draf.prep.weather import get_air_temp
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
 
 
-def get_SLP(
+def get_el_SLP(
     year: int = 2019,
     freq: str = "15min",
     profile: str = "G1",
@@ -27,7 +26,7 @@ def get_SLP(
     country: str = "DE",
     province: Optional[str] = None,
 ) -> pd.Series:
-    """Returns a synthetic time series based on standard load profiles.
+    """Return synthetic electricity time series based on standard load profiles.
 
     Args:
         year: Year
@@ -159,72 +158,17 @@ def get_SLP(
     return ser
 
 
-def get_TRY():
-    """Experimental. Get thermal data of a Test Reference Year (TRY)."""
-
-    fp_raw = paths.DATA / "demand/thermal/TRY_location_HSKA/TRY2045_38855002480500_Jahr.dat"
-
-    with open(fp_raw, "r") as f:
-        lines = f.readlines()
-
-    lines_clean = lines[32:]
-    del lines_clean[1]
-
-    string = "".join(lines_clean)
-
-    ser = pd.read_table(StringIO(string), sep=r"\s+", usecols="t", squeeze=True).drop(0)
-    ser.index = ser.index - 1  # to start index with 0
-    return ser
-
-
-def get_ambient_temp(
-    year: int, freq: str = "60min", location: str = "Rheinstetten", cache: bool = True,
-) -> pd.Series:
-    """OBSOLETE: Replaced by new functions to get ambient temperature.
-    Experimental. Get ambient temperature from specific German stations from DWD"""
-
-    assert year in range(2008, 2100), f"{year} is not a valid year"
-    assert freq in ["60min"], f"{freq} is not a valid freq"
-
-    fp = paths.DATA / f"weather/cache/{year}_{freq}_t_ambient_{location}.parquet"
-
-    station_ids = {
-        "Rheinstetten": "04177",
-        "Kempten": "02559",
-    }
-
-    if cache and fp.exists():
-        ser = read(fp)
-
-    else:
-        # German Data downloaded from
-        # https://www.dwd.de/DE/leistungen/klimadatendeutschland/klarchivstunden.html?nn=16102#buehneTop
-        station = station_ids[location]
-        what = "hist" if year <= 2018 else "akt"
-        dir_raw = paths.DATA / f"weather/DWD/stundenwerte_TU_{station}_{what}"
-        fp_raw = list(dir_raw.glob("produkt_tu_stunde*.txt"))[0]
-        ser = pd.read_csv(
-            fp_raw, sep=";", index_col="MESS_DATUM", usecols=["MESS_DATUM", "TT_TU"], squeeze=True
-        )
-
-        ser = ser[ser.index.astype(str).str[:4] == str(year)]
-        ser.reset_index(drop=True, inplace=True)
-        ser.name = "t_amb"
-        if cache:
-            write(ser, fp)
-
-    hp.warn_if_incorrect_index_length(ser, year, freq)
-    return ser
-
-
 def get_thermal_demand(
-    ser_amb_temp: pd.Series,
+    ser_amb_temp: Optional[pd.Series] = None,
     annual_energy: float = 1e6,
     target_temp: float = 22.0,
     threshold_temp: float = 15.0,
+    year: Optional[int] = None,
+    coords: Optional[Tuple[float, float]] = None,
 ) -> pd.Series:
     """Returns a heating demand based on the air temperature."""
-    # TODO: implement new wheather function, so that ser_amb_temp will be optional.
+    if ser_amb_temp is None:
+        get_air_temp(coords=coords, year=year, with_dt=False)
     assert target_temp >= threshold_temp
     ser = ser_amb_temp
     ser[ser > threshold_temp] = target_temp
@@ -240,12 +184,16 @@ def get_thermal_demand(
 
 
 def get_cooling_demand(
-    ser_amb_temp: pd.Series,
+    ser_amb_temp: pd.Series = None,
     annual_energy: float = 1e6,
     target_temp: float = 22.0,
     threshold_temp: float = 22.0,
+    year: Optional[int] = None,
+    coords: Optional[Tuple[float, float]] = None,
 ) -> pd.Series:
     """Returns a cooling demand based on the ambient air temperature."""
+    if ser_amb_temp is None:
+        get_air_temp(coords=coords, year=year, with_dt=False)
     assert target_temp <= threshold_temp
     ser = ser_amb_temp
     ser[ser < threshold_temp] = target_temp
@@ -258,10 +206,3 @@ def get_cooling_demand(
         f", threshold_temp={threshold_temp}."
     )
     return ser
-
-
-def get_PV_profile() -> pd.Series:
-    """Experimental. Get a default PV profile for 1 kWh_peak."""
-    # TODO: implement some PV module.
-    fp = paths.DATA / "renewables/pv_el.csv"
-    return read(fp=fp)

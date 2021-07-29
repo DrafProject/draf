@@ -1,1 +1,0 @@
-from draf.models import *
