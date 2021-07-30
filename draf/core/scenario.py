@@ -597,6 +597,9 @@ class Scenario(DrafBaseClass):
     def get_doc(self, ent_name: str) -> str:
         return self.get_meta(ent_name=ent_name, meta_type="doc")
 
+    def get_src(self, ent_name: str) -> str:
+        return self.get_meta(ent_name=ent_name, meta_type="src")
+
     def get_meta(self, ent_name: str, meta_type: str) -> str:
         """Returns meta-information such as a description (doc) or the pysical unit (unit)
         for a given entity.
@@ -652,6 +655,7 @@ class Scenario(DrafBaseClass):
         data: Optional[Union[int, float, list, np.ndarray, pd.Series]] = None,
         doc: str = "",
         unit: str = "",
+        src: str = "",
         fill: Optional[float] = None,
         update: bool = False,
     ) -> pd.Series:
@@ -696,7 +700,7 @@ class Scenario(DrafBaseClass):
             )
 
         if not update:
-            self.params._meta[name] = dict(doc=doc, unit=unit, dims=dims)
+            self.params._meta[name] = dict(doc=doc, unit=unit, src=src, dims=dims)
 
         if isinstance(data, pd.Series):
             data.rename(name, inplace=True)
