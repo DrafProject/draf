@@ -18,30 +18,10 @@ from draf.core.entity_stores import Dimensions, Params, Results, Vars
 from draf.core.mappings import GRB_OPT_STATUS, VAR_PAR
 from draf.core.params_prepping import Prepper
 from draf.plotting import ScenPlotter
+from draf.prep.data_base import DataBase, ParDat
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
-
-
-def data_contains_nan(data: Optional[Union[int, float, list, np.ndarray, pd.Series]]) -> bool:
-    if isinstance(data, float):
-        return math.isnan(data)
-    elif isinstance(data, list):
-        for i in data:
-            if math.isnan(i):
-                return True
-        return False
-    elif isinstance(data, np.ndarray):
-        return np.isnan(np.sum(data))
-    elif isinstance(data, pd.Series):
-        return data.isnull().values.any()
-
-
-def warn_if_data_contains_nan(
-    data: Optional[Union[int, float, list, np.ndarray, pd.Series]], name: str
-) -> None:
-    if data_contains_nan(data):
-        logger.warning(f"Parameter '{name}' contains one or more NaNs.")
 
 
 class Scenario(DrafBaseClass):
@@ -512,7 +492,7 @@ class Scenario(DrafBaseClass):
         try:
             with open(fp, "wb") as f:
                 pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
-            logger.info(f"saved scenario to {fp}")
+            logger.info(f"Saved scenario to {fp}")
 
         except pickle.PicklingError as e:
             logger.error(
@@ -564,7 +544,6 @@ class Scenario(DrafBaseClass):
         Note:
             * This does not yet create a gurobipy or pyomo-variable-object.
             * Dims are inferred from name suffix
-
         """
 
         dims = self._get_dims(name)
@@ -601,8 +580,7 @@ class Scenario(DrafBaseClass):
         return self.get_meta(ent_name=ent_name, meta_type="src")
 
     def get_meta(self, ent_name: str, meta_type: str) -> str:
-        """Returns meta-information such as a description (doc) or the pysical unit (unit)
-        for a given entity.
+        """Returns meta-information such as doc or unit for a given entity.
 
         Note:
             Meta-information are stored as followed:
@@ -640,24 +618,24 @@ class Scenario(DrafBaseClass):
         return self
 
     def fits_convention(self, ent_name: str, data: Union[int, float, pd.Series]) -> bool:
-        """Decides if the data dimensions and the entity name match according to the
-         naming-conventions.
-        """
-        # TODO: maybe also check for the number of dimensions?
+        """If the naming-conventions apply for the data dimensions and the entity name """
+
         dims = self._get_dims(ent_name)
-        match_a = dims == "" and isinstance(data, (int, float))
-        match_b = dims != "" and isinstance(data, (pd.Series))
-        return match_a or match_b
+        if isinstance(data, (int, float)):
+            return dims == ""
+        elif isinstance(data, pd.Series):
+            return data.index.nlevels == len(dims)
 
     def add_par(
         self,
-        name: str,
+        name: Optional[str] = None,
         data: Optional[Union[int, float, list, np.ndarray, pd.Series]] = None,
         doc: str = "",
         unit: str = "",
         src: str = "",
         fill: Optional[float] = None,
         update: bool = False,
+        from_db: Optional[ParDat] = None,
     ) -> pd.Series:
         """Add a parameter to the scenario.
 
@@ -673,8 +651,13 @@ class Scenario(DrafBaseClass):
                 series is filled.
             update: if True, the meta-data will not be touched, just the data changed.
             read_kwargs: keyword arguments handed onto the pandas read-function.
+            from_db: DataBase object.
 
         """
+        if from_db is not None:
+            if name is not None:
+                from_db.name = name
+            return self.add_par(**from_db.__dict__)
 
         dims = self._get_dims(name)
 
@@ -784,3 +767,24 @@ class Scenario(DrafBaseClass):
                     v = v.sum()
                 d[n.split("_")[1]] = v
         return d
+
+
+def data_contains_nan(data: Optional[Union[int, float, list, np.ndarray, pd.Series]]) -> bool:
+    if isinstance(data, float):
+        return math.isnan(data)
+    elif isinstance(data, list):
+        for i in data:
+            if math.isnan(i):
+                return True
+        return False
+    elif isinstance(data, np.ndarray):
+        return np.isnan(np.sum(data))
+    elif isinstance(data, pd.Series):
+        return data.isnull().values.any()
+
+
+def warn_if_data_contains_nan(
+    data: Optional[Union[int, float, list, np.ndarray, pd.Series]], name: str
+) -> None:
+    if data_contains_nan(data):
+        logger.warning(f"Parameter '{name}' contains one or more NaNs.")

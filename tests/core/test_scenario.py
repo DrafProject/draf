@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 
 from draf import CaseStudy, Scenario
+from draf.prep.data_base import DataBase as db
 
 
 @pytest.fixture
@@ -50,3 +51,12 @@ def test_trim_to_datetimeindex(cs):
 
 def test_get_entity(sc):
     assert sc.get_entity("eta_test_") == 5
+
+
+def test_add_par(sc):
+    sc.add_par(name="x_HP_test_", data=4, doc="test doc", unit="test_unit", src="test_source")
+    sc.add_par(from_db=db.funcs.c_CHP_inv_())
+    sc.add_par(from_db=db.eta_HP_)
+    sc.add_par(name="c_FUEL_other-name_", from_db=db.c_FUEL_co2_)
+    for ent in ["c_CHP_inv_", "eta_HP_", "c_FUEL_other-name_"]:
+        isinstance(sc.params.get(ent), float)

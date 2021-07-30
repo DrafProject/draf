@@ -13,6 +13,7 @@ import plotly.offline as po
 import seaborn as sns
 from elmada import plots
 from IPython.display import display
+from matplotlib.colors import Colormap, DivergingNorm, LinearSegmentedColormap
 from plotly.tools import make_subplots
 
 from draf import helper as hp
@@ -551,13 +552,14 @@ class ScenPlotter(BasePlotter):
         sns.despine()
 
     def _get_df_desc(
-        self, original_df: pd.DataFrame, sort_values: bool, filter_str: str
+        self, orig_df: pd.DataFrame, sort_values: bool, filter_str: str
     ) -> pd.DataFrame:
-        df = original_df[[col for col in original_df if filter_str in col]]
+        df = orig_df[[col for col in orig_df if filter_str in col]]
         df_desc = df.describe(percentiles=[], include=np.number).transpose()
-        df_desc.pop("50%")
-        df_desc.pop("count")
-        df_desc.pop("std")
+
+        for k in ("50%", "count", "std"):
+            df_desc.pop(k)
+
         df_desc.insert(loc=0, column="sum", value=[df[x].values.sum() for x in list(df_desc.index)])
 
         if sort_values:
@@ -580,7 +582,6 @@ class ScenPlotter(BasePlotter):
         return d
 
     def _pretty_print_descDict(self, what_type: str, desc_dict: Dict, natural_units: bool) -> None:
-        # from IPython.display import display
         header = f"{what_type.capitalize()} for {self.sc.id} (doc='{self.sc.doc}')"
         print(hp.bordered(header))
         for dim, val in desc_dict.items():
@@ -596,7 +597,6 @@ class ScenPlotter(BasePlotter):
 
             else:
                 print(val)
-                # display(val)
             print()
 
     def _plot_plotly_fig(self, fig, **kwargs):
@@ -632,25 +632,10 @@ class ScenPlotter(BasePlotter):
             fig, ax = plt.subplots(1, 1, figsize=figsize)
             fig.subplots_adjust(right=0.85, hspace=0.1)
 
-        imshow_kws.update(cmap=cmap)
-
         if divergingNorm:
-            # TODO: refactor
-            from matplotlib.colors import LinearSegmentedColormap
+            cmap = _make_diverging_norm(series, imshow_kws)
 
-            if series.min() < 0 < series.max():
-                import matplotlib.colors as colors
-
-                _cmap = LinearSegmentedColormap.from_list(
-                    "_cmap", colors=["darkblue", "steelblue", "white", "indianred", "darkred"]
-                )
-                norm = colors.DivergingNorm(vmin=series.min(), vcenter=0.0, vmax=series.max())
-                imshow_kws.update(norm=norm, cmap=_cmap)
-            else:
-                _cmap = LinearSegmentedColormap.from_list(
-                    "_cmap", colors=["white", "indianred", "darkred"]
-                )
-                imshow_kws.update(cmap=_cmap)
+        imshow_kws.update(cmap=cmap)
 
         img = ax.imshow(
             data,
@@ -660,8 +645,8 @@ class ScenPlotter(BasePlotter):
             **imshow_kws,
         )
 
-        ax.set_yticks(hours)
-        ax.set_ylabel("Time [{}]".format(self.cs._freq_unit))
+        ax.set(yticks=hours)
+        ax.set_ylabel(f"Time [{self.cs._freq_unit}]")
         ax.set_xlabel("Time [Days]", labelpad=10)
         ax.xaxis_date()
         ax.set_xticklabels(ax.get_xticklabels(), rotation=0, ha="center", rotation_mode="anchor")
@@ -670,6 +655,16 @@ class ScenPlotter(BasePlotter):
         ax.tick_params(direction="out")
 
         return fig, ax, img
+
+
+def _make_diverging_norm(ser, imshow_kws) -> Colormap:
+    colors = ["white", "indianred", "darkred"]
+
+    if ser.min() < 0 < ser.max():
+        imshow_kws.update(norm=DivergingNorm(vmin=ser.min(), vcenter=0.0, vmax=ser.max()))
+        colors = ["darkblue", "steelblue"] + colors
+
+    return LinearSegmentedColormap.from_list("_cmap", colors=colors)
 
 
 def _dim_contains_valid_ents(data: Union[Dict, pd.DataFrame], filter_str: str) -> bool:
