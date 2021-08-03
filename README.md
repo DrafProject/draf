@@ -6,43 +6,33 @@
 
 # **D**emand **r**esponse **a**nalysis **f**ramework
 
-draf is a Python library for analyzing price-based demand response. It is developed by [Markus Fleschutz](https://www.linkedin.com/in/markus-fleschutz/) in a cooperative PhD between [MTU](https://www.mtu.ie/) and the [University of Applied Sciences Karlsruhe](https://www.h-ka.de/en/). An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showcase/).
+`draf` is a Python library for analyzing price-based demand response.
+It is developed by [Markus Fleschutz](https://www.linkedin.com/in/markus-fleschutz/) in a cooperative PhD between [MTU](https://www.mtu.ie/) and the [University of Applied Sciences Karlsruhe](https://www.h-ka.de/en/).
+An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showcase/).
 
 # Quick start
 
-```sh
-git clone https://github.com/DrafProject/draf
-cd draf
+1. Clone the source repository:
 
-# creates environment based on environment.yml and installs editable local version:
-conda env create
+   ```sh
+   git clone https://github.com/DrafProject/draf
+   cd draf
+   ```
 
-# activate draf environment
-conda activate draf  
+1. Create environment based on environment.yml and install editable local version:
 
-# Run the tests and ensure that there are no errors
-pytest
-```
+   ```sh
+   conda env create
+   ```
 
-- draf can run on Windows, macOS and Linux.
-- Several example models are included with draf under [draf/models](draf/models).
-- For the full functionality of draf you need a valid gurobi licence.
+1. Activate draf environment and run tests:
 
-# Structure
+   ```sh
+   conda activate draf
+   pytest
+   ```
 
-A `CaseStudy` object can contain several `Scenario` instances e.g.:
-
-```none
-CaseStudy
- ⤷ Year, Country, timely resolution (freq)
- ⤷ Plots (scenario comparision, pareto analysis)
- ⤷ Scenario_1
-    ⤷ Parameter, Model, Results, Plots
- ⤷ Scenario_2
-    ⤷ Parameter, Model, Results, Plots
-```
-
-# Some features
+# Features
 
 - Intuitive handling of complex data structures.
 - Fast model formulation with gurobipy.
@@ -60,6 +50,31 @@ CaseStudy
 - Automatic unit conversion, descriptions and documentation.
 - Uses Python's modern type annotations.
 - Whole case studies and individual scenarios can be saved including all results.
+- draf can run on Windows, macOS and Linux.
+
+# Usage
+
+For usage examples please see example models in [draf/models](draf/models). Start with "minimal.py"
+
+# Status
+
+This piece of software is in a very early stage. Use at your own risk.
+
+# Documentation
+
+## Structure
+
+A `CaseStudy` object can contain several `Scenario` instances e.g.:
+
+```none
+CaseStudy
+ ⤷ Year, Country, timely resolution (freq)
+ ⤷ Plots (scenario comparision, pareto analysis)
+ ⤷ Scenario_1
+    ⤷ Parameter, Model, Results, Plots
+ ⤷ Scenario_2
+    ⤷ Parameter, Model, Results, Plots
+```
 
 ## Data
 
@@ -71,43 +86,33 @@ Raw-data  parquet-files  pd.Series
      |--prep--^   |--get--^
 ```
 
-# Usage
+## Naming conventions
 
-For usage examples please see example models in [draf/models](draf/models). Start with "minimal.py"
+All parameter and variable names must satisfy the structure `<Type>_<Component>_<Descriptor>_<Dims>`.
+E.g. in 'E_GRID_buy_T' `E` is the entity type, `GRID` the component, `buy` the descriptor and `T` the dimension.
+Dimensions are denoted with individual capital letters, so `<Dims>` could be `TE` if the entity has the dimensions `T` and `E`.
 
-# Common Abbreviations
+## Common Abbreviations
 
 | short | long |
 |-------|------------------|
-| `cs` | __CaseStudy__ object |
-| `sc`, `scen` | __Scenario__ object |
-| `m`, `mdl` | __Model__ |
-| `d`, `dims` | __Dimension__ container object |
-| `p`, `params` | __Parameters__ container object |
-| `v`, `vars` | __Variables__ container object |
-| `r`, `res` | __Results__ container object |
-| `ent` | __entity__: a variable or parameter |
-| `doc` | __documentation__ / description string |
-| `constr` | __constraint__ |
-| `meta` | __meta__ data |
-| `df` | pandas __DataFrame__ |
-| `ser` | pandas __Series__ |
-| `fp` | __file path__ |
-| `gp` | __gurobi python__ |
-| `XEFs` | Average Electricity __Mix Emission Factors__ |
-| `MEFs` | __Marginal__ Power Plant __Emission Factors__ |
-
-# Status
-
-This piece of software is in a very early stage. Use at your own risk.
-
-# Dokumentation
-
-## Conventions
-
-### Naming conventions
-
-All parameter and variable names must satisfy the structure `<Type>_<Component>_<Descriptor>_<Dims>`. E.g. in 'E_GRID_buy_T' `E` is the entity type, `GRID` the component, `buy` the descriptor and `T` the dimension. Dimensions are denoted with individual capital letters. So `<Dims>` could be `TE` if the entity has the dimensions `T` and `E`.
+| `cs` | CaseStudy object |
+| `sc`, `scen` | Scenario object |
+| `m`, `mdl` | Model |
+| `d`, `dims` | Dimension container object |
+| `p`, `params` | Parameters container object |
+| `v`, `vars` | Variables container object |
+| `r`, `res` | Results container object |
+| `ent` | Entity: a variable or parameter |
+| `doc` | Documentation / description string |
+| `constr` | Constraint |
+| `meta` | Meta data |
+| `df` | Pandas `DataFrame` |
+| `ser` | Pandas `Series` |
+| `fp` | file path |
+| `gp` | `gurobipy` - the Gurobi Python Interface |
+| `XEFs` | Average Electricity Mix Emission Factors |
+| `MEFs` | Marginal Power Plant Emission Factors |
 
 # License
 
