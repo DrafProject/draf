@@ -19,16 +19,16 @@ An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showc
    cd draf
    ```
 
-1. Create environment based on environment.yml and install editable local version:
+1. Create and activate conda environment based on environment.yml including editable local version:
 
    ```sh
    conda env create
+   conda activate draf
    ```
 
-1. Activate draf environment and run tests:
+1. Run tests:
 
    ```sh
-   conda activate draf
    pytest
    ```
 
