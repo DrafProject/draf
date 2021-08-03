@@ -107,9 +107,11 @@ This piece of software is in a very early stage. Use at your own risk.
 
 ### Naming conventions
 
-All parameters and variable names 
+All parameter and variable names must satisfy the following structure.
 
-'E_GRID_buy_T'
+'<type>_<component>_<descriptor>_<dims>'
+
+E.g. in 'E_GRID_buy_T' `E` is the entity type, `GRID` the component, `buy` the descriptor and `T` the dimension.
 
 # License
 
