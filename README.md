@@ -50,7 +50,7 @@ An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showc
 - Automatic unit conversion, descriptions and documentation.
 - Uses Python's modern type annotations.
 - Whole case studies and individual scenarios can be saved including all results.
-- draf can run on Windows, macOS and Linux.
+- `draf` can run on Windows, macOS and Linux.
 
 # Usage
 
