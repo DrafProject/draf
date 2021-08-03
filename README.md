@@ -73,43 +73,7 @@ Raw-data  parquet-files  pd.Series
 
 # Usage
 
-You can make your own model...
-
-```py
-from gurobipy import GRB, Model, quicksum
-
-import draf
-
-cs = draf.CaseStudy(name="foo", year=2019, freq="60min", country="DE")
-cs.set_time_horizon(start="Jan-02 00", steps=24 * 2)
-
-sc = cs.add_REF_scen()
-sc.dim("T", infer=True)
-sc.var("C_", unit="€/a", lb=-GRB.INFINITY)
-sc.prep.c_GRID_RTP_T()
-sc.prep.E_dem_T(profile="G3", annual_energy=5e5)
-
-def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
-     m.setObjective(v.C_, GRB.MINIMIZE)
-     m.addConstr(v.C_ == quicksum(p.E_dem_T[t] * p.c_GRID_RTP_T[t] for t in d.T))
-
-cs.set_model(mod.model_func).optimize().save()
-```
-
-... or use an existing one.
-
-```py
-import draf
-from draf.models.gp import pv_bes as mod
-
-cs = draf.CaseStudy(name="ShowCase", year=2017, freq="60min", country="DE")
-sc = cs.add_REF_scen(doc="no BES").set_params(mod.params_func)
-sc.update_params(P_PV_CAPx_=100, c_GRID_peak_=50)
-cs.add_scens(scen_vars=[("c_GRID_T", "t", ["c_GRID_RTP_T", "c_GRID_TOU_T"]),
-                        ("E_BES_CAPx_", "b", [1000])],
-             nParetoPoints=3)
-cs.set_model(mod.model_func).optimize(postprocess_func=mod.postprocess_func).save()
-```
+For usage examples please see example models in [draf/models](draf/models). Start with "minimal.py"
 
 # Common Abbreviations
 
