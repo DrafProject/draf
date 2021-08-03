@@ -1,17 +1,14 @@
 import pandas as pd
 
-from draf.prep.conventions import Acronyms
 from draf.prep.par_dat import ParDat
 
 
+# fmt: off
 class SRC:
-    BMWI_2020 = (
-        "https://www.bmwi-energiewende.de/EWD/Redaktion/Newsletter/2020/11/Meldung/News1.html"
-    )
+    ASUE_2011 = "https://asue.de/sites/default/files/asue/themen/blockheizkraftwerke/2011/broschueren/05_07_11_asue-bhkw-kenndaten-0311.pdf, p.12"
+    BMWI_2020 = "https://www.bmwi-energiewende.de/EWD/Redaktion/Newsletter/2020/11/Meldung/News1.html"
     BRACCO_2016 = "https://doi.org/10.1016/j.energy.2016.01.050"
-    FFE_2016 = (
-        "https://www.ffe.de/images/stories/Themen/414_MOS/20160728_MOS_Speichertechnologien.pdf"
-    )
+    FFE_2016 = "https://www.ffe.de/images/stories/Themen/414_MOS/20160728_MOS_Speichertechnologien.pdf"
     FIGGENER_2020 = "https://doi.org/10.1016/j.est.2020.101982"
     GEG9_2020 = "https://www.buzer.de/Anlage_9_GEG.htm"
     IFEU_2008 = "https://www.ifeu.de/oekobilanzen/pdf/THG_Bilanzen_Bio_Erdgas.pdf"
@@ -20,12 +17,18 @@ class SRC:
     KALTSCH_2020 = "https://doi.org/10.1007/978-3-662-61190-6"
     MTA = "MTA Galaxy tech GLT 210/SSN in https://www.mta.de/fileadmin/user_upload/MTA-Produktuebersicht-Prozesskuehlung.pdf"
     PLAN_BIOGAS = "https://planet-biogas.de/biogasprodukte/bhkw/"
+    PVMAG_2020 = "https://www.pv-magazine.de/2020/03/13/pv-magazine-marktuebersicht-fuer-grossspeicher-aktualisiert"
     SMT_2018 = "https://www.strommarkttreffen.org/2018-02_Hinterberger_P2H-Anlagen_zur_Verwertung_von_EE-Ueberschussstrom.pdf"
+    VARTIAINEN_2019 = "https://doi.org/10.1002/pip.3189"
     VDI2067 = "https://www.beuth.de/de/technische-regel/vdi-2067-blatt-1/151420393"
+    VIESSMANN = "http://www.heizungs-discount.de/Kataloge/Viessmann/viessmann_preisliste_mittel_und_grosskessel_vitoplex_vitocell_vitorond_vitotrans_vitoradial_vitomax_vitoplex_vitocontrol_kwt_vitocal_pyrot_pyrotec_mawera_vitocom_vitodata_vitohome.pdf"
+    WOLF_2017 = "http://dx.doi.org/10.18419/opus-9593"
+
+# fmt: on
 
 
 class DataBase:
-    from draf.prep import c_inv as funcs
+    from draf.prep import param_funcs as funcs
     from draf.prep.conventions import Acronyms
 
     c_EEG_ = ParDat(name="c_EEG_", data=0.065, doc=f"EEG levy", src=SRC.BMWI_2020, unit="€/kWh_el")
@@ -54,20 +57,6 @@ class DataBase:
         unit="kWh_th/kW_el",
     )
 
-    eta_CHP_el_ = ParDat(
-        name="eta_CHP_el_",
-        data=0.42,
-        doc=f"Electric efficiency.",
-        src=SRC.PLAN_BIOGAS,
-        unit="kW_el/kW",
-    )
-    eta_CHP_th_ = ParDat(
-        name="eta_CHP_th_",
-        data=0.42,
-        doc=f"Thermal efficiency.",
-        src=SRC.PLAN_BIOGAS,
-        unit="kW_th/kW",
-    )
     eta_CS_in_ = ParDat(name="eta_CS_in_", data=0.99, doc=f"Loading efficiency.", src=SRC.FFE_2016)
     eta_CS_time_ = ParDat(
         name="eta_CS_time_", data=0.95, doc=f"Storing efficiency.", src=SRC.FFE_2016

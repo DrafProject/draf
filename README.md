@@ -10,7 +10,7 @@ draf is a Python library for analyzing price-based demand response. It is develo
 
 # Quick start
 
-```bash
+```sh
 git clone https://github.com/DrafProject/draf
 cd draf
 
@@ -32,7 +32,7 @@ pytest
 
 A `CaseStudy` object can contain several `Scenario` instances e.g.:
 
-``` None
+```none
 CaseStudy
  ⤷ Year, Country, timely resolution (freq)
  ⤷ Plots (scenario comparision, pareto analysis)
@@ -45,6 +45,8 @@ CaseStudy
 # Some features
 
 - Intuitive handling of complex data structures.
+- Fast model formulation with gurobipy.
+- Open-source model formulation with pyomo.
 - Uses the power of gurobi, the fastest MILP solver available and its community for model formulation and solving.
 - Easy and automatic scenario generation and sensitivity analyses.
 - Naming conventions for parameters and variables.
@@ -55,7 +57,7 @@ CaseStudy
 - Modules for peak-load analysis.
 - Economic assessment uses historic day-ahead market prices.
 - Convenient plotting and presentation functions.
-- Automatic unit conversion, great descriptions and documentation.
+- Automatic unit conversion, descriptions and documentation.
 - Uses Python's modern type annotations.
 - Whole case studies and individual scenarios can be saved including all results.
 
@@ -73,44 +75,40 @@ Raw-data  parquet-files  pd.Series
 
 You can make your own model...
 
-``` Python
+```py
+from gurobipy import GRB, Model, quicksum
+
 import draf
-import gurobipy as gp
 
 cs = draf.CaseStudy(name="foo", year=2019, freq="60min", country="DE")
+cs.set_time_horizon(start="Jan-02 00", steps=24 * 2)
 
 sc = cs.add_REF_scen()
-sc.add_dim("T", infer=True)
-sc.prep.add_c_GRID_RTP_T()
-sc.prep.add_E_dem_T(profile="G3", annual_energy=5e5)
-sc.add_var("C_", unit="€/a", lb=-gp.GRB.INFINITY)
+sc.dim("T", infer=True)
+sc.var("C_", unit="€/a", lb=-GRB.INFINITY)
+sc.prep.c_GRID_RTP_T()
+sc.prep.E_dem_T(profile="G3", annual_energy=5e5)
 
-def model_func(d, p, v, m):  # (d)imensions, (p)arameters, (v)ariables, (m)odel
-     m.setObjective(v.C_, gp.GRB.MINIMIZE)
-     m.addConstr(v.C_ == gp.quicksum(p.E_dem_T[t] * p.c_GRID_RTP_T[t] for t in d.T))
+def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
+     m.setObjective(v.C_, GRB.MINIMIZE)
+     m.addConstr(v.C_ == quicksum(p.E_dem_T[t] * p.c_GRID_RTP_T[t] for t in d.T))
 
-cs.set_model(model_func).optimize().save()
+cs.set_model(mod.model_func).optimize().save()
 ```
 
 ... or use an existing one.
 
-``` Python
+```py
 import draf
-import draf.models.PV_BES as mod
+from draf.models.gp import pv_bes as mod
 
 cs = draf.CaseStudy(name="ShowCase", year=2017, freq="60min", country="DE")
-
-cs.add_REF_scen(doc="no BES").set_params(mod.params_func).update_params(
-     P_PV_CAPx_=100, c_GRID_peak_=50
-)
-
-cs.add_scens(
-    scen_vars=[("c_GRID_T", "t", ["c_GRID_RTP_T", "c_GRID_TOU_T"]), ("E_BES_CAPx_", "b", [1000])],
-    nParetoPoints=4,
-)
-
-cs.improve_pareto_and_set_model(mod.model_func).optimize(mod.postprocess_func).save()
-
+sc = cs.add_REF_scen(doc="no BES").set_params(mod.params_func)
+sc.update_params(P_PV_CAPx_=100, c_GRID_peak_=50)
+cs.add_scens(scen_vars=[("c_GRID_T", "t", ["c_GRID_RTP_T", "c_GRID_TOU_T"]),
+                        ("E_BES_CAPx_", "b", [1000])],
+             nParetoPoints=3)
+cs.set_model(mod.model_func).optimize(postprocess_func=mod.postprocess_func).save()
 ```
 
 # Common Abbreviations
@@ -139,6 +137,15 @@ cs.improve_pareto_and_set_model(mod.model_func).optimize(mod.postprocess_func).s
 
 This piece of software is in a very early stage. Use at your own risk.
 
+# Dokumentation
+
+## Conventions
+
+### Naming conventions
+
+All parameters and variable names 
+
+'E_GRID_buy_T'
 
 # License
 

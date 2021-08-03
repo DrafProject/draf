@@ -194,7 +194,7 @@ class Scenario(DrafBaseClass):
         except RuntimeError as e:
             logger.error(e)
 
-        self.add_par(
+        self.param(
             "timelog_params_",
             self._cs._get_time_diff(),
             doc="Time for building the params",
@@ -223,7 +223,7 @@ class Scenario(DrafBaseClass):
 
         self._cs._set_time_trace()
         self._activate_vars()
-        self.add_par(
+        self.param(
             "timelog_vars_",
             self._cs._get_time_diff(),
             doc="Time for building the variables",
@@ -241,7 +241,7 @@ class Scenario(DrafBaseClass):
 
         model_builder_func(m=self.mdl, d=self.dims, p=params, v=self.vars)
 
-        self.add_par(
+        self.param(
             "timelog_model_",
             self._cs._get_time_diff(),
             doc="Time for building the model",
@@ -367,7 +367,7 @@ class Scenario(DrafBaseClass):
         self.mdl.setParam("LogToConsole", int(logToConsole), verbose=False)
         self.mdl.setParam("OutputFlag", int(outputFlag), verbose=False)
         self.mdl.optimize()
-        self.add_par(
+        self.param(
             "timelog_solve_",
             self._cs._get_time_diff(),
             doc="Time for solving the model",
@@ -416,7 +416,7 @@ class Scenario(DrafBaseClass):
 
         results = solver.solve(self.mdl, tee=logToConsole, load_solutions=False, logfile=logfile)
 
-        self.add_par(
+        self.param(
             "timelog_solve_",
             self._cs._get_time_diff(),
             doc="Time for solving the model",
@@ -530,7 +530,7 @@ class Scenario(DrafBaseClass):
         """Returns a list of coordinates for the given dimensions."""
         return [getattr(self.dims, dim) for dim in list(dims)]
 
-    def add_var(
+    def var(
         self,
         name: str,
         doc: str = "",
@@ -597,7 +597,7 @@ class Scenario(DrafBaseClass):
 
     def update_params(self, **kwargs) -> Scenario:
         """Update multiple existing parameters.
-        e.g. sc.update_params(E_GRID_dem_T=2000, c_GRID_addon_T=0, c_el_peak_=0)
+        e.g. sc.update_params(E_GRID_dem_T=2000, c_GRID_addon_T=0, c_GRID_peak_=0)
         """
         for ent_name, data in kwargs.items():
 
@@ -611,9 +611,9 @@ class Scenario(DrafBaseClass):
                 raise RuntimeError(f"The parameter {ent_name} you want to update does not exist.")
 
             if self.fits_convention(ent_name, data):
-                self.add_par(ent_name, data=data, update=True)
+                self.param(ent_name, data=data, update=True)
             else:
-                self.add_par(ent_name, fill=data, update=True)
+                self.param(ent_name, fill=data, update=True)
 
         return self
 
@@ -626,7 +626,7 @@ class Scenario(DrafBaseClass):
         elif isinstance(data, pd.Series):
             return data.index.nlevels == len(dims)
 
-    def add_par(
+    def param(
         self,
         name: Optional[str] = None,
         data: Optional[Union[int, float, list, np.ndarray, pd.Series]] = None,
@@ -657,7 +657,7 @@ class Scenario(DrafBaseClass):
         if from_db is not None:
             if name is not None:
                 from_db.name = name
-            return self.add_par(**from_db.__dict__)
+            return self.param(**from_db.__dict__)
 
         dims = self._get_dims(name)
 
@@ -692,7 +692,7 @@ class Scenario(DrafBaseClass):
         self.params._changed_since_last_dic_export = True
         return data
 
-    def add_dim(
+    def dim(
         self,
         name: str,
         data: Union[List, np.ndarray] = None,

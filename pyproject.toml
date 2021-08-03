@@ -37,7 +37,5 @@ python_files = "test_*.py"
 python_functions = "test_*"
 testpaths = ["tests"]
 
-[tool.coverage.run]
-omit = [
-    "draf/models/*"
-    ]
+# [tool.coverage.run]
+# omit = []

@@ -25,10 +25,10 @@ class Prepper:
         """For serialization with pickle."""
         return None
 
-    def add_n_comp_(self, name="n_comp_"):
+    def n_comp_(self, name="n_comp_"):
         """Add cost weighting factor to compensate part year analysis."""
         sc = self.sc
-        return self.sc.add_par(
+        return self.sc.param(
             name=name,
             unit="",
             doc="Weighting factor to compensate part year analysis",
@@ -36,10 +36,10 @@ class Prepper:
         )
 
     @hp.copy_doc(get_emissions, start="Args:")
-    def add_ce_GRID_T(self, name="ce_GRID_T", method="XEF_PP", **kwargs):
+    def ce_GRID_T(self, name="ce_GRID_T", method="XEF_PP", **kwargs):
         """Add dynamic carbon emission factors."""
         sc = self.sc
-        return self.sc.add_par(
+        return self.sc.param(
             name=name,
             unit="kgCO2eq/kWh_el",
             doc=f"{method} for {sc.year}, {sc.freq}, {sc.country}",
@@ -51,10 +51,10 @@ class Prepper:
             ),
         )
 
-    def add_c_GRID_RTP_T(self, name="c_GRID_RTP_T", method="hist_EP", **kwargs):
+    def c_GRID_RTP_T(self, name="c_GRID_RTP_T", method="hist_EP", **kwargs):
         """Add Real-time-prices-tariffs."""
         sc = self.sc
-        return self.sc.add_par(
+        return self.sc.param(
             name=name,
             unit="€/kWh_el",
             doc=f"Day-ahead-market-prices {sc.year}, {sc.freq}, {sc.country}",
@@ -64,10 +64,10 @@ class Prepper:
             ),
         )
 
-    def add_c_GRID_PP_T(self, name="c_GRID_PP_T", method="PP"):
+    def c_GRID_PP_T(self, name="c_GRID_PP_T", method="PP"):
         """Add marginal costs from PP-method. Only for Germany."""
         sc = self.sc
-        return self.sc.add_par(
+        return self.sc.param(
             name=name,
             unit="€/kWh_el",
             doc=f"Marginal Costs {sc.year}, {sc.freq}, {sc.country}",
@@ -76,10 +76,10 @@ class Prepper:
             ],
         )
 
-    def add_c_GRID_PWL_T(self, name="c_GRID_PWL_T", method="PWL", **kwargs):
+    def c_GRID_PWL_T(self, name="c_GRID_PWL_T", method="PWL", **kwargs):
         """Add marginal costs from PWL-method."""
         sc = self.sc
-        return self.sc.add_par(
+        return self.sc.param(
             name=name,
             unit="€/kWh_el",
             doc=f"Marginal Costs {sc.year}, {sc.freq}, {sc.country}",
@@ -88,7 +88,7 @@ class Prepper:
             ),
         )
 
-    def add_c_GRID_TOU_T(
+    def c_GRID_TOU_T(
         self, name: str = "c_GRID_TOU_T", prices: Optional[List[float]] = None, prov: str = "BW"
     ):
         """A Time-of-Use tariff with two prices.
@@ -124,14 +124,14 @@ class Prepper:
                 _lt = min(prices)
                 _ht = max(prices)
 
-        return self.sc.add_par(
+        return self.sc.param(
             name=name,
             unit="€/kWh_el",
             doc=f"Time-Of-Use-tariff with the prices {_lt:.3f}€ and {_ht:.3f}€",
             data=_lt * _y_lt + _ht * _y_ht,
         )
 
-    def add_c_GRID_FLAT_T(
+    def c_GRID_FLAT_T(
         self, price: Optional[float] = None, name="c_GRID_FLAT_T", doc_addon: str = ""
     ):
         if price is None:
@@ -144,7 +144,7 @@ class Prepper:
                 )
 
         unit = "€/kWh_el"
-        return self.sc.add_par(
+        return self.sc.param(
             name=name,
             unit=unit,
             doc=f"Flat-electricity tariff ({price:.4f} {unit}). {doc_addon}",
@@ -152,7 +152,7 @@ class Prepper:
         )
 
     @hp.copy_doc(prep.get_el_SLP)
-    def add_E_dem_T(
+    def E_dem_T(
         self,
         name="E_dem_T",
         profile="G1",
@@ -164,7 +164,7 @@ class Prepper:
         """Add an electricity demand"""
         sc = self.sc
 
-        return self.sc.add_par(
+        return self.sc.param(
             name=name,
             unit="kWh_el",
             doc=f"Electricity demand from standard load profile {profile}",
@@ -183,7 +183,7 @@ class Prepper:
         )
 
     @hp.copy_doc(prep.get_thermal_demand)
-    def add_H_dem_T(
+    def H_dem_T(
         self,
         name="H_dem_T",
         annual_energy: float = 1.0,
@@ -196,7 +196,7 @@ class Prepper:
 
         ser_amb_temp = prep.get_ambient_temp(year=sc.year, freq=sc.freq, location=location)
 
-        return self.sc.add_par(
+        return self.sc.param(
             name=name,
             unit="kWh_th",
             doc=f"Heat demand derived from ambient temperatur in {location}",
@@ -210,17 +210,17 @@ class Prepper:
             ),
         )
 
-    def add_E_PV_profile_T(self, name="E_PV_profile_T"):
+    def E_PV_profile_T(self, name="E_PV_profile_T"):
         """Add a photovoltaic profile."""
         sc = self.sc
-        return self.sc.add_par(
+        return self.sc.param(
             name=name,
             unit="kW_el/kW_peak",
             doc=f"Produced PV-power for 1 kW_peak",
             data=sc.trim_to_datetimeindex(prep.get_PV_profile()),
         )
 
-    def add_c_GRID_addon_T(
+    def c_GRID_addon_T(
         self,
         name="c_GRID_addon_T",
         AbLa_surcharge=0.00006,
@@ -251,7 +251,7 @@ class Prepper:
             Sales,
         ]
 
-        return self.sc.add_par(
+        return self.sc.param(
             name=name,
             unit="€/kWh_el",
             doc="Add-on electricity price component",

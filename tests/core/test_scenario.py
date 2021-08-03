@@ -19,7 +19,7 @@ def empty_sc(cs) -> Scenario:
 @pytest.fixture
 def sc(cs) -> Scenario:
     sc = cs.add_REF_scen()
-    sc.add_par("eta_test_", data=5)
+    sc.param("eta_test_", data=5)
     return sc
 
 
@@ -53,10 +53,10 @@ def test_get_entity(sc):
     assert sc.get_entity("eta_test_") == 5
 
 
-def test_add_par(sc):
-    sc.add_par(name="x_HP_test_", data=4, doc="test doc", unit="test_unit", src="test_source")
-    sc.add_par(from_db=db.funcs.c_CHP_inv_())
-    sc.add_par(from_db=db.eta_HP_)
-    sc.add_par(name="c_FUEL_other-name_", from_db=db.c_FUEL_co2_)
+def test_param(sc):
+    sc.param(name="x_HP_test_", data=4, doc="test doc", unit="test_unit", src="test_source")
+    sc.param(from_db=db.funcs.c_CHP_inv_())
+    sc.param(from_db=db.eta_HP_)
+    sc.param(name="c_FUEL_other-name_", from_db=db.c_FUEL_co2_)
     for ent in ["c_CHP_inv_", "eta_HP_", "c_FUEL_other-name_"]:
         isinstance(sc.params.get(ent), float)

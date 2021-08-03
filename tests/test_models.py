@@ -1,15 +1,15 @@
 import pytest
 
-from draf.models.gp import der_hut, investment, minimal, mo_bes, mo_bes_2, p1
-from draf.models.pyo import minimal as pyo_minimal
+from draf.models.gp import der_hut, minimal, minimal_import, pv, pv_bes, pv_bes_mo
+from draf.models.pyo import pv as pyo_pv
 
 
-@pytest.mark.parametrize("mdl", [minimal, pyo_minimal])
-def test_minimal(mdl):
+@pytest.mark.parametrize("mdl", [pv, pyo_pv])
+def test_pv(mdl):
     mdl.main()
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("mdl", [der_hut, investment, mo_bes, mo_bes_2, p1])
+@pytest.mark.parametrize("mdl", [der_hut, minimal_import, minimal, pv_bes_mo, pv_bes])
 def test_models(mdl):
     mdl.main()
