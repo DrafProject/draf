@@ -19,16 +19,16 @@ An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showc
    cd draf
    ```
 
-1. Create environment based on environment.yml and install editable local version:
+1. Create and activate conda environment based on environment.yml including editable local version of `draf`:
 
    ```sh
    conda env create
+   conda activate draf
    ```
 
-1. Activate draf environment and run tests:
+1. Run tests:
 
    ```sh
-   conda activate draf
    pytest
    ```
 
@@ -54,11 +54,7 @@ An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showc
 
 # Usage
 
-For usage examples please see example models in [draf/models](draf/models). Start with "minimal.py"
-
-# Status
-
-This piece of software is in a very early stage. Use at your own risk.
+For usage examples please see example models in [draf/models](draf/models). Start with [`minimal.py`](draf/models/minimal.py)
 
 # Documentation
 
@@ -113,6 +109,10 @@ Dimensions are denoted with individual capital letters, so `<Dims>` could be `TE
 | `gp` | `gurobipy` - the Gurobi Python Interface |
 | `XEFs` | Average Electricity Mix Emission Factors |
 | `MEFs` | Marginal Power Plant Emission Factors |
+
+# Status
+
+This piece of software is in a very early stage. Use at your own risk.
 
 # License
 
