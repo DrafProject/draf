@@ -107,11 +107,7 @@ This piece of software is in a very early stage. Use at your own risk.
 
 ### Naming conventions
 
-All parameter and variable names must satisfy the following structure.
-
-'<type>_<component>_<descriptor>_<dims>'
-
-E.g. in 'E_GRID_buy_T' `E` is the entity type, `GRID` the component, `buy` the descriptor and `T` the dimension.
+All parameter and variable names must satisfy the structure `<Type>_<Component>_<Descriptor>_<Dims>`. E.g. in 'E_GRID_buy_T' `E` is the entity type, `GRID` the component, `buy` the descriptor and `T` the dimension. Dimensions are denoted with individual capital letters. So `<Dims>` could be `TE` if the entity has the dimensions `T` and `E`.
 
 # License
 
