@@ -147,3 +147,8 @@ def bordered(text: str) -> str:
         res.append("│" + (s + " " * width)[:width] + "│")
     res.append(f"└{'─' * width}┘")
     return "\n".join(res)
+
+
+def check(name: str, check: bool):
+    check_res = "✅" if check else "⛔"
+    print(f"{check_res} {name}")

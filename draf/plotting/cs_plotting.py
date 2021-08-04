@@ -482,7 +482,7 @@ class CsPlotter(BasePlotter):
                             f"{r.C_inv_:,.0f}",
                             f"{cs.REF_scen.res.C_ - r.C_:,.0f}",
                             f"{r.C_inv_ * p.AF_:,.0f}",
-                            f"{r.P_GRID_buy_peak_:,.0f}",
+                            f"{r.P_GRID_buyPeak_:,.0f}",
                         ],
                         ["k€/a", "k€", "k€/a", "k€/a", "kW"],
                     ],

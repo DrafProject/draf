@@ -38,6 +38,8 @@ class Acronyms:
     )
     RTP = Acro(en="Real-time-prices", de="Dynamische Strompreise")
     TOU = Acro(en="Time-of-use", de="Zeitabhängige Strompreise")
+    FI = Acro(en="Feed-in", de="Einspeisungsanteil")
+    OC = Acro(en="Own consumption", de="Eigenerzeugungsanteil")
 
 
 class Components:

@@ -14,19 +14,19 @@ def params_func(sc: draf.Scenario):
 
     # General
     sc.dim("T", infer=True)
-    sc.var("C_", doc="total costs", unit="k€/a", lb=-GRB.INFINITY)
-    sc.var("CE_", doc="total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
+    sc.var("C_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
+    sc.var("CE_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
 
     # Pareto
     sc.param("alpha_", 0, "weighting factor", "")
 
-    # Electricity Grid
+    # GRID
     sc.prep.c_GRID_RTP_T()
     sc.prep.ce_GRID_T()
-    sc.var("E_GRID_buy_T", doc="purchased electricity", unit="kWh_el", lb=-GRB.INFINITY)
+    sc.var("E_GRID_buy_T", doc="Purchased electricity", unit="kWh_el", lb=-GRB.INFINITY)
 
     # Demand
-    sc.prep.E_dem_T(profile="G1", annual_energy=4.8e6)
+    sc.prep.E_dem_T(profile="G1", annual_energy=5e6)
 
     # PV
     sc.param("P_PV_CAPx_", 0, "existing capacity", "kW_peak")
@@ -37,12 +37,12 @@ def model_func(m: pyo.Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
 
     m.obj = pyo.Objective(expr=(1 - p.alpha_) * v.C_ + p.alpha_ * v.CE_, sense=pyo.minimize)
 
-    # Costs
+    # C
     m.DEF_C_ = pyo.Constraint(
         expr=(v.C_ == pyo.quicksum(v.E_GRID_buy_T[t] * p.c_GRID_RTP_T[t] / 1e3 for t in d.T))
     )
 
-    # Carbon emissions
+    # CE
     m.DEF_CE_ = pyo.Constraint(
         expr=(v.CE_ == pyo.quicksum(v.E_GRID_buy_T[t] * p.ce_GRID_T[t] for t in d.T))
     )
