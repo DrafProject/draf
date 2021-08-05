@@ -25,8 +25,7 @@ class CsPlotter(BasePlotter):
     """Plotter for case studies.
 
     Args:
-        cs (CaseStudy): The CaseStudy object, containing all scenarios.
-
+        cs: The CaseStudy object, containing all scenarios.
     """
 
     def __init__(self, cs: "CaseStudy"):
@@ -40,7 +39,11 @@ class CsPlotter(BasePlotter):
         return None
 
     def yields(self, gradient: bool = False) -> pdStyler:
-        """Returns a styled pandas table with cost and carbon savings, and avoidance cost."""
+        """Returns a styled pandas table with cost and carbon savings, and avoidance cost.
+        
+        Args:
+            gradient: If the table is coloured with a gradient.
+        """
         cs = self.cs
 
         savings = cs.pareto.iloc[0] - cs.pareto
@@ -387,7 +390,7 @@ class CsPlotter(BasePlotter):
 
         Args:
             string_builder_func: Function that returns a space-seperated table with
-             the columns type, source, targe, value. e.g.
+                the columns type, source, targe, value. e.g.
                 ```
                 type source target value
                 F GAS CHP 1000
@@ -445,11 +448,11 @@ class CsPlotter(BasePlotter):
         Args:
             string_builder_func: Function that returns a space-seperated table with
                 the columns type, source, targe, value. e.g.
-                    ```
-                    type source target value
-                    F GAS CHP 1000
-                    E CHP EL 450
-                    ```
+                ```
+                type source target value
+                F GAS CHP 1000
+                E CHP EL 450
+                ```
             sc: Scenario object, which is selected.
             sort: If scenarios are sorted by total costs.
 

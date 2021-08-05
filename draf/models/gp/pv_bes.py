@@ -40,7 +40,7 @@ def params_func(sc: draf.Scenario):
 
     # PV
     sc.param("P_PV_CAPx_", data=0, doc="Existing capacity", unit="kW_peak")
-    sc.prep.E_PV_profile_T()
+    sc.prep.E_PV_profile_T(use_coords=True)
     sc.var("E_PV_FI_T", doc="Feed-in", unit="kWh_el")
     sc.var("E_PV_OC_T", doc="Own consumption", unit="kWh_el")
     sc.var("E_PV_T", doc="Produced electricity", unit="kWh_el")
@@ -133,7 +133,7 @@ def sankey_func(sc: draf.Scenario):
 
 
 def main():
-    cs = draf.CaseStudy("DER_HUT", year=2019, freq="60min")
+    cs = draf.CaseStudy("DER_HUT", year=2019, freq="60min", coords=(49.01, 8.39))
     cs.set_time_horizon(start="Apr-01 00", steps=24 * 2)
     cs.add_REF_scen().set_params(params_func)
     cs.add_scens(

@@ -33,7 +33,7 @@ class ScenPlotter(BasePlotter):
     """Plotter for scenarios.
 
     Args:
-        sc (Scenario): The scenario object containing all data.
+        sc: The scenario object containing all data.
     """
 
     def __init__(self, sc):
@@ -55,7 +55,7 @@ class ScenPlotter(BasePlotter):
         Args:
             what: 'v' for Variables, 'p' for Parameters.
         """
-        sc: Scenario = self.sc
+        sc = self.sc
         dims_dic = sc._get_entity_store(what=what)._to_dims_dic(unstack_to_first_dim=1)
         for dim, data in dims_dic.items():
             if dim == "":
@@ -429,7 +429,6 @@ class ScenPlotter(BasePlotter):
                 F GAS CHP 1000
                 E CHP EL 450
             title: Title of the Sankey figure.
-
         """
 
         df = self._get_sankey_df(string_builder_func)

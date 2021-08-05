@@ -22,11 +22,11 @@ def test___init__(case):
 @pytest.mark.parametrize("year", [[1980], [2020], [2101]])
 def test_set_year(year: int, case):
     if year in range(1980, 2100):
-        case.set_year(year=year)
+        case._set_year(year=year)
         assert case.year == year
     else:
         with pytest.raises(AssertionError):
-            case.set_year(year=year)
+            case._set_year(year=year)
 
 
 @pytest.mark.parametrize("freq, expected", [["15min", 0.25], ["30min", 0.5], ["60min", 1.0]])

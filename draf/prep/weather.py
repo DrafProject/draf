@@ -76,6 +76,7 @@ def get_data_for_gsee(stations_id_air: int, stations_id_solar: int, year: int):
 
 
 def get_air_temp(coords: Tuple[float, float], year: int, with_dt=False) -> pd.Series:
+    """Returns air temperature for German locations."""
     data_type = "air_temperature"
     stations_id = get_nearest_station(coords=coords, data_type=data_type, year=year)["Stations_id"]
     df = get_df_from_DWD(data_type=data_type, stations_id=stations_id)
@@ -279,44 +280,4 @@ def get_TRY():
 
     ser = pd.read_table(StringIO(string), sep=r"\s+", usecols="t", squeeze=True).drop(0)
     ser.index = ser.index - 1  # to start index with 0
-    return ser
-
-
-def get_ambient_temp(
-    year: int, freq: str = "60min", location: str = "Rheinstetten", cache: bool = True,
-) -> pd.Series:
-    """OBSOLETE: Replaced by new functions to get ambient temperature.
-    Experimental. Get ambient temperature from specific German stations from DWD"""
-
-    assert year in range(2008, 2100), f"{year} is not a valid year"
-    assert freq in ["60min"], f"{freq} is not a valid freq"
-
-    fp = paths.DATA / f"weather/cache/{year}_{freq}_t_ambient_{location}.parquet"
-
-    station_ids = {
-        "Rheinstetten": "04177",
-        "Kempten": "02559",
-    }
-
-    if cache and fp.exists():
-        ser = read(fp)
-
-    else:
-        # German Data downloaded from
-        # https://www.dwd.de/DE/leistungen/klimadatendeutschland/klarchivstunden.html?nn=16102#buehneTop
-        station = station_ids[location]
-        what = "hist" if year <= 2018 else "akt"
-        dir_raw = paths.DATA / f"weather/DWD/stundenwerte_TU_{station}_{what}"
-        fp_raw = list(dir_raw.glob("produkt_tu_stunde*.txt"))[0]
-        ser = pd.read_csv(
-            fp_raw, sep=";", index_col="MESS_DATUM", usecols=["MESS_DATUM", "TT_TU"], squeeze=True
-        )
-
-        ser = ser[ser.index.astype(str).str[:4] == str(year)]
-        ser.reset_index(drop=True, inplace=True)
-        ser.name = "t_amb"
-        if cache:
-            write(ser, fp)
-
-    hp.warn_if_incorrect_index_length(ser, year, freq)
     return ser

@@ -1,5 +1,6 @@
 import logging
 import warnings
+from functools import lru_cache
 from typing import Dict, List, Optional, Set, Tuple
 
 import pandas as pd
@@ -20,14 +21,14 @@ def fit_gsee_model_to_real(
      to the annual energy sum.
 
     Args:
-        real (pd.Series): Hourly historic PV power.
-        gsee_params (Dict): Year, tilt, azim, system_loss.
-        capa (float): PV Capacity in kW_peak.
-        get_whole_year_if_sliced (bool): If True, models the whole year even if only part-year
+        real: Hourly historic PV power.
+        gsee_params: Year, tilt, azim, system_loss.
+        capa: PV Capacity in kW_peak.
+        get_whole_year_if_sliced: If True, models the whole year even if only part-year
             data were given.
 
     Returns:
-        pd.Series: resulting PV-power time series.
+        pd.Series: Resulting PV-power time series.
         float: Additional system losses not caused by panel and inverter (fraction).
     """
     slicer = _get_slicer(real)
@@ -53,18 +54,27 @@ def _get_slicer(real: pd.Series) -> slice:
         return slice(start, end)
 
 
+@lru_cache(maxsize=5)
 def get_pv_power(
     year: int,
-    coords: Tuple,
+    coords: Tuple[float, float],
     tilt: float = 0,
     azim: float = 180,
     capacity: float = 1.0,
-    tracking=0,
-    system_loss=0.0,
+    tracking: int = 0,
+    system_loss: float = 0.0,
     **gsee_kw,
 ):
     """Returns electrical PV power using the gsee.pv model with weather data from
      the nearest DWD weather station.
+
+    Args:
+        coords: Latitude and longitude.
+        tilt: Tilt angle (degrees).
+        azim: Azimuth angle (degrees, 180 = towards equator).
+        tracking: Tracking (0: none, 1: 1-axis, 2: 2-axis).
+        capacity : Installed capacity in W.
+        system_loss: Total system power losses (fraction).
     """
     warnings.simplefilter(action="ignore", category=FutureWarning)
     df = get_data_for_gsee_with_data_of_nearest_station(year=year, coords=coords)

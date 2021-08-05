@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 import holidays
 import numpy as np
@@ -8,6 +8,7 @@ from elmada import get_emissions, get_prices
 
 import draf.helper as hp
 from draf import prep
+from draf.prep.demand import SLP_PROFILES
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
@@ -167,7 +168,7 @@ class Prepper:
         return self.sc.param(
             name=name,
             unit="kWh_el",
-            doc=f"Electricity demand from standard load profile {profile}",
+            doc=f"Electricity demand from standard load profile {profile}: {SLP_PROFILES[profile]}",
             data=sc.trim_to_datetimeindex(
                 prep.get_el_SLP(
                     year=sc.year,
@@ -194,7 +195,7 @@ class Prepper:
         """Add a heat demand based on the `target_temp`, `threshold_temp`, `annual_energy`."""
         sc = self.sc
 
-        ser_amb_temp = prep.get_ambient_temp(year=sc.year, freq=sc.freq, location=location)
+        ser_amb_temp = prep.get_air_temp(coords=sc.coords, year=sc.year)
 
         return self.sc.param(
             name=name,
@@ -210,14 +211,34 @@ class Prepper:
             ),
         )
 
-    def E_PV_profile_T(self, name="E_PV_profile_T"):
-        """Add a photovoltaic profile."""
+    def E_PV_profile_T(self, name="E_PV_profile_T", use_coords: bool = True, **gsee_kw):
+        """Add a photovoltaic profile.
+        
+        For Germany only: If `coords` are given as within the CaseStudy
+        a `gsee` calculation is conducted with weather data from the nearest available weather
+        station.
+        """
         sc = self.sc
+
+        if sc.coords is not None and use_coords:
+            logger.info(f"{sc.coords} coordinates used for PV calculation.")
+            ser = prep.get_pv_power(year=sc.year, coords=sc.coords, **gsee_kw).reset_index(
+                drop=True
+            )
+            ser = hp.resample(
+                ser, year=sc.year, start_freq=hp.estimate_freq(ser), target_freq=sc.freq
+            )
+        else:
+            logger.warning(
+                "No coords given or usage not wanted. Year-independant backup PV profile is used."
+            )
+            ser = prep.get_PV_profile()
+
         return self.sc.param(
             name=name,
             unit="kW_el/kW_peak",
             doc=f"Produced PV-power for 1 kW_peak",
-            data=sc.trim_to_datetimeindex(prep.get_PV_profile()),
+            data=sc.trim_to_datetimeindex(ser),
         )
 
     def c_GRID_addon_T(

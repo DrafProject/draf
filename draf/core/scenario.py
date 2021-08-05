@@ -34,11 +34,19 @@ class Scenario(DrafBaseClass):
         doc: Scenario documentation string.
     """
 
-    def __init__(self, cs: "CaseStudy", id: str = "", name: str = "", doc: str = ""):
+    def __init__(
+        self,
+        cs: "CaseStudy",
+        id: str = "",
+        name: str = "",
+        doc: str = "",
+        coords: Optional[Tuple[float, float]] = None,
+    ):
         self._cs = cs
         self.id = id
         self.name = name
         self.doc = doc
+        self.coords = coords
         self.dims = Dimensions()
         self.params = Params()
         self.mdl = None
@@ -640,17 +648,17 @@ class Scenario(DrafBaseClass):
         """Add a parameter to the scenario.
 
         Args:
-            name: the entity name. It has to end with an underscore followed by the
+            name: The entity name. It has to end with an underscore followed by the
                 single-character dimensions i.e. a solely time-dependent parameter has
                 to end with `_T` e.g. `E_dem_T`;
                 a scalar has to end with `_` e.g. `C_inv_`.
-            data: data is normally given as int, float or pd.Series. Lists and np.ndarrays are
+            data: Data is normally given as int, float or pd.Series. Lists and np.ndarrays are
                 converted to pd.Series.
-            doc: a description string.
-            fill: if a float is given here, for all relevant dimensions inferred from the name the
+            doc: A description string.
+            fill: If a float is given here, for all relevant dimensions inferred from the name the
                 series is filled.
-            update: if True, the meta-data will not be touched, just the data changed.
-            read_kwargs: keyword arguments handed onto the pandas read-function.
+            update: If True, the meta-data will not be touched, just the data changed.
+            read_kwargs: Keyword arguments handed onto the pandas read-function.
             from_db: DataBase object.
 
         """

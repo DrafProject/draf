@@ -31,7 +31,7 @@ def params_func(sc: draf.Scenario):
 
     # PV
     sc.param("P_PV_CAPx_", 0, "existing capacity", "kW_peak")
-    sc.prep.E_PV_profile_T()
+    sc.prep.E_PV_profile_T(use_coords=True)
 
 
 def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
@@ -54,7 +54,7 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
 
 
 def main():
-    cs = draf.CaseStudy("pv_gp", year=2019, freq="60min")
+    cs = draf.CaseStudy("pv_gp", year=2019, freq="60min", coords=(49.01, 8.39))
     cs.set_time_horizon(start="Apr-01 00", steps=24 * 2)
     cs.add_REF_scen().set_params(params_func)
     cs.add_scen("REF_PV", doc="REF plus PV").update_params(P_PV_CAPx_=100)

@@ -1,19 +1,17 @@
 import logging
 import textwrap
 from datetime import datetime
-from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import pandas as pd
 from elmada.helper import (
-    downsample,
+    estimate_freq,
     int_from_freq,
     make_datetimeindex,
     read,
     remove_outlier,
     resample,
-    upsample,
     warn_if_incorrect_index_length,
     write,
     z_score,
@@ -49,7 +47,7 @@ def make_gif(fp: Path, duration: float = 0.5) -> None:
 def make_quarterhourly_file_hourly(fp: Path, year: str = "2017", aggfunc: str = "mean") -> None:
     fp = Path(fp)
     ser = read(fp=fp, squeeze=True)
-    sh = downsample(ser, year=year, aggfunc=aggfunc)
+    sh = resample(ser, year=year, start_freq="15min", target_freq="60min", aggfunc=aggfunc)
     filepath_new = Path(fp.as_posix().replace("15min", "60min"))
     write(sh, fp=filepath_new)
 

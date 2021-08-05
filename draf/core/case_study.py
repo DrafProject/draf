@@ -78,18 +78,20 @@ class CaseStudy(DrafBaseClass):
         freq: str = "60min",
         country: str = "DE",
         doc: str = "No doc available.",
+        coords: Tuple[float, float] = None,
     ):
 
         self.name = name
         self.doc = doc
         self.freq = freq
         self.country = country
+        self.coords = coords
         self.scens = Scenarios()
         self.plot = CsPlotter(cs=self)
         self.dims = Dimensions()
         self.params = Params()
         self.obj_vars = ["C_", "CE_"]
-        self.set_year(year)
+        self._set_year(year)
 
         assert self.freq in ["15min", "30min", "60min"]
 
@@ -106,7 +108,7 @@ class CaseStudy(DrafBaseClass):
         main = "\n".join(l)
         return f"{preface}\n{main}"
 
-    def set_year(self, year: int):
+    def _set_year(self, year: int):
         assert year in range(1980, 2100)
         self.year = year
         self._set_dtindex()
@@ -226,18 +228,19 @@ class CaseStudy(DrafBaseClass):
         self,
         id: Optional[str] = None,
         name: str = "",
-        doc: Optional[str] = None,
+        doc: str = "",
         based_on: Optional[str] = "REF",
         based_on_last: bool = False,
     ) -> Scenario:
         """Add a Scenario with a name, a describing doc-string and a link to a model.
 
         Args:
-            id: Scenario id string.
+            id: Scenario id string which must be unique and without special characters. If is None,
+                the scenarios are numbered consecutively.
             name: Scenario name string.
-            doc: Scenario doc string.
-            based_on: Id of scenario which is copied. `based_on` can be set to None to
-                create a new scenario from scratch.
+            doc: Scenario doc string. This can be a longer string
+            based_on: Id of scenario which is copied. `based_on` can be set to None to create a new
+                scenario from scratch.
             based_on_last: If the most recent scenario is taken as basis.
         """
         if based_on_last:
@@ -248,7 +251,7 @@ class CaseStudy(DrafBaseClass):
             id = f"sc{len(self.scens_list)}"
 
         if based_on is None:
-            sc = Scenario(cs=self, id=id, name=name, doc=doc)
+            sc = Scenario(cs=self, id=id, name=name, doc=doc, coords=self.coords)
         else:
             sc = getattr(self.scens, based_on)._special_copy()
             sc.id = id
@@ -360,8 +363,15 @@ class CaseStudy(DrafBaseClass):
         return time.time() - self._time
 
     def save(self, name: str = "", fp: Any = None):
-        """Saves the case study to a pickle-file. You need to turn off iPython Autoreload function
-        first.
+        """Saves the CaseStudy object to a pickle-file. The current timestamp is used for a
+        unique file-name.
+
+        Args:
+            name: This string is appended to the time stamp.
+            fp: Filepath which overwrites the default, which uses a time stamp.
+
+        Note:
+            iPython autoreload function must be turned off.
         """
         date_time = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
 
@@ -466,7 +476,7 @@ class CaseStudy(DrafBaseClass):
         return self
 
     def set_params(self, params_func: Callable, scens: List = None) -> CaseStudy:
-        """Set model parameters for multiple scenarios at once."""
+        """Executes the `params_func` for for multiple scenarios at once."""
         if scens is None:
             scens = self.scens_list
 
@@ -504,8 +514,9 @@ class CaseStudy(DrafBaseClass):
         if scens is None:
             scens = self.scens_list
 
-        # Since lists are dynamic, the current status has to be frozen with tuple to avoid the
-        # interactive status bar description being modified later as further scenarios are added.
+        # Since lists are dynamic, the current status has to be frozen in a inmutable tuple to
+        # avoid the interactive status bar description being modified later as further scenarios
+        # are added.
         scens = tuple(scens)
 
         pbar = tqdm(scens)
@@ -546,7 +557,7 @@ class CaseStudy(DrafBaseClass):
             return df
 
     def get_ent(self, ent_name: str) -> Dict:
-        """Returns a desired result entity for all scenarios."""
+        """Returns the data of an entity for all scenarios."""
         return {name: sc.get_entity(ent_name) for name, sc in self.scens_dic.items()}
 
     def import_scens(

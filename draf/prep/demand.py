@@ -15,6 +15,20 @@ from draf.prep.weather import get_air_temp
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
 
+SLP_PROFILES = {
+    "H0": "Household general",
+    "G0": "Business in general",
+    "G1": "Business on weekdays 08:00 - 18:00",
+    "G2": "Business with heavy evening consumption",
+    "G3": "Business continuous",
+    "G4": "shop/hairdresser",
+    "G5": "Bakeries with bakery",
+    "G6": "Weekend operation",
+    "L0": "farms",
+    "L1": "farms with milk and livestock",
+    "L2": "other farms",
+}
+
 
 def get_el_SLP(
     year: int = 2019,
@@ -65,21 +79,7 @@ def get_el_SLP(
     """
     warnings.filterwarnings("ignore", message="indexing past lexsort depth")
 
-    profiles = {
-        "H0": "Household general",
-        "G0": "Business in general",
-        "G1": "Business on weekdays 08:00 - 18:00",
-        "G2": "Business with heavy evening consumption",
-        "G3": "Business continuous",
-        "G4": "shop/hairdresser",
-        "G5": "Bakeries with bakery",
-        "G6": "Weekend operation",
-        "L0": "farms",
-        "L1": "farms with milk and livestock",
-        "L2": "other farms",
-    }
-
-    assert profile in profiles
+    assert profile in SLP_PROFILES
 
     if offset > 0 and peak_load is not None:
         assert offset < peak_load
@@ -134,13 +134,13 @@ def get_el_SLP(
     for i, day in enumerate(day_list):
         ser.loc[day.strftime("%Y-%m-%d")] = df.loc[season[i], day_type[i]]["Wert"].values
 
-    if freq == "60min":
-        ser = hp.downsample(ser, year=str(year), aggfunc="mean")
+    ser = hp.resample(ser, year=year, start_freq="15min", target_freq=freq, aggfunc="mean")
+    ser = ser.reset_index(drop=True)
 
     if peak_load is not None:
         ser = ser * (peak_load - offset) / ser.max()
 
-    delta_T = {"15min": 0.25, "30min": 0.5, "60min": 1}[freq]
+    delta_T = hp.int_from_freq(freq) / 60
 
     if annual_energy is not None:
         ser = ser * (annual_energy - (offset * dt_index.size * delta_T)) / (ser.sum() * delta_T)
@@ -150,7 +150,7 @@ def get_el_SLP(
     logger.info(
         f"SLP created\n"
         f"\t{str(year)}, {freq}\n"
-        f"\t{profile} ({profiles[profile]})\n"
+        f"\t{profile} ({SLP_PROFILES[profile]})\n"
         f"\tpeak_load: {ser.max()}\n"
         f"\tannual_energy{ser.sum() * delta_T}"
     )

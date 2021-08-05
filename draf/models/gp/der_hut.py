@@ -42,7 +42,7 @@ def params_func(sc: draf.Scenario):
     sc.param("Q_dem_C_TN", doc="Cooling demand", unit="kWh_th", fill=0)
     sc.param("Q_dem_H_TH", doc="Heating demand", unit="kWh_th", fill=0)
     p.Q_dem_H_TH.loc[:, 1] = draf.prep.get_thermal_demand(
-        ser_amb_temp=draf.prep.get_ambient_temp(2017, "60min"),
+        ser_amb_temp=draf.prep.get_air_temp(coords=sc.coords, year=2017),
         annual_energy=1743000,
         target_temp=22,
         threshold_temp=13,
@@ -63,7 +63,7 @@ def params_func(sc: draf.Scenario):
     sc.param("P_PV_CAPx_", data=0, doc="Existing capacity", unit="kW_peak")
     sc.param("z_PV_", data=0, doc="If new capacity is allowed")
     sc.param(from_db=db.funcs.c_PV_inv_())
-    sc.prep.E_PV_profile_T()
+    sc.prep.E_PV_profile_T(use_coords=True)
     sc.var("E_PV_FI_T", doc="Feed-in", unit="kWh_el")
     sc.var("E_PV_OC_T", doc="Own consumption", unit="kWh_el")
     sc.var("E_PV_T", doc="Produced electricity", unit="kWh_el")
@@ -369,7 +369,7 @@ def sankey_func(sc: draf.Scenario):
 
 
 def main():
-    cs = draf.CaseStudy("DER_HUT", year=2019, freq="60min")
+    cs = draf.CaseStudy("DER_HUT", year=2019, freq="60min", coords=(49.01, 8.39))
     cs.set_time_horizon(start="Apr-01 00", steps=24 * 2)
     cs.add_REF_scen().set_params(params_func)
     cs.add_scens(
