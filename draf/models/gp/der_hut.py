@@ -15,13 +15,13 @@ def params_func(sc: draf.Scenario):
 
     # Dimensions
     sc.dim("T", infer=True)
-    sc.dim("C", [1, 2, 3], doc="Condensing temperature levels [1:25°C, 2:35°C, 3:60°C]")
     sc.dim("F", ["ng", "bio"], doc="Types of fuel")
-    sc.dim("H", [1, 2], doc="Heating temperature levels [1: 40°C/60°C, 2: 70°C/90°]")
-    sc.dim("N", [1, 2], doc="Cooling temperature level [1:7°C/12°C, 2:35°C/30°C]")
+    sc.dim("C", ["25", "35", "60"], doc="Condensing temperature levels")
+    sc.dim("H", ["60/40", "90/70"], doc="Heating temperature levels")
+    sc.dim("N", ["7/12", "30/35"], doc="Cooling temperature level")
 
     # General
-    sc.param("AF_", 0.1, doc="Annuitiy factor (it pays off in 1/AF_ years)")
+    sc.param("AF_", 0.1, doc="Annuity factor (it pays off in 1/AF_ years)")
     sc.prep.n_comp_()
     sc.var("C_", doc="Total costs", unit="€/a", lb=-GRB.INFINITY)
     sc.var("C_inv_", doc="Investment costs", unit="€")
@@ -41,7 +41,7 @@ def params_func(sc: draf.Scenario):
     sc.prep.E_dem_T(profile="G1", annual_energy=5e6)
     sc.param("Q_dem_C_TN", doc="Cooling demand", unit="kWh_th", fill=0)
     sc.param("Q_dem_H_TH", doc="Heating demand", unit="kWh_th", fill=0)
-    p.Q_dem_H_TH.loc[:, 1] = draf.prep.get_thermal_demand(
+    p.Q_dem_H_TH.loc[:, "60/40"] = draf.prep.get_thermal_demand(
         ser_amb_temp=draf.prep.get_air_temp(coords=sc.coords, year=2017),
         annual_energy=1743000,
         target_temp=22,
@@ -84,11 +84,11 @@ def params_func(sc: draf.Scenario):
     sc.var("E_BES_T", doc="Electricity stored", unit="kWh_el")
 
     # HP
-    sc.param("T_C_C", data=273 + pd.Series([25, 35, 60], d.C), doc="Temperature", unit="K")
-    sc.param("T_H_in_H", data=273 + pd.Series([40, 70], d.H), doc="Temperature", unit="K")
-    sc.param("T_H_out_H", data=273 + pd.Series([60, 90], d.H), doc="Temperature", unit="K")
-    sc.param("T_N_in_N", data=273 + pd.Series([7, 30], d.N), doc="Temperature", unit="K")
-    sc.param("T_N_out_N", data=273 + pd.Series([12, 35], d.N), doc="Temperature", unit="K")
+    sc.param("T_C_C", data=273 + pd.Series([25, 35, 60], d.C), doc="Condensing temp.", unit="K")
+    sc.param("T_H_in_H", data=273 + pd.Series([40, 70], d.H), doc="Heating inlet temp.", unit="K")
+    sc.param("T_H_out_H", data=273 + pd.Series([60, 90], d.H), doc="Heating outlet temp.", unit="K")
+    sc.param("T_N_in_N", data=273 + pd.Series([7, 30], d.N), doc="Cooling inlet temp.", unit="K")
+    sc.param("T_N_out_N", data=273 + pd.Series([12, 35], d.N), doc="Cooling outlet temp.", unit="K")
     sc.param("eta_HP_", data=0.5, doc="Ratio of reaching the ideal COP")
     sc.param(
         "cop_HP_ideal_CN",
@@ -104,7 +104,9 @@ def params_func(sc: draf.Scenario):
         "cop_HP_CN",
         data=pd.Series(
             {
-                (c, n): 0 if c in [1, 2] and n == 2 else p.cop_HP_ideal_CN[c, n] * p.eta_HP_
+                (c, n): 0
+                if c in ["25", "35"] and n == "30/35"
+                else p.cop_HP_ideal_CN[c, n] * p.eta_HP_
                 for c in d.C
                 for n in d.N
             }
@@ -218,13 +220,18 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
     )
 
     # Heat
-    m.addConstrs((v.Q_HP_E_TCN.sum(t, "*", 1) == p.Q_dem_C_TN[t, 1] for t in T), "BAL_HP_N1")
     m.addConstrs(
         (
-            v.Q_HOB_T[t] + v.Q_CHP_T[t] == p.Q_dem_H_TH[t, 2] + v.Q_H2H1_T[t] + v.Q_HS_in_TH[t, 2]
+            v.Q_HOB_T[t] + v.Q_CHP_T[t]
+            == p.Q_dem_H_TH[t, "90/70"] + v.Q_H2H1_T[t] + v.Q_HS_in_TH[t, "90/70"]
             for t in T
         ),
         "BAL_H2",
+    )
+
+    # COOL
+    m.addConstrs(
+        (v.Q_HP_E_TCN.sum(t, "*", "7/12") == p.Q_dem_C_TN[t, "7/12"] for t in T), "BAL_HP_N1"
     )
 
     # GRID
@@ -306,10 +313,14 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
     m.addConstrs(
         (v.E_HP_TCN[t, c, n] <= v.P_HP_CAPn_N[n] for t in T for c in C for n in N), "CAP_HP"
     )
-    m.addConstrs((v.Y_HP_TCN.sum(t, "*", 1) <= 1 for t in T), "HP_onlyOneConTemp1")
-    m.addConstrs((v.Y_HP_TCN.sum(t, c, 2) == 0 for t in T for c in [1, 2]), "HP_onlyOneConTemp2")
-    m.addConstrs((v.Y_HP_TCN[t, 3, 2] == 1 for t in T), "HP_onlyOneConTemp3")
-    m.addConstrs((v.Q_HP_E_TCN.sum(t, "*", 2) == v.Q_HP_C_TCN[t, 2, 1] for t in T), "BAL_HP_N2")
+    m.addConstrs((v.Y_HP_TCN.sum(t, "*", "7/12") <= 1 for t in T), "HP_onlyOneConTemp1")
+    m.addConstrs(
+        (v.Y_HP_TCN.sum(t, c, "30/35") == 0 for t in T for c in ["25", "35"]), "HP_onlyOneConTemp2"
+    )
+    m.addConstrs((v.Y_HP_TCN[t, "60", "30/35"] == 1 for t in T), "HP_onlyOneConTemp3")
+    m.addConstrs(
+        (v.Q_HP_E_TCN.sum(t, "*", "30/35") == v.Q_HP_C_TCN[t, "35", "7/12"] for t in T), "BAL_HP_N2"
+    )
 
     # HS
     m.addConstrs(
