@@ -201,8 +201,6 @@ class CsPlotter(BasePlotter):
 
     def pareto_curves(
         self,
-        save_file: bool = False,
-        filetype: str = "png",
         groups: List[str] = None,
         c_unit: Optional[str] = None,
         ce_unit: Optional[str] = None,
@@ -212,14 +210,13 @@ class CsPlotter(BasePlotter):
     ) -> go.Figure:
         """EXPERIMENTAL: Plot based on pareto() considering multiple pareto curve-groups."""
 
-        def get_hover_text(sc):
-            ref = sc._cs.REF_scen
-            sav_C = ref.res.C_ - sc.res.C_
+        def get_hover_text(sc, ref_scen):
+            sav_C = ref_scen.res.C_ - sc.res.C_
             sav_C_fmted, unit_C = hp.auto_fmt(sav_C, sc.get_unit("C_"))
-            sav_C_rel = sav_C / ref.res.C_
-            sav_CE = ref.res.CE_ - sc.res.CE_
+            sav_C_rel = sav_C / ref_scen.res.C_
+            sav_CE = ref_scen.res.CE_ - sc.res.CE_
             sav_CE_fmted, unit_CE = hp.auto_fmt(sav_CE, sc.get_unit("CE_"))
-            sav_CE_rel = sav_CE / ref.res.CE_
+            sav_CE_rel = sav_CE / ref_scen.res.CE_
 
             return "<br>".join(
                 [
@@ -303,7 +300,7 @@ class CsPlotter(BasePlotter):
                 text=[get_text(sc, label_verbosity) for sc in scens_]
                 if bool(label_verbosity)
                 else None,
-                hovertext=[get_hover_text(sc) for sc in scens_],
+                hovertext=[get_hover_text(sc, ref_scen=cs.REF_scen) for sc in scens_],
                 textposition="bottom center",
                 marker=dict(size=12, color=c, showscale=False),
                 name=ix,

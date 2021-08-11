@@ -4,7 +4,6 @@ import datetime
 import logging
 import pickle
 import textwrap
-import time
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
@@ -15,6 +14,7 @@ from tqdm.auto import tqdm
 
 from draf import helper as hp
 from draf import paths
+from draf.core.datetime_handler import DateTimeHandler
 from draf.core.draf_base_class import DrafBaseClass
 from draf.core.entity_stores import Dimensions, Params, Scenarios
 from draf.core.params_prepping import Prepper
@@ -40,7 +40,6 @@ def open_casestudy(fp) -> CaseStudy:
     cs.__dict__ = _load_pickle_object(fp).__dict__
     cs.plot = CsPlotter(cs=cs)
     for sc in cs.scens.get_all().values():
-        sc._cs = cs
         sc.plot = ScenPlotter(sc=sc)
         sc.prep = Prepper(sc=sc)
 
@@ -58,7 +57,7 @@ def open_latest_casestudy(name: str, verbose: bool = True) -> CaseStudy:
     return open_casestudy(fp)
 
 
-class CaseStudy(DrafBaseClass):
+class CaseStudy(DrafBaseClass, DateTimeHandler):
     """Contains all relevant information for a case study: timeranges, optimization models,
     scenarios and functions.
 
@@ -107,19 +106,6 @@ class CaseStudy(DrafBaseClass):
         l.append(f"• dt_info:\n{s_dt_info}")
         main = "\n".join(l)
         return f"{preface}\n{main}"
-
-    def _set_year(self, year: int):
-        assert year in range(1980, 2100)
-        self.year = year
-        self._set_dtindex()
-        self._t1 = 0
-        self._t2 = self.dtindex.size - 1  # =8759 for a normal year
-
-    @property
-    def step_width(self) -> float:
-        """Returns the step width of the current datetimeindex.
-        e.g. 0.25 for a frequency of 15min."""
-        return float(int(self.freq[:2]) / 60)
 
     @property
     def scens_ids(self) -> List[str]:
@@ -183,17 +169,6 @@ class CaseStudy(DrafBaseClass):
             pass
         return None
 
-    @property
-    def dt_info(self) -> str:
-        """Get an info string of the chosen time horizon of the case study."""
-        t1_str = f"{self.dtindex_custom[0].day_name()}, {self.dtindex_custom[0]}"
-        t2_str = f"{self.dtindex_custom[-1].day_name()}, {self.dtindex_custom[-1]}"
-        return (
-            f"t1 = {self._t1:<5} ({t1_str}),\n"
-            f"t2 = {self._t2:<5} ({t2_str})\n"
-            f"Length = {self.dtindex_custom.size}"
-        )
-
     def set_solver_params(self, **kwargs) -> CaseStudy:
         """Set some gurobi solver parameters e.g.:
             LogFile,
@@ -210,10 +185,6 @@ class CaseStudy(DrafBaseClass):
                 sc.mdl.setParam(k, v, verbose=False)
 
         return self
-
-    def get_T(self) -> List:
-        """Returns the set T from case-study configuration."""
-        return list(range(self._t1, self._t2 + 1))
 
     def activate_vars(self) -> None:
         for sc in self.scens_list:
@@ -251,7 +222,20 @@ class CaseStudy(DrafBaseClass):
             id = f"sc{len(self.scens_list)}"
 
         if based_on is None:
-            sc = Scenario(cs=self, id=id, name=name, doc=doc, coords=self.coords)
+            sc = Scenario(
+                id=id,
+                name=name,
+                doc=doc,
+                coords=self.coords,
+                year=self.year,
+                country=self.country,
+                freq=self.freq,
+                cs_name=self.name,
+                dtindex=self.dtindex,
+                dtindex_custom=self.dtindex_custom,
+                t1=self._t1,
+                t2=self._t2,
+            )
         else:
             sc = getattr(self.scens, based_on)._special_copy()
             sc.id = id
@@ -307,8 +291,7 @@ class CaseStudy(DrafBaseClass):
         self.scen_vars = scen_vars
 
         names_long, names_short, value_lists = zip(*scen_vars)
-        idx = pd.MultiIndex.from_product(value_lists, names=names_long)
-        df = pd.DataFrame(index=idx)
+        df = pd.DataFrame(index=pd.MultiIndex.from_product(value_lists, names=names_long))
         df = df.reset_index()
         dfn = df.T.astype(str).apply(lambda x: names_short + x)
         df.index = ["_".join(dfn[x].values) for x in dfn]
@@ -345,23 +328,6 @@ class CaseStudy(DrafBaseClass):
             cs = pickle.load(f)
         return cs
 
-    def _set_dtindex(self) -> None:
-        self.dtindex = hp.make_datetimeindex(year=self.year, freq=self.freq)
-        self.dtindex_custom = self.dtindex
-
-        if self.freq == "15min":
-            self.steps_per_day = 96
-            self._freq_unit = "1/4 h"
-        elif self.freq == "60min":
-            self.steps_per_day = 24
-            self._freq_unit = "h"
-
-    def _set_time_trace(self):
-        self._time = time.time()
-
-    def _get_time_diff(self):
-        return time.time() - self._time
-
     def save(self, name: str = "", fp: Any = None):
         """Saves the CaseStudy object to a pickle-file. The current timestamp is used for a
         unique file-name.
@@ -390,22 +356,6 @@ class CaseStudy(DrafBaseClass):
 
         size = hp.sizeof_fmt(fp.stat().st_size)
         print(f"CaseStudy saved to {fp.as_posix()} ({size})")
-
-    def _get_datetime_int_loc_from_string(self, s: str) -> int:
-        return self.dtindex.get_loc(f"{self.year}-{s}")
-
-    def _get_integer_locations(self, start, steps, end) -> Tuple[int, int]:
-        t1 = self._get_datetime_int_loc_from_string(start) if isinstance(start, str) else start
-        if steps is not None and end is None:
-            assert t1 + steps < self.dtindex.size, "Too many steps are given."
-            t2 = t1 + steps - 1
-        elif steps is None and end is not None:
-            t2 = self._get_datetime_int_loc_from_string(end) if isinstance(end, str) else end
-        elif steps is None and end is None:
-            t2 = self.dtindex.size - 1
-        else:
-            raise ValueError("One of steps or end must be given.")
-        return t1, t2
 
     def set_time_horizon(
         self,
@@ -532,29 +482,6 @@ class CaseStudy(DrafBaseClass):
             )
 
         return self
-
-    def dated(
-        self, df: Union[pd.Series, pd.DataFrame], activated=True
-    ) -> Union[pd.Series, pd.DataFrame]:
-        """Add datetime index to a data entity. The frequency and year are taken from the casestudy.
-
-        Args:
-            df: A pandas data entity.
-            activated: If False, the df is returned without modification.
-
-        """
-        try:
-            dtindex_to_use = self.dtindex[df.index.min() : df.index.max() + 1]
-            if activated:
-                if isinstance(df, pd.DataFrame):
-                    return df.set_index(dtindex_to_use, inplace=False)
-                elif isinstance(df, pd.Series):
-                    return df.set_axis(dtindex_to_use, inplace=False)
-            else:
-                return df
-        except TypeError as e:
-            logger.warning(f"Dated function could not add date-time index to data: {e}")
-            return df
 
     def get_ent(self, ent_name: str) -> Dict:
         """Returns the data of an entity for all scenarios."""

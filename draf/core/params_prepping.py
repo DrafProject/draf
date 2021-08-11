@@ -74,9 +74,9 @@ class Prepper:
             name=name,
             unit="€/kWh_el",
             doc=f"Marginal Costs {sc.year}, {sc.freq}, {sc.country}",
-            data=get_prices(year=sc.year, freq=sc.freq, country=sc.country, method=method)[
-                sc._t1 : sc._t2 + 1
-            ],
+            data=sc.trim_to_datetimeindex(
+                get_prices(year=sc.year, freq=sc.freq, country=sc.country, method=method)
+            ),
         )
 
     def c_GRID_PWL_T(self, name: str = "c_GRID_PWL_T", method: str = "PWL", **kwargs) -> pd.Series:

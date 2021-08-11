@@ -21,6 +21,16 @@ logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.CRITICAL)
 
 
+def fits_convention(ent_name: str, data: Union[int, float, pd.Series]) -> bool:
+    """If the naming-conventions apply for the data dimensions and the entity name """
+
+    dims = get_dims(ent_name)
+    if isinstance(data, (int, float)):
+        return dims == ""
+    elif isinstance(data, pd.Series):
+        return data.index.nlevels == len(dims)
+
+
 def get_type(ent_name: str) -> str:
     return ent_name.split("_")[0]
 
@@ -37,6 +47,10 @@ def get_acro(ent_name: str) -> str:
 
 def get_dims(ent_name: str) -> str:
     return ent_name.split("_")[-1]
+
+
+def get_step_width(freq: str) -> float:
+    return int_from_freq(freq) / 60
 
 
 def datetime_to_int(freq: str, year: int, month: int, day: int) -> int:

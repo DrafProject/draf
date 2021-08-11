@@ -35,32 +35,14 @@ def test_step_width(freq: str, expected: float, case):
     assert case.step_width == expected
 
 
-def test_get_T(case):
-    t_list = []
-    for t in range(8760):
-        t_list.append(t)
-    assert case.get_T() == t_list
-
-
 @pytest.mark.parametrize(
-    "freq, steps, unit", [["15min", 96, "1/4 h"], ["30min", 24, "h"], ["60min", 24, "h"]]
+    "freq, steps, unit", [["15min", 96, "1/4 h"], ["30min", 48, "1/2 h"], ["60min", 24, "h"]]
 )
 def test__set_dtindex(freq: str, steps: int, unit: str, case):
     case.freq = freq
     case._set_dtindex()
     assert case.steps_per_day == steps
-    assert case._freq_unit == unit
-
-
-def test__set_time_trace(case):
-    case._set_time_trace()
-    expected = time.time()
-    assert case._time == expected
-
-
-def test__get_time_diff(case):
-    case._set_time_trace()
-    assert time.time() - case._time == case._get_time_diff()
+    assert case.freq_unit == unit
 
 
 @pytest.mark.parametrize(

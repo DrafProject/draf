@@ -39,7 +39,6 @@ class ScenPlotter(BasePlotter):
     def __init__(self, sc):
         self.figsize = (16, 4)
         self.sc = sc
-        self.cs = sc._cs
         self.notebook_mode: bool = self.script_type() == "jupyter"
         self.optimize_layout_for_reveal_slides = True
 
@@ -55,8 +54,7 @@ class ScenPlotter(BasePlotter):
         Args:
             what: 'v' for Variables, 'p' for Parameters.
         """
-        sc = self.sc
-        dims_dic = sc._get_entity_store(what=what)._to_dims_dic(unstack_to_first_dim=1)
+        dims_dic = self.sc._get_entity_store(what=what)._to_dims_dic(unstack_to_first_dim=1)
         for dim, data in dims_dic.items():
             if dim == "":
                 data = pd.Series(data).to_frame(name="Scalar value")
@@ -69,7 +67,6 @@ class ScenPlotter(BasePlotter):
         timeseries: Union[np.ndarray, pd.Series] = None,
         ent_name: str = None,
         title: Optional[str] = None,
-        show_title: bool = True,
         cmap: str = "OrRd",
         colorbar_label: str = "",
     ) -> go.Figure:
@@ -92,7 +89,7 @@ class ScenPlotter(BasePlotter):
             layout = hp.optimize_plotly_layout_for_reveal_slides(layout)
 
         data = timeseries.values.reshape((self.cs.steps_per_day, -1), order="F")[:, :]
-        idx = self.cs.dated(timeseries).index
+        idx = self.sc.dated(timeseries).index
         data = go.Heatmap(
             x=pd.date_range(start=idx[0], end=idx[-1], freq="D"),
             z=data,
@@ -125,7 +122,7 @@ class ScenPlotter(BasePlotter):
             raise Exception("No timeseries specified!")
 
         data = ser.values.reshape((self.cs.steps_per_day, -1), order="F")[:, :]
-        idx = self.cs.dated(ser).index
+        idx = self.sc.dated(ser).index
 
         trace1 = go.Scatter(x=idx, y=ser.values, line_width=1)
 
@@ -147,9 +144,9 @@ class ScenPlotter(BasePlotter):
         )
 
         fig.update_yaxes(title_text=colorbar_label, row=1, col=1)
-        fig.update_xaxes(title_text=f"Time [{self.cs._freq_unit}]", row=1, col=1)
-        fig.update_yaxes(title_text=f"Time [{self.cs._freq_unit}]", row=2, col=1)
-        fig.update_xaxes(title_text=f"Days of {self.cs.year}", row=2, col=1)
+        fig.update_xaxes(title_text=f"Time [{self.sc.freq_unit}]", row=1, col=1)
+        fig.update_yaxes(title_text=f"Time [{self.sc.freq_unit}]", row=2, col=1)
+        fig.update_xaxes(title_text=f"Days of {self.sc.year}", row=2, col=1)
 
         fig.append_trace(trace1, 1, 1)
         fig.append_trace(trace2, 2, 1)
@@ -271,7 +268,7 @@ class ScenPlotter(BasePlotter):
             data = self.sc.get_entity(ent_name)
 
             if hp.get_dims(ent_name) == "T":
-                data = self.cs.dated(data)
+                data = self.sc.dated(data)
 
         assert isinstance(data, pd.Series)
         return self._get_line_fig(data)
@@ -298,13 +295,10 @@ class ScenPlotter(BasePlotter):
             what: 'v' for Variables, 'p' for Parameters.
             dated: If index has datetimes.
         """
-        sc = self.sc
-        cs = sc._cs
-
-        df = sc.get_var_par_dic(what)["T"]
+        df = self.sc.get_var_par_dic(what)["T"]
 
         if dated:
-            df = cs.dated(df)
+            df = self.sc.dated(df)
 
         ser = df.stack()
         ser.index = ser.index.rename(["T", "ent"])
@@ -378,10 +372,10 @@ class ScenPlotter(BasePlotter):
                 data = sc.get_entity(ent_name)
 
                 if t_end is None:
-                    data = self.cs.dated(dims_dic[dims][which_ents[dims]], y_dtindex)
+                    data = self.sc.dated(dims_dic[dims][which_ents[dims]], y_dtindex)
                     data.plot(title=title_dim, **pltargs)
                 else:
-                    data = self.cs.dated(
+                    data = self.sc.dated(
                         dims_dic[dims][which_ents[dims]][:][t_start:t_end], y_dtindex
                     )
                     data.plot(title=title_dim, **pltargs)
@@ -390,10 +384,10 @@ class ScenPlotter(BasePlotter):
                 for ent in which_ents[dims]:
                     title_ent = f"{self.sc.id}: {ent} ({dim_str})"
                     if t_end is None:
-                        data = self.cs.dated(dims_dic[dims][ent].unstack(), y_dtindex)
+                        data = self.sc.dated(dims_dic[dims][ent].unstack(), y_dtindex)
                         data.plot(title=title_ent, **pltargs)
                     else:
-                        data = self.cs.dated(
+                        data = self.sc.dated(
                             dims_dic[dims][ent][t_start:t_end].unstack(), y_dtindex
                         )
                         data.plot(title=title_ent, **pltargs)
@@ -402,10 +396,10 @@ class ScenPlotter(BasePlotter):
                 for ent in which_ents[dims]:
                     title_ent = f"{self.sc}: {ent} ({dim_str})"
                     if t_end is None:
-                        data = self.cs.dated(dims_dic[dims][ent].unstack().unstack(), y_dtindex)
+                        data = self.sc.dated(dims_dic[dims][ent].unstack().unstack(), y_dtindex)
                         data.plot(title=title_ent, **pltargs)
                     else:
-                        data = self.cs.dated(
+                        data = self.sc.dated(
                             dims_dic[dims][ent][t_start:t_end].unstack().unstack(), y_dtindex
                         )
                         data.plot(title=title_ent, **pltargs)
@@ -608,7 +602,7 @@ class ScenPlotter(BasePlotter):
     def _get_core_heatmap_fig(
         self, series, cmap, yaxis_factor: float, divergingNorm: bool = True, **imshow_kws
     ) -> Tuple:
-        steps_per_day = self.cs.steps_per_day
+        steps_per_day = self.sc.steps_per_day
 
         assert len(series) % steps_per_day == 0, (
             f"Timeseries doesn't fit the steps per day. There are "
@@ -645,7 +639,7 @@ class ScenPlotter(BasePlotter):
         )
 
         ax.set(yticks=hours)
-        ax.set_ylabel(f"Time [{self.cs._freq_unit}]")
+        ax.set_ylabel(f"Time [{self.cs.freq_unit}]")
         ax.set_xlabel("Time [Days]", labelpad=10)
         ax.xaxis_date()
         ax.set_xticklabels(ax.get_xticklabels(), rotation=0, ha="center", rotation_mode="anchor")

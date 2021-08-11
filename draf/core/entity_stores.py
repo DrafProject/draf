@@ -135,6 +135,9 @@ class Results(EntityStore):
         super().__init__()
         self._get_results_from_variables(sc=sc)
 
+    # TODO: Move to _get_results_from_variables, _from_gurobipy, _from_pyomo to Scenario for
+    # better type hinting
+
     def _get_results_from_variables(self, sc: "Scenario") -> None:
         if sc.mdl_language == "gp":
             self._from_gurobipy(sc)

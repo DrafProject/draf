@@ -5,6 +5,8 @@ import datetime
 import logging
 import math
 import pickle
+import time
+from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import gurobipy as gp
@@ -13,22 +15,23 @@ import pandas as pd
 import pyomo.environ as pyo
 
 from draf import helper as hp
+from draf import paths
+from draf.core.datetime_handler import DateTimeHandler
 from draf.core.draf_base_class import DrafBaseClass
 from draf.core.entity_stores import Dimensions, Params, Results, Vars
 from draf.core.mappings import GRB_OPT_STATUS, VAR_PAR
 from draf.core.params_prepping import Prepper
 from draf.plotting import ScenPlotter
-from draf.prep.data_base import DataBase, ParDat
+from draf.prep.data_base import ParDat
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
 
 
-class Scenario(DrafBaseClass):
+class Scenario(DrafBaseClass, DateTimeHandler):
     """An energy system configuration scenario.
 
     Args:
-        cs: CaseStudy object.
         id: Scenario Id string which must not start with a number.
         name: Scenario name string.
         doc: Scenario documentation string.
@@ -36,13 +39,19 @@ class Scenario(DrafBaseClass):
 
     def __init__(
         self,
-        cs: "CaseStudy",
+        freq: str,
+        year: str,
+        country: str,
+        dtindex,
+        dtindex_custom,
+        t1: int,
+        t2: int,
         id: str = "",
         name: str = "",
         doc: str = "",
         coords: Optional[Tuple[float, float]] = None,
+        cs_name: str = "no_case_study",
     ):
-        self._cs = cs
         self.id = id
         self.name = name
         self.doc = doc
@@ -54,14 +63,14 @@ class Scenario(DrafBaseClass):
         self.plot = ScenPlotter(sc=self)
         self.prep = Prepper(sc=self)
         self.vars = Vars()
-        self.year = cs.year
-        self.country = cs.country
-        self.freq = cs.freq
-        self.dtindex = cs.dtindex
-        self.dtindex_custom = cs.dtindex_custom
-        self._freq_unit = cs._freq_unit
-        self._t1 = cs._t1
-        self._t2 = cs._t2
+        self.year = year
+        self.country = country
+        self.freq = freq
+        self.cs_name = cs_name
+        self.dtindex = dtindex
+        self.dtindex_custom = dtindex_custom
+        self._t1 = t1
+        self._t2 = t2
 
     def __repr__(self):
         """Get overview of attributes of the scenario object."""
@@ -78,8 +87,20 @@ class Scenario(DrafBaseClass):
         """Remove objects with dependencies for serialization with pickle."""
         d = self.__dict__.copy()
         d.pop("mdl", None)
-        d.pop("_cs", None)
         return d
+
+    def _set_time_trace(self):
+        self._time = time.time()
+
+    def _get_time_diff(self):
+        return time.time() - self._time
+
+    @property
+    def _res_fp(self) -> Path:
+        """Returns the path to the case study's default result directory."""
+        fp = paths.RESULTS / self.cs_name
+        fp.mkdir(exist_ok=True)
+        return fp
 
     @property
     def _all_ents_dict(self) -> Dict:
@@ -93,7 +114,7 @@ class Scenario(DrafBaseClass):
 
     def _set_default_solver_params(self) -> None:
         defaults = {
-            "LogFile": str(self._cs._res_fp / "gurobi.log"),
+            "LogFile": str(self._res_fp / "gurobi.log"),
             "LogToConsole": 1,
             "OutputFlag": 1,
             "MIPGap": 0.1,
@@ -191,7 +212,7 @@ class Scenario(DrafBaseClass):
         """Executes the params builder function to fill the params object and the variables
         meta-informations.
         """
-        self._cs._set_time_trace()
+        self._set_time_trace()
 
         try:
             params_builder_func(self)
@@ -204,7 +225,7 @@ class Scenario(DrafBaseClass):
 
         self.param(
             "timelog_params_",
-            self._cs._get_time_diff(),
+            self._get_time_diff(),
             doc="Time for building the params",
             unit="seconds",
         )
@@ -229,16 +250,16 @@ class Scenario(DrafBaseClass):
         if self.mdl_language == "gp":
             self._set_default_solver_params()
 
-        self._cs._set_time_trace()
+        self._set_time_trace()
         self._activate_vars()
         self.param(
             "timelog_vars_",
-            self._cs._get_time_diff(),
+            self._get_time_diff(),
             doc="Time for building the variables",
             unit="seconds",
         )
 
-        self._cs._set_time_trace()
+        self._set_time_trace()
 
         if speed_up and self.mdl_language == "gp":
             params = self.get_tuple_dict_container()
@@ -251,7 +272,7 @@ class Scenario(DrafBaseClass):
 
         self.param(
             "timelog_model_",
-            self._cs._get_time_diff(),
+            self._get_time_diff(),
             doc="Time for building the model",
             unit="seconds",
         )
@@ -377,13 +398,13 @@ class Scenario(DrafBaseClass):
         self, logToConsole, outputFlag, show_results, keep_vars, postprocess_func
     ):
         logger.info(f"Optimize {self.id}.")
-        self._cs._set_time_trace()
+        self._set_time_trace()
         self.mdl.setParam("LogToConsole", int(logToConsole), verbose=False)
         self.mdl.setParam("OutputFlag", int(outputFlag), verbose=False)
         self.mdl.optimize()
         self.param(
             "timelog_solve_",
-            self._cs._get_time_diff(),
+            self._get_time_diff(),
             doc="Time for solving the model",
             unit="seconds",
         )
@@ -423,16 +444,16 @@ class Scenario(DrafBaseClass):
         self, logToConsole, outputFlag, show_results, keep_vars, postprocess_func, which_solver
     ):
         logger.info(f"Optimize {self.id}.")
-        self._cs._set_time_trace()
+        self._set_time_trace()
         solver = pyo.SolverFactory(which_solver)
 
-        logfile = str(self._cs._res_fp / "pyomo.log") if outputFlag else None
+        logfile = str(self._res_fp / "pyomo.log") if outputFlag else None
 
         results = solver.solve(self.mdl, tee=logToConsole, load_solutions=False, logfile=logfile)
 
         self.param(
             "timelog_solve_",
-            self._cs._get_time_diff(),
+            self._get_time_diff(),
             doc="Time for solving the model",
             unit="seconds",
         )
@@ -479,7 +500,6 @@ class Scenario(DrafBaseClass):
     def _special_copy(self) -> Scenario:
         """Returns a deepcopy of this scenario that preserves the pointer to the case study."""
         scen_copy = copy.deepcopy(self)
-        scen_copy._cs = self._cs
         scen_copy.plot.sc = scen_copy
         scen_copy.prep.sc = scen_copy
         return scen_copy
@@ -492,7 +512,7 @@ class Scenario(DrafBaseClass):
         given, the file is saved in the case study's default result directory."""
         date_time = self._get_now_string()
         if fp is None:
-            fp = self._cs._res_fp / f"{date_time}_{self.id}.{filetype}"
+            fp = self._res_fp / f"{date_time}_{self.id}.{filetype}"
 
         self.mdl.write(str(fp))
         logger.info(f"written to {fp}")
@@ -501,7 +521,7 @@ class Scenario(DrafBaseClass):
         """Saves the scenario to a pickle-file."""
         date_time = self._get_now_string()
 
-        fp = self._cs._res_fp / f"{date_time}_{self.id}.p"
+        fp = self._res_fp / f"{date_time}_{self.id}.p"
 
         try:
             with open(fp, "wb") as f:
@@ -512,11 +532,6 @@ class Scenario(DrafBaseClass):
             logger.error(
                 f"PicklingError {e}: Try deactivate Ipython's autoreload to save the scenario."
             )
-
-    def trim_to_datetimeindex(
-        self, data: Union[pd.DataFrame, pd.Series]
-    ) -> Union[pd.DataFrame, pd.Series]:
-        return data[self._t1 : self._t2 + 1]
 
     def get_xarray_dataset(self, include_vars: bool = True, include_params: bool = True):
         """Get an xarray dataset with all parameters and results."""
@@ -568,9 +583,9 @@ class Scenario(DrafBaseClass):
 
     def _infer_dimension_from_name(self, name: str) -> Tuple[str, str, Union[float, pd.Series]]:
         if name == "T":
-            doc = f"{self._cs.freq} time steps"
-            unit = self._cs._freq_unit
-            data = self._cs.get_T()
+            doc = f"{self.freq} time steps"
+            unit = self.freq_unit
+            data = self.get_T()
         else:
             raise AttributeError(f"No infer options available for {name}")
         return doc, unit, data
@@ -624,21 +639,12 @@ class Scenario(DrafBaseClass):
             if not hasattr(self.params, ent_name):
                 raise RuntimeError(f"The parameter {ent_name} you want to update does not exist.")
 
-            if self.fits_convention(ent_name, data):
+            if hp.fits_convention(ent_name, data):
                 self.param(ent_name, data=data, update=True)
             else:
                 self.param(ent_name, fill=data, update=True)
 
         return self
-
-    def fits_convention(self, ent_name: str, data: Union[int, float, pd.Series]) -> bool:
-        """If the naming-conventions apply for the data dimensions and the entity name """
-
-        dims = hp.get_dims(ent_name)
-        if isinstance(data, (int, float)):
-            return dims == ""
-        elif isinstance(data, pd.Series):
-            return data.index.nlevels == len(dims)
 
     def param(
         self,
@@ -772,8 +778,9 @@ class Scenario(DrafBaseClass):
             agg: If True, multi-dimensional CAP entities are aggregated.
         """
         d = dict()
-        _map = {"CAPn": "res", "CAPx": "params"}
-        container = getattr(self, _map[which])
+
+        assert which in ("CAPn", "CAPx"), "`which` need to be either CAPn or CAPx."
+        container = self.res if which == "CAPn" else self.params
 
         for n, v in container.get_all().items():
             if which in n:
