@@ -26,7 +26,7 @@ class Prepper:
         """For serialization with pickle."""
         return None
 
-    def n_comp_(self, name="n_comp_"):
+    def n_comp_(self, name: str = "n_comp_") -> float:
         """Add cost weighting factor to compensate part year analysis."""
         sc = self.sc
         return self.sc.param(
@@ -37,7 +37,7 @@ class Prepper:
         )
 
     @hp.copy_doc(get_emissions, start="Args:")
-    def ce_GRID_T(self, name="ce_GRID_T", method="XEF_PP", **kwargs):
+    def ce_GRID_T(self, name: str = "ce_GRID_T", method: str = "XEF_PP", **kwargs) -> pd.Series:
         """Add dynamic carbon emission factors."""
         sc = self.sc
         return self.sc.param(
@@ -52,7 +52,9 @@ class Prepper:
             ),
         )
 
-    def c_GRID_RTP_T(self, name="c_GRID_RTP_T", method="hist_EP", **kwargs):
+    def c_GRID_RTP_T(
+        self, name: str = "c_GRID_RTP_T", method: str = "hist_EP", **kwargs
+    ) -> pd.Series:
         """Add Real-time-prices-tariffs."""
         sc = self.sc
         return self.sc.param(
@@ -65,7 +67,7 @@ class Prepper:
             ),
         )
 
-    def c_GRID_PP_T(self, name="c_GRID_PP_T", method="PP"):
+    def c_GRID_PP_T(self, name: str = "c_GRID_PP_T", method: str = "PP") -> pd.Series:
         """Add marginal costs from PP-method. Only for Germany."""
         sc = self.sc
         return self.sc.param(
@@ -77,7 +79,7 @@ class Prepper:
             ],
         )
 
-    def c_GRID_PWL_T(self, name="c_GRID_PWL_T", method="PWL", **kwargs):
+    def c_GRID_PWL_T(self, name: str = "c_GRID_PWL_T", method: str = "PWL", **kwargs) -> pd.Series:
         """Add marginal costs from PWL-method."""
         sc = self.sc
         return self.sc.param(
@@ -90,17 +92,19 @@ class Prepper:
         )
 
     def c_GRID_TOU_T(
-        self, name: str = "c_GRID_TOU_T", prices: Optional[List[float]] = None, prov: str = "BW"
-    ):
+        self,
+        name: str = "c_GRID_TOU_T",
+        prices: Optional[Tuple[float, float]] = None,
+        prov: str = "BW",
+    ) -> pd.Series:
         """A Time-of-Use tariff with two prices.
-        If no prices are given the according RTP tariff is taken as reference.
+        If no prices are given the according RTP tariff is taken as basis.
         """
         sc = self.sc
 
         holis = getattr(holidays, sc.country)(prov=prov)
 
-        # calculate high/low times:
-        _y_lt = np.array(
+        isLowTime_T = np.array(
             [
                 True
                 if ((x.dayofweek >= 5) or not (8 <= x.hour < 20) or (x.date() in holis))
@@ -108,33 +112,37 @@ class Prepper:
                 for x in self.sc.dtindex_custom
             ]
         )
-        _y_ht = np.invert(_y_lt)
+        isHighTime_T = np.invert(isLowTime_T)
 
         if prices is None:
             try:
-                _lt = self.sc.params.c_GRID_RTP_T[_y_lt].mean()
-                _ht = self.sc.params.c_GRID_RTP_T[_y_ht].mean()
+                low_price = self.sc.params.c_GRID_RTP_T[isLowTime_T].mean()
+                high_price = self.sc.params.c_GRID_RTP_T[isHighTime_T].mean()
             except AttributeError as err:
                 logger.error(
-                    f"Mean prices for TOU tariff cannot be inferred "
-                    f"from RTP, since there is no RTP. {err}"
+                    f"Mean price for TOU tariff cannot be inferred"
+                    f" from RTP, since there is no RTP. {err}"
                 )
 
         else:
-            if isinstance(prices, list) and len(prices) == 2:
-                _lt = min(prices)
-                _ht = max(prices)
+            if isinstance(prices, Tuple) and len(prices) == 2:
+                low_price = min(prices)
+                high_price = max(prices)
 
         return self.sc.param(
             name=name,
             unit="€/kWh_el",
-            doc=f"Time-Of-Use-tariff with the prices {_lt:.3f}€ and {_ht:.3f}€",
-            data=_lt * _y_lt + _ht * _y_ht,
+            doc=f"Time-Of-Use-tariff with the prices {low_price:.3f}€ and {high_price:.3f}€",
+            data=low_price * isLowTime_T + high_price * isHighTime_T,
         )
 
     def c_GRID_FLAT_T(
-        self, price: Optional[float] = None, name="c_GRID_FLAT_T", doc_addon: str = ""
+        self, price: Optional[float] = None, name: str = "c_GRID_FLAT_T", doc_addon: str = ""
     ):
+        """Add a flat electricity tariff.
+        
+        If no price is given the according RTP tariff is taken as basis.
+        """
         if price is None:
             try:
                 price = self.sc.params.c_GRID_RTP_T.mean()
@@ -155,13 +163,13 @@ class Prepper:
     @hp.copy_doc(prep.get_el_SLP)
     def E_dem_T(
         self,
-        name="E_dem_T",
-        profile="G1",
+        name: str = "E_dem_T",
+        profile: str = "G1",
         peak_load: Optional[float] = None,
         annual_energy: Optional[float] = None,
         offset: float = 0,
         province: Optional[str] = None,
-    ):
+    ) -> pd.Series:
         """Add an electricity demand"""
         sc = self.sc
 
@@ -183,26 +191,33 @@ class Prepper:
             ),
         )
 
-    @hp.copy_doc(prep.get_thermal_demand)
-    def H_dem_T(
+    def Q_dem_H_TH(self) -> pd.Series:
+        data = pd.Series(0, pd.MultiIndex.from_product([self.sc.dims.T, self.sc.dims.H]))
+        return self.sc.param(name="Q_dem_H_TH", data=data, doc="Heating demand", unit="kWh_th")
+
+    def Q_dem_C_TN(self) -> pd.Series:
+        data = pd.Series(0, pd.MultiIndex.from_product([self.sc.dims.T, self.sc.dims.N]))
+        return self.sc.param(name="Q_dem_C_TN", data=data, doc="Cooling demand", unit="kWh_th")
+
+    @hp.copy_doc(prep.get_heating_demand)
+    def Q_dem_H_T(
         self,
-        name="H_dem_T",
-        annual_energy: float = 1.0,
+        name: str = "Q_dem_H_T",
+        annual_energy: float = 1e6,
         target_temp: float = 22.0,
         threshold_temp: float = 15.0,
-        location="Rheinstetten",
-    ):
+    ) -> pd.Series:
         """Add a heat demand based on the `target_temp`, `threshold_temp`, `annual_energy`."""
         sc = self.sc
 
         ser_amb_temp = prep.get_air_temp(coords=sc.coords, year=sc.year)
 
-        return self.sc.param(
+        return sc.param(
             name=name,
             unit="kWh_th",
-            doc=f"Heat demand derived from ambient temperatur in {location}",
+            doc=f"Heating demand derived from ambient temperature near {sc.coords}.",
             data=sc.trim_to_datetimeindex(
-                prep.get_thermal_demand(
+                prep.get_heating_demand(
                     ser_amb_temp=ser_amb_temp,
                     annual_energy=annual_energy,
                     target_temp=target_temp,
@@ -211,7 +226,36 @@ class Prepper:
             ),
         )
 
-    def E_PV_profile_T(self, name="E_PV_profile_T", use_coords: bool = True, **gsee_kw):
+    @hp.copy_doc(prep.get_cooling_demand)
+    def Q_dem_C_T(
+        self,
+        name: str = "Q_dem_C_T",
+        annual_energy: float = 1e6,
+        target_temp: float = 22.0,
+        threshold_temp: float = 22.0,
+    ) -> pd.Series:
+        """Add a heat demand based on the `target_temp`, `threshold_temp`, `annual_energy`."""
+        sc = self.sc
+
+        ser_amb_temp = prep.get_air_temp(coords=sc.coords, year=sc.year)
+
+        return sc.param(
+            name=name,
+            unit="kWh_th",
+            doc=f"Cooling demand derived from ambient temperature near {sc.coords}.",
+            data=sc.trim_to_datetimeindex(
+                prep.get_cooling_demand(
+                    ser_amb_temp=ser_amb_temp,
+                    annual_energy=annual_energy,
+                    target_temp=target_temp,
+                    threshold_temp=threshold_temp,
+                )
+            ),
+        )
+
+    def E_PV_profile_T(
+        self, name: str = "E_PV_profile_T", use_coords: bool = True, **gsee_kw
+    ) -> pd.Series:
         """Add a photovoltaic profile.
         
         For Germany only: If `coords` are given as within the CaseStudy
@@ -234,7 +278,7 @@ class Prepper:
             )
             ser = prep.get_PV_profile()
 
-        return self.sc.param(
+        return sc.param(
             name=name,
             unit="kW_el/kW_peak",
             doc=f"Produced PV-power for 1 kW_peak",
@@ -243,7 +287,7 @@ class Prepper:
 
     def c_GRID_addon_T(
         self,
-        name="c_GRID_addon_T",
+        name: str = "c_GRID_addon_T",
         AbLa_surcharge=0.00006,
         Concession_fee=0.0011,
         EEG_surcharge=0.0688,
@@ -253,7 +297,7 @@ class Prepper:
         NEV_surcharge=0.0025,
         Offshore_surcharge=-0.00002,
         Sales=0.01537,
-    ):
+    ) -> pd.Series:
         """Add electricity price components other than wholesale prices defaults for Industry for
         2017.
 

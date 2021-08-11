@@ -3,6 +3,38 @@ import pandas as pd
 from draf import helper as hp
 
 
+def test_get_type():
+    assert hp.get_type("c_") == "c"
+    assert hp.get_type("c_T") == "c"
+    assert hp.get_type("c_GRID_TH") == "c"
+    assert hp.get_type("c_GRID_RTP_TH") == "c"
+
+
+def test_get_dims():
+    assert hp.get_component("c_") == ""
+    assert hp.get_component("c_T") == ""
+    assert hp.get_component("c_TH") == ""
+    assert hp.get_component("c_GRID_TH") == "GRID"
+    assert hp.get_component("c_GRID_RTP_TH") == "GRID"
+
+
+def test_get_acro():
+    assert hp.get_acro("c_") == ""
+    assert hp.get_acro("c_TH") == ""
+    assert hp.get_acro("c_GRID_TH") == ""
+    assert hp.get_acro("c_GRID_RTP_TH") == "RTP"
+    assert hp.get_acro("c_GRID_RTP_addon_TH") == "RTP"
+    assert hp.get_acro("c_GRID_RTPaddon_TH") == "RTPaddon"
+
+
+def test_get_dims():
+    assert hp.get_dims("c_") == ""
+    assert hp.get_dims("c_T") == "T"
+    assert hp.get_dims("c_TH") == "TH"
+    assert hp.get_dims("c_GRID_TH") == "TH"
+    assert hp.get_dims("c_GRID_RTP_TH") == "TH"
+
+
 def test_datetime_to_int():
     assert hp.datetime_to_int(freq="60min", year=2019, month=12, day=31) == 8760 - 24
 

@@ -296,13 +296,19 @@ class Scenario(DrafBaseClass):
 
             kwargs = dict(lb=metas["lb"], ub=metas["ub"], name=name, vtype=metas["vtype"])
 
+            mdl = self.mdl
+            if mdl is None:
+                raise RuntimeError(
+                    "The scenario has no model yet. Please first instantiate the model"
+                    " e.g. with `sc.set_model` or `sc._instantiate_model`."
+                )
             if metas["is_scalar"]:
-                var_obj = self.mdl.addVar(**kwargs)
+                var_obj = mdl.addVar(**kwargs)
 
             else:
-                dims = self._get_dims(ent=name)
+                dims = hp.get_dims(name)
                 dims_list = self.get_coords(dims=dims)
-                var_obj = self.mdl.addVars(*dims_list, **kwargs)
+                var_obj = mdl.addVars(*dims_list, **kwargs)
 
             setattr(self.vars, name, var_obj)
 
@@ -323,7 +329,7 @@ class Scenario(DrafBaseClass):
                 var_obj = pyo.Var(**kwargs)
 
             else:
-                dims = self._get_dims(ent=name)
+                dims = hp.get_dims(name)
                 dims_list = self.get_coords(dims=dims)
                 var_obj = pyo.Var(*dims_list, **kwargs)
 
@@ -554,7 +560,7 @@ class Scenario(DrafBaseClass):
             * Dims are inferred from name suffix
         """
 
-        dims = self._get_dims(name)
+        dims = hp.get_dims(name)
         is_scalar = dims == ""
         self.vars._meta[name] = dict(
             doc=doc, unit=unit, vtype=vtype, lb=lb, ub=ub, dims=dims, is_scalar=is_scalar,
@@ -570,7 +576,7 @@ class Scenario(DrafBaseClass):
         return doc, unit, data
 
     def _get_idx(self, ent_name: str):
-        dims = self._get_dims(ent_name)
+        dims = hp.get_dims(ent_name)
         coords = self.get_coords(dims)
         if len(dims) == 1:
             idx = coords[0]
@@ -628,7 +634,7 @@ class Scenario(DrafBaseClass):
     def fits_convention(self, ent_name: str, data: Union[int, float, pd.Series]) -> bool:
         """If the naming-conventions apply for the data dimensions and the entity name """
 
-        dims = self._get_dims(ent_name)
+        dims = hp.get_dims(ent_name)
         if isinstance(data, (int, float)):
             return dims == ""
         elif isinstance(data, pd.Series):
@@ -667,7 +673,7 @@ class Scenario(DrafBaseClass):
                 from_db.name = name
             return self.param(**from_db.__dict__)
 
-        dims = self._get_dims(name)
+        dims = hp.get_dims(name)
 
         if dims == "":
             assert isinstance(data, (float, int)), (
@@ -734,7 +740,7 @@ class Scenario(DrafBaseClass):
     def get_ent_info(self, ent_name: str, only_header: bool = True, show_units: bool = True) -> str:
         """Get an printable string with concise info of an entity."""
         ent_value = self.get_entity(ent_name)
-        dim = self._get_dims(ent_name)
+        dim = hp.get_dims(ent_name)
         unit = self.get_unit(ent_name)
 
         if dim == "":
@@ -773,7 +779,7 @@ class Scenario(DrafBaseClass):
             if which in n:
                 if agg and isinstance(v, pd.Series):
                     v = v.sum()
-                d[n.split("_")[1]] = v
+                d[hp.get_component(n)] = v
         return d
 
 

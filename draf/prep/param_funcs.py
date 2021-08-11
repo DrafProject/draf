@@ -103,7 +103,7 @@ def c_HOB_inv_() -> ParDat:
     cost_factor_for_pipes_etc = 1.5
     main_component_costs = pd.Series({"Heizkessel": 18216, "Weishaupt Gebläsebrenner": 5399})
     value = cost_factor_for_pipes_etc * main_component_costs.sum() / thermal_capa_in_kW_th
-    return ParDat(name="c_HS_inv_", data=value, doc="CAPEX", src=SRC.VIESSMANN, unit="€/kW_th")
+    return ParDat(name="c_HOB_inv_", data=value, doc="CAPEX", src=SRC.VIESSMANN, unit="€/kW_th")
 
 
 def eta_CHP_el_(fuel: str = "bio") -> ParDat:

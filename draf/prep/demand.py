@@ -158,7 +158,7 @@ def get_el_SLP(
     return ser
 
 
-def get_thermal_demand(
+def get_heating_demand(
     ser_amb_temp: Optional[pd.Series] = None,
     annual_energy: float = 1e6,
     target_temp: float = 22.0,
@@ -168,6 +168,8 @@ def get_thermal_demand(
 ) -> pd.Series:
     """Returns a heating demand based on the air temperature."""
     if ser_amb_temp is None:
+        assert coords is not None
+        assert year is not None
         get_air_temp(coords=coords, year=year, with_dt=False)
     assert target_temp >= threshold_temp
     ser = ser_amb_temp
@@ -184,7 +186,7 @@ def get_thermal_demand(
 
 
 def get_cooling_demand(
-    ser_amb_temp: pd.Series = None,
+    ser_amb_temp: Optional[pd.Series] = None,
     annual_energy: float = 1e6,
     target_temp: float = 22.0,
     threshold_temp: float = 22.0,
@@ -193,6 +195,8 @@ def get_cooling_demand(
 ) -> pd.Series:
     """Returns a cooling demand based on the ambient air temperature."""
     if ser_amb_temp is None:
+        assert coords is not None
+        assert year is not None
         get_air_temp(coords=coords, year=year, with_dt=False)
     assert target_temp <= threshold_temp
     ser = ser_amb_temp

@@ -21,6 +21,24 @@ logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.CRITICAL)
 
 
+def get_type(ent_name: str) -> str:
+    return ent_name.split("_")[0]
+
+
+def get_component(ent_name: str) -> str:
+    elements = ent_name.split("_")
+    return elements[1] if len(elements) >= 3 else ""
+
+
+def get_acro(ent_name: str) -> str:
+    elements = ent_name.split("_")
+    return elements[2] if len(elements) >= 4 else ""
+
+
+def get_dims(ent_name: str) -> str:
+    return ent_name.split("_")[-1]
+
+
 def datetime_to_int(freq: str, year: int, month: int, day: int) -> int:
     """Returns the index location in a whole-year date-time-index for the given date."""
     dtindex = make_datetimeindex(year=year, freq=freq)

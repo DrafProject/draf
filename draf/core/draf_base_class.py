@@ -5,15 +5,6 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 class DrafBaseClass:
     """This class mainly provides functions."""
 
-    @staticmethod
-    def _get_dims(ent: str) -> str:
-        """Returns the dimensions of a given entity name, based on its name."""
-        lst = ent.split("_")
-        assert (
-            len(lst) > 0
-        ), "Every entity must contain at least one underscore which '{ent}' has not."
-        return lst[-1]
-
     def _build_repr(self, layout: str = None, which_metadata: Optional[List] = None) -> str:
 
         preface = "<{} object>".format(self.__class__.__name__)

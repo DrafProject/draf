@@ -17,9 +17,9 @@ def test_get_el_SLP():
     assert ser.max() == pytest.approx(5e3)
 
 
-def test_get_thermal_demand():
+def test_get_heating_demand():
     t_amb = pd.Series(12, index=range(8760))
-    ser = prep.get_thermal_demand(ser_amb_temp=t_amb, year=2019)
+    ser = prep.get_heating_demand(ser_amb_temp=t_amb, year=2019)
     assert isinstance(ser, pd.Series)
     assert ser.min() > 0
 

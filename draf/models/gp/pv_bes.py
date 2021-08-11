@@ -30,9 +30,9 @@ def params_func(sc: draf.Scenario):
     sc.param(
         "c_GRID_T", data=sc.prep.c_GRID_RTP_T(), doc="Chosen electricity tariff", unit="€/kWh_el"
     )
-    sc.prep.c_GRID_addon_T()
-    sc.prep.c_GRID_FLAT_T()
     sc.prep.c_GRID_TOU_T()
+    sc.prep.c_GRID_FLAT_T()
+    sc.prep.c_GRID_addon_T()
     sc.prep.ce_GRID_T()
     sc.var("E_GRID_buy_T", doc="Purchased electricity", unit="kWh_el")
     sc.var("E_GRID_sell_T", doc="Sold electricity", unit="kWh_el")
@@ -133,12 +133,9 @@ def sankey_func(sc: draf.Scenario):
 
 
 def main():
-    cs = draf.CaseStudy("DER_HUT", year=2019, freq="60min", coords=(49.01, 8.39))
+    cs = draf.CaseStudy("pv_bes", year=2019, freq="60min", coords=(49.01, 8.39))
     cs.set_time_horizon(start="Apr-01 00", steps=24 * 2)
     cs.add_REF_scen().set_params(params_func)
-    cs.add_scens(
-        scen_vars=[("c_GRID_T", "t", [f"c_GRID_{ix}_T" for ix in ["RTP"]])], nParetoPoints=3
-    )
-    cs.set_model(model_func)
-    cs.optimize(logToConsole=False, postprocess_func=postprocess_func)
+    cs.add_scens(scen_vars=[("c_GRID_T", "t", ["c_GRID_RTP_T", "c_GRID_TOU_T"])], del_REF=True)
+    cs.set_model(model_func).optimize(logToConsole=False, postprocess_func=postprocess_func)
     return cs

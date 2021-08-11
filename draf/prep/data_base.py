@@ -79,6 +79,7 @@ class DataBase:
     k_CHP_RMI_ = ParDat(name="k_CHP_RMI_", data=0.06 + 0.02, doc=Acronyms.RMI.en, src=SRC.VDI2067)
     k_CM_RMI_ = ParDat(name="k_CM_RMI_", data=0.01 + 0.015, doc=Acronyms.RMI.en, src=SRC.VDI2067)
     k_CS_RMI_ = ParDat(name="k_CS_RMI_", data=0.001, doc=Acronyms.RMI.en, src=SRC.FFE_2016)
+    k_HOB_RMI_ = ParDat(name="k_HOB_RMI_", data=0.04, doc=Acronyms.RMI.en)  # TODO
     k_HP_RMI_ = ParDat(name="k_HP_RMI_", data=0.01 + 0.015, doc=Acronyms.RMI.en, src=SRC.VDI2067)
     k_HS_RMI_ = ParDat(name="k_HS_RMI_", data=0.001, doc=Acronyms.RMI.en, src=SRC.FFE_2016)
     k_PV_RMI_ = ParDat(name="k_PV_RMI_", data=0.02, doc=Acronyms.RMI.en, src=SRC.ISE_2018)

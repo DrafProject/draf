@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import pandas as pd
 
+from draf import helper as hp
 from draf.core.draf_base_class import DrafBaseClass
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ class EntityStore(DrafBaseClass):
             {<dimension>: [<ent_name1>, <ent_name2>]}.
         """
         ents_list = self.get_all().keys()
-        dims_dic = {ent: self._get_dims(ent) for ent in ents_list}
+        dims_dic = {ent: hp.get_dims(ent) for ent in ents_list}
         dims_set = set(dims_dic.values())
         _empty_dims_dic = {dims: [] for dims in dims_set}
         for ent, dims in dims_dic.items():
@@ -80,6 +81,24 @@ class EntityStore(DrafBaseClass):
 
         self._changed_since_last_dic_export = False
         return dims_dic
+
+    def filtered(
+        self,
+        type: Optional[str] = None,
+        component: Optional[str] = None,
+        acro: Optional[str] = None,
+        dims: Optional[str] = None,
+    ) -> Dict:
+        return {
+            k: v
+            for k, v in self.get_all().items()
+            if (
+                (hp.get_type(k) == type or type is None)
+                and (hp.get_component(k) == component or component is None)
+                and (hp.get_acro(k) == acro or acro is None)
+                and (hp.get_dims(k) == dims or dims is None)
+            )
+        }
 
 
 class Params(EntityStore):
@@ -127,7 +146,7 @@ class Results(EntityStore):
 
     def _from_gurobipy(self, sc: "Scenario") -> None:
         for name, var in sc.vars.get_all().items():
-            dims = self._get_dims(name)
+            dims = hp.get_dims(name)
             if dims == "":
                 data = var.x
             else:
@@ -139,7 +158,7 @@ class Results(EntityStore):
 
     def _from_pyomo(self, sc: "Scenario") -> None:
         for name, var in sc.vars.get_all().items():
-            dims = self._get_dims(name)
+            dims = hp.get_dims(name)
             if dims == "":
                 data = var.value
             else:

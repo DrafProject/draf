@@ -270,7 +270,7 @@ class ScenPlotter(BasePlotter):
         if ent_name is not None:
             data = self.sc.get_entity(ent_name)
 
-            if self.sc._get_dims(ent_name) == "T":
+            if hp.get_dims(ent_name) == "T":
                 data = self.cs.dated(data)
 
         assert isinstance(data, pd.Series)
@@ -310,7 +310,7 @@ class ScenPlotter(BasePlotter):
         ser.index = ser.index.rename(["T", "ent"])
         ser = ser.rename("values")
         df = ser.reset_index()
-        df["flow_type"] = df.ent.apply(lambda x: x.split("_")[0]).astype("category")
+        df["flow_type"] = df.ent.apply(lambda x: hp.get_type(x)).astype("category")
         df["ent"] = df["ent"].astype("category")
 
         y_scaler = len(df.flow_type.unique())
@@ -523,7 +523,7 @@ class ScenPlotter(BasePlotter):
             else:
                 assert isinstance(data, pd.DataFrame)
                 df_desc = self._get_df_desc(
-                    original_df=data, sort_values=sort_values, filter_str=filter_str
+                    orig_df=data, sort_values=sort_values, filter_str=filter_str
                 )
                 desc_dict[dim] = df_desc.copy()
 
