@@ -110,6 +110,15 @@ Dimensions are denoted with individual capital letters, so `<Dims>` could be `TE
 | `XEFs` | Average Electricity Mix Emission Factors |
 | `MEFs` | Marginal Power Plant Emission Factors |
 
+# For developers
+
+Bump version using `bump2version` e.g. the patch version can be altered with
+
+```sh
+bump2version patch
+git push --follow-tags
+```
+
 # Status
 
 This piece of software is in a very early stage. Use at your own risk.

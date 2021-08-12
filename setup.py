@@ -2,13 +2,11 @@ from pathlib import Path
 
 from setuptools import find_packages, setup
 
-exec(Path("draf/_version.py").read_text().strip())  # Set the __version__ variable
-
 long_description = Path("README.md").read_text().strip()
 
 setup(
     name="draf",
-    version=__version__,
+    version="0.1.2",
     author="Markus Fleschutz",
     author_email="mfleschutz@gmail.com",
     description="Demand Response Analysis Framework",
