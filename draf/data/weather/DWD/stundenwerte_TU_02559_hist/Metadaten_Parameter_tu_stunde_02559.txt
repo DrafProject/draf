@@ -1,9 +1,0 @@
-Stations_ID;Von_Datum;Bis_Datum;Stationsname;Parameter;Parameterbeschreibung;Einheit;Datenquelle (Strukturversion=SV);Zusatz-Info;Besonderheiten;Literaturhinweis;eor;
-2559;19550101;19921031;Kempten;RF_TU;relative Feuchte;%;Daten der Temperatur und relativen Feuchte (Stundenwerte) aus analogen Registrierungen (Thermohygrograph);Stundenwerte in MEZ;;;eor;
-2559;19921101;20010331;Kempten;RF_TU;relative Feuchte;%;Daten der Temperatur und relativen Feuchte (Stundenwerte) von automatischen Stationen der 1. Generation (MIRIAM/AFMS2, ESAU-Daten);Stundenwerte in UTC;;;eor;
-2559;20010401;20190313;Kempten;RF_TU;relative Feuchte;%;Daten der Temperatur und relativen Feuchte (Stundenwerte) generiert aus SYNOP-Meldungen (nach dem 01.04.2001);Stundenwerte in UTC;;;eor;
-2559;19550101;19921031;Kempten;TT_TU;Lufttemperatur;°C;Daten der Temperatur und relativen Feuchte (Stundenwerte) aus analogen Registrierungen (Thermohygrograph);Stundenwerte in MEZ;;;eor;
-2559;19921101;20010331;Kempten;TT_TU;Lufttemperatur;°C;Daten der Temperatur und relativen Feuchte (Stundenwerte) von automatischen Stationen der 1. Generation (MIRIAM/AFMS2, ESAU-Daten);Stundenwerte in UTC;;;eor;
-2559;20010401;20190313;Kempten;TT_TU;Lufttemperatur;°C;Daten der Temperatur und relativen Feuchte (Stundenwerte) generiert aus SYNOP-Meldungen (nach dem 01.04.2001);Stundenwerte in UTC;;;eor;
-Legende: FT  = Folgetag; GZ = Gesetzliche Zeit
-generiert: 14.03.2019 --  Deutscher Wetterdienst  --

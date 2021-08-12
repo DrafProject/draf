@@ -62,7 +62,11 @@ def test_set_time_horizon(start: str, steps: str, end: str, t1: int, t2: int, ca
 
 @pytest.mark.parametrize(
     "string, expected",
-    [["1", slice(0, 744, None)], ["2", slice(744, 1416, None)], ["10", slice(6552, 7296, None)],],
+    [
+        ["1", slice(0, 744, None)],
+        ["2", slice(744, 1416, None)],
+        ["10", slice(6552, 7296, None)],
+    ],
 )
 def test__get_datetime_int_loc_from_string(string: str, expected: str, case):
     assert case._get_datetime_int_loc_from_string(s=string) == expected

@@ -98,7 +98,7 @@ def c_HS_inv_(estimated_size=100, temp_spread=40) -> ParDat:
 
 
 def c_HOB_inv_() -> ParDat:
-    """"CAPEX for gas boiler Vitoplex 300 with 620 kWh_th"""
+    """ "CAPEX for gas boiler Vitoplex 300 with 620 kWh_th"""
     thermal_capa_in_kW_th = 620
     cost_factor_for_pipes_etc = 1.5
     main_component_costs = pd.Series({"Heizkessel": 18216, "Weishaupt Gebläsebrenner": 5399})
@@ -112,7 +112,11 @@ def eta_CHP_el_(fuel: str = "bio") -> ParDat:
     else:
         ValueError("Only biogas implemented")
     return ParDat(
-        name="eta_CHP_el_", data=data, doc=f"Electric efficiency.", src=src, unit="kW_el/kW",
+        name="eta_CHP_el_",
+        data=data,
+        doc=f"Electric efficiency.",
+        src=src,
+        unit="kW_el/kW",
     )
 
 
@@ -122,5 +126,9 @@ def eta_CHP_th_(fuel: str = "bio") -> ParDat:
     else:
         ValueError("Only biogas implemented")
     return ParDat(
-        name="eta_CHP_th_", data=data, doc=f"Thermal efficiency.", src=src, unit="kW_th/kW",
+        name="eta_CHP_th_",
+        data=data,
+        doc=f"Thermal efficiency.",
+        src=src,
+        unit="kW_th/kW",
     )

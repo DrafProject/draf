@@ -82,7 +82,7 @@ class DateTimeHandler(ABC):
         self, df: Union[pd.Series, pd.DataFrame], activated=True
     ) -> Union[pd.Series, pd.DataFrame]:
         """Add datetime index to a data entity.
-        
+
         The frequency and year are taken from the CaseStudy or the Scenario object.
 
         Args:

@@ -1,4 +1,0 @@
-Stations_ID;Stationsname;Geo. Laenge [Grad];Geo. Breite [Grad];Stationshoehe [m];Geberhoehe ueber Grund [m];Von_Datum;Bis_Datum;Geraetetyp Name;Messverfahren;eor;
-4177;Rheinstetten;8.33;48.97;116.1;2;20081101;20110518;PT 100 (Luft);Temperaturmessung, elektr.;eor;
-4177;Rheinstetten;8.33;48.97;116.1;2;20110519;20200331;PT 100 (Luft);Temperaturmessung, elektr.;eor;
-generiert: 01.04.2020 --  Deutscher Wetterdienst  --

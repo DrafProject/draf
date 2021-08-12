@@ -1,5 +1,0 @@
-Stations_id;Stationshoehe;Geogr.Breite;Geogr.Laenge;von_datum;bis_datum;Stationsname
-  4177;  116.00; 48.9715;  8.3369;19230501;19850630;Rheinstetten
-  4177;  116.10; 48.9726;  8.3302;20081028;20081031;Rheinstetten
-  4177;  116.10; 48.9726;  8.3302;20081101;20110518;Rheinstetten
-  4177;  116.10; 48.9726;  8.3301;20110519;        ;Rheinstetten

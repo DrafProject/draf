@@ -40,7 +40,7 @@ class EntityStore(DrafBaseClass):
     @property
     def _empty_dims_dic(self) -> Dict[str, List[str]]:
         """Returns an empty dimension dictionary of the shape
-            {<dimension>: [<ent_name1>, <ent_name2>]}.
+        {<dimension>: [<ent_name1>, <ent_name2>]}.
         """
         ents_list = self.get_all().keys()
         dims_dic = {ent: hp.get_dims(ent) for ent in ents_list}

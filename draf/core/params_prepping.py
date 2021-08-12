@@ -16,7 +16,7 @@ logger.setLevel(level=logging.WARN)
 
 class Prepper:
     """This class holds convenience functions for paremeter preparation and hands the scenario
-     object on them.
+    object on them.
     """
 
     def __init__(self, sc):
@@ -46,7 +46,11 @@ class Prepper:
             doc=f"{method} for {sc.year}, {sc.freq}, {sc.country}",
             data=sc.trim_to_datetimeindex(
                 get_emissions(
-                    year=sc.year, freq=sc.freq, country=sc.country, method=method, **kwargs,
+                    year=sc.year,
+                    freq=sc.freq,
+                    country=sc.country,
+                    method=method,
+                    **kwargs,
                 )
                 / 1e3
             ),
@@ -140,7 +144,7 @@ class Prepper:
         self, price: Optional[float] = None, name: str = "c_GRID_FLAT_T", doc_addon: str = ""
     ):
         """Add a flat electricity tariff.
-        
+
         If no price is given the according RTP tariff is taken as basis.
         """
         if price is None:
@@ -257,7 +261,7 @@ class Prepper:
         self, name: str = "E_PV_profile_T", use_coords: bool = True, **gsee_kw
     ) -> pd.Series:
         """Add a photovoltaic profile.
-        
+
         For Germany only: If `coords` are given as within the CaseStudy
         a `gsee` calculation is conducted with weather data from the nearest available weather
         station.

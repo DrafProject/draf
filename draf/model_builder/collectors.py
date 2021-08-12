@@ -20,7 +20,7 @@ def _capas(v: Vars) -> List[Tuple[str, str]]:
 def C_inv_(p: Params, v: Vars):
     """Returns the sum product of all scalar capacities and investment costs.
     WARNING: The model must contain scalar investment prices `c_<COMPONENT>_inv_`.
-    
+
     Example:
         >>> model.addConstr((v.C_inv_ == collectors.C_inv_(p, v)))
     """
@@ -41,7 +41,7 @@ def C_invAnnual_(p: Params, v: Vars):
 def C_RMI_(p: Params, v: Vars):
     """Returns a linear expression for the repair, maintenance, and inspection per year.
     WARNING: The model must contain scalar parameters for investment prices `c_<COMPONENT>_inv_`.
-    
+
     Example:
         >>> model.addConstr((v.C_RMI_ == collectors.C_RMI_(p, v)))
     """

@@ -508,7 +508,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         return datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
 
     def export_model(self, filetype="lp", fp=None):
-        """Exports the optimization problem to a file e.g. an lp-file. If no filepath (fp) is 
+        """Exports the optimization problem to a file e.g. an lp-file. If no filepath (fp) is
         given, the file is saved in the case study's default result directory."""
         date_time = self._get_now_string()
         if fp is None:
@@ -578,7 +578,13 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         dims = hp.get_dims(name)
         is_scalar = dims == ""
         self.vars._meta[name] = dict(
-            doc=doc, unit=unit, vtype=vtype, lb=lb, ub=ub, dims=dims, is_scalar=is_scalar,
+            doc=doc,
+            unit=unit,
+            vtype=vtype,
+            lb=lb,
+            ub=ub,
+            dims=dims,
+            is_scalar=is_scalar,
         )
 
     def _infer_dimension_from_name(self, name: str) -> Tuple[str, str, Union[float, pd.Series]]:

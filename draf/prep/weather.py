@@ -263,21 +263,3 @@ def read_stations(data_type: str, cache: bool = True) -> pd.DataFrame:
 def read_stations_table(data_type: str) -> str:
     fp = DWD_BASE + MIDDLE[data_type] + DOC[data_type]
     return urlopen(fp).read().decode("latin-1")
-
-
-def get_TRY():
-    """Experimental. Get thermal data of a Test Reference Year (TRY)."""
-
-    fp_raw = paths.DATA / "demand/thermal/TRY_location_HSKA/TRY2045_38855002480500_Jahr.dat"
-
-    with open(fp_raw, "r") as f:
-        lines = f.readlines()
-
-    lines_clean = lines[32:]
-    del lines_clean[1]
-
-    string = "".join(lines_clean)
-
-    ser = pd.read_table(StringIO(string), sep=r"\s+", usecols="t", squeeze=True).drop(0)
-    ser.index = ser.index - 1  # to start index with 0
-    return ser

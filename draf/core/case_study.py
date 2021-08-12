@@ -171,14 +171,14 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
 
     def set_solver_params(self, **kwargs) -> CaseStudy:
         """Set some gurobi solver parameters e.g.:
-            LogFile,
-            LogToConsole,
-            OutputFlag,
-            MIPGap,
-            MIPFocus: solver focuses on:
-                1: feasible solutions quickly,
-                2: optimality,
-                3: bound.
+        LogFile,
+        LogToConsole,
+        OutputFlag,
+        MIPGap,
+        MIPFocus: solver focuses on:
+            1: feasible solutions quickly,
+            2: optimality,
+            3: bound.
         """
         for sc in self.scens_list:
             for k, v in kwargs.items():

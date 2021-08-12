@@ -1,10 +1,8 @@
 name: draf
 channels:
   - conda-forge
-  - gurobi
   - plotly
-dependencies:
-  - gurobi
+dependencies:  # NOTE: here '=' (single)
   - ipython
   - ipywidgets
   - jupyter
@@ -14,9 +12,9 @@ dependencies:
   - pip
   - plotly
   - pyomo>=5.7
-  - python=3.7  # gurobi has problems with python >3.7
+  - python=3.7
   - seaborn
-  - pip:
+  - pip:  # NOTE: here '==' (double)
     - holidays
     - elmada
-    - '--editable=.'  # installs an editable version of draf
+    - '--editable=.[dev]'  # installs an editable version of draf

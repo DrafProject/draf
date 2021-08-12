@@ -22,7 +22,7 @@ logger.setLevel(level=logging.CRITICAL)
 
 
 def fits_convention(ent_name: str, data: Union[int, float, pd.Series]) -> bool:
-    """If the naming-conventions apply for the data dimensions and the entity name """
+    """If the naming-conventions apply for the data dimensions and the entity name"""
 
     dims = get_dims(ent_name)
     if isinstance(data, (int, float)):

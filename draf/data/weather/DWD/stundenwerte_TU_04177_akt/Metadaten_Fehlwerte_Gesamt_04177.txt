@@ -1,3 +1,0 @@
-Stations_ID;Stations_Name;Parameter;Von_Datum;Bis_Datum;Gesamt_Fehlwerte;Beschreibung;eor;                                                                                                              
-4177;Rheinstetten;TT_TU;01.11.2008-00:00;31.03.2020-23:00;57;Gesamt_Messzeitraum;eor;                                                                                                                   
-4177;Rheinstetten;RF_TU;01.11.2008-00:00;31.03.2020-23:00;58;Gesamt_Messzeitraum;eor;                                                                                                                   

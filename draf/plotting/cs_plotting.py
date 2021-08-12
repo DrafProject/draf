@@ -40,7 +40,7 @@ class CsPlotter(BasePlotter):
 
     def yields(self, gradient: bool = False) -> pdStyler:
         """Returns a styled pandas table with cost and carbon savings, and avoidance cost.
-        
+
         Args:
             gradient: If the table is coloured with a gradient.
         """
