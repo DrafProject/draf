@@ -1,3 +1,6 @@
+<img src="doc/images/all.svg" width="200" alt="draf logo">
+
+---
 
 # **draf**: **d**emand **r**esponse **a**nalysis **f**ramework
 
