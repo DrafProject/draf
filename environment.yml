@@ -17,4 +17,4 @@ dependencies:  # NOTE: here '=' (single)
   - pip:  # NOTE: here '==' (double)
     - holidays
     - elmada
-    - '--editable=.[dev]'  # installs an editable version of draf
+    - '--editable=.[dev,jupyter]'  # installs a full editable version of draf

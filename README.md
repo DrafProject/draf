@@ -15,6 +15,8 @@ An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showc
 
 # Quick start
 
+1. Install [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [anaconda](https://www.anaconda.com/products/individual)
+
 1. Clone the source repository:
 
    ```sh
@@ -22,17 +24,23 @@ An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showc
    cd draf
    ```
 
-1. Create and activate conda environment based on environment.yml including editable local version of `draf`:
+1. Create and activate a conda environment based on environment.yml including a full editable local version of `draf`:
 
    ```sh
    conda env create
    conda activate draf
    ```
 
-1. Run tests:
+1. (optional) Run tests:
 
    ```sh
    pytest
+   ```
+
+1. Open Jupyter notebook:
+
+   ```sh
+   jupyter notebook
    ```
 
 # Features

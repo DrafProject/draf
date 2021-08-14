@@ -39,7 +39,8 @@ setup(
             "pytest-mock",
             "pytest-xdist",
             "pytest",
-        ]
+        ],
+        "jupyter": ["jupyter"]
     },
     classifiers=[
         "Development Status :: 4 - Alpha",
