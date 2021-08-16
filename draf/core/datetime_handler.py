@@ -79,26 +79,19 @@ class DateTimeHandler(ABC):
         return t1, t2
 
     def dated(
-        self, df: Union[pd.Series, pd.DataFrame], activated=True
+        self, data: Union[pd.Series, pd.DataFrame], activated=True
     ) -> Union[pd.Series, pd.DataFrame]:
         """Add datetime index to a data entity.
 
         The frequency and year are taken from the CaseStudy or the Scenario object.
 
         Args:
-            df: A pandas data entity.
-            activated: If False, the df is returned without modification.
+            data: A pandas data entity.
+            activated: If False, the data is returned without modification.
 
         """
-        try:
-            dtindex_to_use = self.dtindex[df.index.min() : df.index.max() + 1]
-            if activated:
-                if isinstance(df, pd.DataFrame):
-                    return df.set_index(dtindex_to_use)
-                elif isinstance(df, pd.Series):
-                    return df.set_axis(dtindex_to_use)
-            else:
-                return df
-        except TypeError as e:
-            Logger.warning(f"Dated function could not add date-time index to data: {e}")
-            return df
+        if activated:
+            data = data.copy()
+            dtindex_to_use = self.dtindex[data.index.min() : data.index.max() + 1]
+            data.index = dtindex_to_use
+        return data

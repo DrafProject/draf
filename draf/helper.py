@@ -16,6 +16,7 @@ from elmada.helper import (
     write,
     z_score,
 )
+from matplotlib import ticker
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.CRITICAL)
@@ -182,3 +183,13 @@ def bordered(text: str) -> str:
 def check(name: str, check: bool):
     check_res = "✅" if check else "⛔"
     print(f"{check_res} {name}")
+
+
+def add_thousands_formatter(ax, x: bool = True, y: bool = True):
+    axlist = []
+    if x:
+        axlist.append(ax.get_xaxis())
+    if y:
+        axlist.append(ax.get_yaxis())
+    for axis in axlist:
+        axis.set_major_formatter(ticker.FuncFormatter(lambda x, p: format(int(x), ",")))

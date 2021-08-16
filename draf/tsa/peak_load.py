@@ -4,16 +4,20 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib import ticker
+from pandas.core import frame
+
+from draf import helper as hp
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
 
 
-class PeakLoadAnalysis:
-    def __init__(self, p_el: np.ndarray):
+class PeakLoadAnalyzer:
+    def __init__(self, p_el: np.ndarray, figsize=(10, 3)):
         self.p_el_np = p_el
         self.steps_per_day = 96
-        self.figsize = (25, 3)
+        self.figsize = figsize
         self.freq_unit = "quarter hours"
         self._set_parameters()
 
@@ -37,9 +41,7 @@ class PeakLoadAnalysis:
     def _get_reduc_from_nPeaks(self, nPeaks: int) -> float:
         return self.p_el_np.max() - self.p_el_ordered[nPeaks]
 
-    def histo(
-        self, peak_reduction: Optional[float] = None, number_of_peaks: Optional[int] = None
-    ) -> plt.Figure:
+    def histo(self, peak_reduction: Optional[float] = None, number_of_peaks: Optional[int] = None):
         """Presents the biggest peaks of a load curve as table and barchart.
 
         Args:
@@ -65,14 +67,15 @@ class PeakLoadAnalysis:
                 f"One of the arguments `peak_reduction` and `number_of_peaks` must be given."
             )
 
-        threshold_power = self.p_el_ordered[nPeaks]
-        self.threshold_power = threshold_power
+        # TODO: refactor and be consequent with target_peakload being the highest real value
+        target_peakload = self.p_el_ordered[nPeaks]
+        self.target_peakload = target_peakload
         peak_width_list = np.array([])
 
         b = 0
         for i in range(len(self.p_el_np)):
 
-            if threshold_power <= self.p_el_np[i] <= self.p_el_np.max():
+            if target_peakload < self.p_el_np[i] <= self.p_el_np.max():
                 b += 1
 
             else:
@@ -87,73 +90,81 @@ class PeakLoadAnalysis:
 
         savings = reduc * self.params["c_el_peak_EUR_per_kW"]
         rel_savings = savings / self.params["C_el_peak_EUR_per_a"]
+        savings = hp.auto_fmt(savings, "€/a")
         el_max = self.p_el_np.max()
 
         string_title = (
-            f"{savings:,.2f} €/a ({rel_savings:.1%}) can be saved with a "
-            f"{reduc:.0f} kW peak load reduction "
-            f"from {el_max:.0f} kW to {threshold_power:.0f} kW."
+            f"{rel_savings:.1%} network costs ({savings[0]:,.2f} {savings[1]}) can be saved\n"
+            f"by reducing the peak load by {reduc:,.0f} kW ({el_max:,.0f} → {target_peakload:,.0f})."
         )
 
         string_2 = (
-            f"Peak loads above {threshold_power:.0f} kW "
-            f"occur in {nPeaks:.0f} quarter hours "
-            f"(= {nPeaks / (self.steps_per_day / 24):.0f} hours)."
+            f"Peak loads above {target_peakload:,.0f} kW\n"
+            f"occur in {nPeaks:,.0f} time steps\n"
+            f"(= {nPeaks / (self.steps_per_day / 24):,.0f} hours)"
         )
 
-        n_subplots = 4
-        fig, ax = plt.subplots(
-            n_subplots, 1, figsize=(self.figsize[0], self.figsize[1] * n_subplots)
-        )
+        fig, ax = plt.subplots(2, 1, figsize=(self.figsize[0], self.figsize[1] * 2), sharex=True)
 
-        ax[0].plot(self.p_el_np, label="Original load curve", lw=1)
+        ax[0].plot(self.p_el_np, label="Original load curve", lw=1, c="darkgray")
         ax[0].axhline(
-            threshold_power, c="r", ls="--", label=f"Threshold = {threshold_power} kW", lw=1
+            target_peakload,
+            c="firebrick",
+            ls="--",
+            label=f"Threshold = {target_peakload:,.0f} kW",
+            lw=1,
         )
-        ax[0].axhline(
-            self.p_el_np.max(), c="r", ls="--", label=f"Peak load = {self.p_el_np.max()} kW", lw=1
-        )
-        ax[0].set(ylabel="Electrical load [kW]", xlabel=f"Time [{self.freq_unit}]")
-        ax[0].set_title(string_title, fontsize=14, weight="bold")
+        ax[0].set(ylabel="$P_{el}$ [kW]")
+        ax[0].set_title(string_title, fontsize=12, weight="bold")
         ax[0].legend(loc="lower center", ncol=3)
+        ax[0].set_ylim(bottom=0, top=self.p_el_ordered[0])
+        ax[0].margins(y=0.0)
+        hp.add_thousands_formatter(ax[0])
 
-        ax[1].plot(self.p_el_ordered, label="Ordered load curve", lw=3)
-        ax[1].axhline(
-            threshold_power, c="r", ls="--", label=f"Threshold = {threshold_power} kW", lw=1
-        )
-        ax[1].axhline(
-            self.p_el_np.max(), c="r", ls="--", label=f"Peak load = {self.p_el_np.max()} kW", lw=1
-        )
-        ax[1].plot(self.p_el_ordered[:nPeaks], c="r", lw=3)
-        ax[1].set(ylabel="Elektrical Load [kW]", xlabel=f"Time [{self.freq_unit}]")
-        ax[1].legend(loc="lower center", ncol=3)
+        ax[1].plot(self.p_el_ordered, label="Ordered load duration curve", lw=3, c="darkgray")
+        ax[1].plot(self.p_el_ordered[:nPeaks], c="firebrick", lw=3)
+        ax[1].set(ylabel="$P_{el}$ [kW]", xlabel=f"Time [{self.freq_unit}]")
+        ax[1].legend(loc="upper right", ncol=1, frameon=False)
         ax[1].annotate(
             string_2,
-            xy=(nPeaks, threshold_power),
-            xytext=(nPeaks * 0.3, threshold_power * 0.3),
+            xy=(nPeaks, target_peakload),
+            xytext=(nPeaks * 0.3, target_peakload * 0.3),
             arrowprops=dict(facecolor="black", shrink=0.05),
         )
+        ax[1].set_ylim(bottom=0, top=self.p_el_ordered[0])
+        ax[1].margins(y=0.0)
+        hp.add_thousands_formatter(ax[1])
+        fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
 
-        ax[2].plot(self.p_el_ordered[:nPeaks], marker="o", label=f"{nPeaks} highest peaks", c="r")
-        ax[2].set(ylabel="Electrical load [kW]", xlabel=f"Time [{self.freq_unit}]")
-        ax[2].legend(loc="lower center")
+        fig, ax = plt.subplots(2, 1, figsize=(self.figsize[0], self.figsize[1] * 2))
+        fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+
+        ax[0].plot(
+            self.p_el_ordered[:nPeaks],
+            marker="x",
+            markersize=10,
+            linewidth=0.5,
+            label=f"{nPeaks} highest peaks",
+            c="firebrick",
+        )
+        ax[0].set(ylabel="$P_{el}$ [kW]", xlabel=f"Time [{self.freq_unit}]")
+        ax[0].legend(loc="lower center")
+        hp.add_thousands_formatter(ax[0], x=False)
 
         label_1 = (
-            f"Counts of peak-widths within the {nPeaks:.0f} highest peaks\n"
-            f"(e.g. A peak duration of {uni[0][0]:.0f} "
-            f"quarter-hours occures {uni[1][0]:.0f} times\n"
-            f"whereas a peak duration of {uni[0][-1]:.0f} quarter-hours occurs "
-            f"only {uni[1][-1]:.0f} times.)"
+            f"Counts of peak-widths within the {nPeaks:,.0f} highest peaks\n"
+            f"(e.g. A peak duration of {uni[0][0]:,.0f} "
+            f"quarter-hours occures {uni[1][0]:,.0f} times\n"
+            f"whereas a peak duration of {uni[0][-1]:,.0f} quarter-hours occurs "
+            f"only {uni[1][-1]:,.0f} times.)"
         )
 
-        ax[3].bar(uni[0], uni[1], label=label_1, color="r")
-        ax[3].set(xlabel=f"Peak duration [{self.freq_unit}]", ylabel="Frequency")
-        ax[3].legend(loc="upper center")
+        ax[1].bar(uni[0], uni[1], label=label_1, color="firebrick")
+        ax[1].set(xlabel=f"Peak duration [{self.freq_unit}]", ylabel="Frequency")
+        ax[1].legend(loc="upper center")
+        hp.add_thousands_formatter(ax[1], x=False)
 
-        fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-        return fig
-
-    def simulate(
+    def simulate_BES(
         self,
         bes_capa: float = 1000.0,
         bes_P_max: float = 1000.0,
@@ -175,8 +186,8 @@ class PeakLoadAnalysis:
         assert bes_P_max >= 0
 
         if transfer_threshold_from_histo:
-            if hasattr(self, "threshold_power"):
-                switch_point = self.threshold_power
+            if hasattr(self, "target_peakload"):
+                switch_point = self.target_peakload
             else:
                 raise Exception(
                     "If `transfer_threshold_from_histo` is switched on, "
@@ -228,23 +239,23 @@ class PeakLoadAnalysis:
             if switch_point == p_eex_buy.max():
                 return (
                     f"reduce the maximum peak power by "
-                    f"{self.p_el_np.max() - p_eex_buy.max():.0f} kW."
+                    f"{self.p_el_np.max() - p_eex_buy.max():,.0f} kW."
                 )
             else:
                 return (
                     f"only reduce the maximum peak power by "
-                    f"{self.p_el_np.max() - p_eex_buy.max():.0f} kW instead of "
-                    f"the wanted {self.p_el_np.max() - switch_point:.0f} kW."
+                    f"{self.p_el_np.max() - p_eex_buy.max():,.0f} kW instead of "
+                    f"the wanted {self.p_el_np.max() - switch_point:,.0f} kW."
                 )
 
         title = (
-            f"The battery storage system with {bes_capa:.0f} kWh "
-            f"capacity and {bes_P_max: .0f} kW loading/unloading power"
+            f"The battery storage system with {bes_capa:,.0f} kWh "
+            f"capacity and {bes_P_max:,.0f} kW loading/unloading power"
             f"(~{self.params['storage_cost_EUR_per_kWh'] * bes_capa:,.0f} €)"
             f" could {get_success()}"
         )
 
-        ax.set_title(title, y=1.03, fontsize=14, weight="bold")
+        ax.set_title(title, y=1.03, fontsize=12, weight="bold")
         fig.legend(ncol=1, loc="center right", bbox_to_anchor=(0.99, 0.5))
         fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=3.0)
 
@@ -252,4 +263,4 @@ class PeakLoadAnalysis:
         """Sensitivity analysis using the simulate()"""
         for bes_capa in np.arange(3000, 10000, 3000):
             for bes_P_max in np.arange(0, 4000, 1000):
-                self.simulate(bes_capa=bes_capa, bes_P_max=bes_P_max, show_res=True)
+                self.simulate_BES(bes_capa=bes_capa, bes_P_max=bes_P_max, show_res=True)

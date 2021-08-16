@@ -42,10 +42,10 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         freq: str,
         year: str,
         country: str,
-        dtindex,
-        dtindex_custom,
-        t1: int,
-        t2: int,
+        dtindex: Optional[int] = None,
+        dtindex_custom: Optional[int] = None,
+        t1: Optional[int] = None,
+        t2: Optional[int] = None,
         id: str = "",
         name: str = "",
         doc: str = "",
@@ -67,10 +67,14 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.country = country
         self.freq = freq
         self.cs_name = cs_name
-        self.dtindex = dtindex
-        self.dtindex_custom = dtindex_custom
-        self._t1 = t1
-        self._t2 = t2
+
+        if dtindex is None and dtindex_custom is None and t1 is None and t2 is None:
+            self._set_year(year)
+        else:
+            self.dtindex = dtindex
+            self.dtindex_custom = dtindex_custom
+            self._t1 = t1
+            self._t2 = t2
 
     def __repr__(self):
         """Get overview of attributes of the scenario object."""

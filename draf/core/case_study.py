@@ -78,7 +78,9 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         country: str = "DE",
         doc: str = "No doc available.",
         coords: Tuple[float, float] = None,
+        obj_vars: Tuple[str, str] = ("C_", "CE_"),
     ):
+        assert freq in ["15min", "30min", "60min"]
 
         self.name = name
         self.doc = doc
@@ -89,10 +91,8 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         self.plot = CsPlotter(cs=self)
         self.dims = Dimensions()
         self.params = Params()
-        self.obj_vars = ["C_", "CE_"]
+        self.obj_vars = obj_vars
         self._set_year(year)
-
-        assert self.freq in ["15min", "30min", "60min"]
 
     def __repr__(self):
         preface = "<{} object>".format(self.__class__.__name__)
