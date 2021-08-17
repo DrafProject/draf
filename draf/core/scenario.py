@@ -41,7 +41,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self,
         freq: str,
         year: str,
-        country: str,
+        country: str = "DE",
         dtindex: Optional[int] = None,
         dtindex_custom: Optional[int] = None,
         t1: Optional[int] = None,
@@ -55,26 +55,27 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.id = id
         self.name = name
         self.doc = doc
+        self.country = country
         self.coords = coords
-        self.dims = Dimensions()
-        self.params = Params()
+        self.cs_name = cs_name
         self.mdl = None
         self.mdl_language = "gp"
+
+        self.dims = Dimensions()
+        self.params = Params()
         self.plot = ScenPlotter(sc=self)
         self.prep = Prepper(sc=self)
         self.vars = Vars()
-        self.year = year
-        self.country = country
-        self.freq = freq
-        self.cs_name = cs_name
 
         if dtindex is None and dtindex_custom is None and t1 is None and t2 is None:
-            self._set_year(year)
+            self._set_dtindex(year=year, freq=freq)
         else:
+            self.year = year
             self.dtindex = dtindex
             self.dtindex_custom = dtindex_custom
             self._t1 = t1
             self._t2 = t2
+            self.freq = freq
 
     def __repr__(self):
         """Get overview of attributes of the scenario object."""
@@ -595,7 +596,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         if name == "T":
             doc = f"{self.freq} time steps"
             unit = self.freq_unit
-            data = self.get_T()
+            data = list(range(self._t1, self._t2 + 1))
         else:
             raise AttributeError(f"No infer options available for {name}")
         return doc, unit, data

@@ -81,14 +81,14 @@ class ScenPlotter(BasePlotter):
 
         layout = go.Layout(
             title=title,
-            xaxis=dict(title=f"Days of {self.cs.year}"),
-            yaxis=dict(title="Hours of day"),
+            xaxis=dict(title=f"Days of {self.sc.year}"),
+            yaxis=dict(title=f"Time steps of a day [{self.sc.freq_unit}]"),
         )
 
         if self.optimize_layout_for_reveal_slides:
             layout = hp.optimize_plotly_layout_for_reveal_slides(layout)
 
-        data = timeseries.values.reshape((self.cs.steps_per_day, -1), order="F")[:, :]
+        data = timeseries.values.reshape((self.sc.steps_per_day, -1), order="F")[:, :]
         idx = self.sc.dated(timeseries).index
         data = go.Heatmap(
             x=pd.date_range(start=idx[0], end=idx[-1], freq="D"),
@@ -121,7 +121,7 @@ class ScenPlotter(BasePlotter):
         else:
             raise Exception("No timeseries specified!")
 
-        data = ser.values.reshape((self.cs.steps_per_day, -1), order="F")[:, :]
+        data = ser.values.reshape((self.sc.steps_per_day, -1), order="F")[:, :]
         idx = self.sc.dated(ser).index
 
         trace1 = go.Scatter(x=idx, y=ser.values, line_width=1)
@@ -249,7 +249,7 @@ class ScenPlotter(BasePlotter):
         """
         fig = self.get_sankey_fig(string_builder_func=string_builder_func, title=title)
 
-        self._plot_plotly_fig(fig, filename=self.cs._res_fp / f"{title}.html")
+        self._plot_plotly_fig(fig, filename=self.sc._res_fp / f"{title}.html")
         return fig
 
     def line(
@@ -458,7 +458,7 @@ class ScenPlotter(BasePlotter):
         return go.Figure(data=[data], layout=layout)
 
     def merit_order(self, **kwargs) -> Tuple["fig", "ax", "ax_right"]:
-        return plots.merit_order(year=self.cs.year, country=self.cs.country, **kwargs)
+        return plots.merit_order(year=self.sc.year, country=self.sc.country, **kwargs)
 
     def describe(
         self,
@@ -639,7 +639,7 @@ class ScenPlotter(BasePlotter):
         )
 
         ax.set(yticks=hours)
-        ax.set_ylabel(f"Time [{self.cs.freq_unit}]")
+        ax.set_ylabel(f"Time [{self.sc.freq_unit}]")
         ax.set_xlabel("Time [Days]", labelpad=10)
         ax.xaxis_date()
         ax.set_xticklabels(ax.get_xticklabels(), rotation=0, ha="center", rotation_mode="anchor")

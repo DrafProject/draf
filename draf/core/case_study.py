@@ -84,7 +84,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
 
         self.name = name
         self.doc = doc
-        self.freq = freq
+        self._set_dtindex(year=year, freq=freq)
         self.country = country
         self.coords = coords
         self.scens = Scenarios()
@@ -92,7 +92,6 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         self.dims = Dimensions()
         self.params = Params()
         self.obj_vars = obj_vars
-        self._set_year(year)
 
     def __repr__(self):
         preface = "<{} object>".format(self.__class__.__name__)

@@ -333,7 +333,6 @@ class CsPlotter(BasePlotter):
             show_info: If additional information such as Scenario, Entity, Stats are displayed.
         """
         cs = self.cs
-        css = cs.scens_dic
         sc = cs.any_scen
         layout = go.Layout(
             title=None,

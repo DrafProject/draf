@@ -100,7 +100,6 @@ def get_data_for_gsee_with_data_of_nearest_station(year: int, coords: Tuple):
     )
 
 
-def get_PV_profile() -> pd.Series:
-    """Experimental. Get a default PV profile for 1 kWh_peak."""
-    fp = paths.DATA / "renewables/pv_el.csv"
-    return read(fp=fp)
+def get_backup_PV_profile() -> pd.Series:
+    """Get a backup PV profile for 1 kWh_peak."""
+    return read(paths.DATA / "pv/backup/pv_el.csv")

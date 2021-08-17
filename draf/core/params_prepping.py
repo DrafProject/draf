@@ -273,14 +273,17 @@ class Prepper:
             ser = prep.get_pv_power(year=sc.year, coords=sc.coords, **gsee_kw).reset_index(
                 drop=True
             )
-            ser = hp.resample(
-                ser, year=sc.year, start_freq=hp.estimate_freq(ser), target_freq=sc.freq
-            )
         else:
             logger.warning(
                 "No coords given or usage not wanted. Year-independant backup PV profile is used."
             )
-            ser = prep.get_PV_profile()
+            ser = prep.get_backup_PV_profile()
+            import calendar
+
+            if calendar.isleap(self.sc.year):
+                ser = pd.Series(np.concatenate([ser.values, ser[-24:].values]))
+
+        ser = hp.resample(ser, year=sc.year, start_freq=hp.estimate_freq(ser), target_freq=sc.freq)
 
         return sc.param(
             name=name,

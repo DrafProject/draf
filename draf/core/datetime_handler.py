@@ -28,14 +28,10 @@ class DateTimeHandler(ABC):
             f"Length = {self.dtindex_custom.size}"
         )
 
-    def _set_dtindex(self) -> None:
-        self.dtindex = hp.make_datetimeindex(year=self.year, freq=self.freq)
-        self.dtindex_custom = self.dtindex
-
     @property
     def steps_per_day(self):
         steps_per_hour = 60 / hp.int_from_freq(self.freq)
-        return steps_per_hour * 24
+        return int(steps_per_hour * 24)
 
     @property
     def freq_unit(self):
@@ -46,19 +42,17 @@ class DateTimeHandler(ABC):
         elif self.freq == "60min":
             return "h"
 
-    def get_T(self) -> List:
-        """Returns the set T from dtindex configuration."""
-        return list(range(self._t1, self._t2 + 1))
-
     def trim_to_datetimeindex(
         self, data: Union[pd.DataFrame, pd.Series]
     ) -> Union[pd.DataFrame, pd.Series]:
         return data[self._t1 : self._t2 + 1]
 
-    def _set_year(self, year: int) -> None:
+    def _set_dtindex(self, year: int, freq: str) -> None:
         assert year in range(1980, 2100)
         self.year = year
-        self._set_dtindex()
+        self.freq = freq
+        self.dtindex = hp.make_datetimeindex(year=year, freq=freq)
+        self.dtindex_custom = self.dtindex
         self._t1 = 0
         self._t2 = self.dtindex.size - 1  # =8759 for a normal year
 

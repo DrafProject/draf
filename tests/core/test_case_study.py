@@ -19,16 +19,6 @@ def test___init__(case):
             draf.__init__()
 
 
-@pytest.mark.parametrize("year", [[1980], [2020], [2101]])
-def test_set_year(year: int, case):
-    if year in range(1980, 2100):
-        case._set_year(year=year)
-        assert case.year == year
-    else:
-        with pytest.raises(AssertionError):
-            case._set_year(year=year)
-
-
 @pytest.mark.parametrize("freq, expected", [["15min", 0.25], ["30min", 0.5], ["60min", 1.0]])
 def test_step_width(freq: str, expected: float, case):
     case.freq = freq
@@ -39,8 +29,7 @@ def test_step_width(freq: str, expected: float, case):
     "freq, steps, unit", [["15min", 96, "1/4 h"], ["30min", 48, "1/2 h"], ["60min", 24, "h"]]
 )
 def test__set_dtindex(freq: str, steps: int, unit: str, case):
-    case.freq = freq
-    case._set_dtindex()
+    case._set_dtindex(year=2019, freq=freq)
     assert case.steps_per_day == steps
     assert case.freq_unit == unit
 
