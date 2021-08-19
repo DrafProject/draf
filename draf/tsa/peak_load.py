@@ -4,13 +4,11 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import plotly.graph_objs as go
 import seaborn as sns
 
 from draf import helper as hp
 from draf.core.datetime_handler import DateTimeHandler
 from draf.core.entity_stores import Params
-from draf.core.scenario import Scenario
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
@@ -55,8 +53,8 @@ class PeakLoadAnalyzer(DateTimeHandler):
         el_max = p_el.max()
 
         string_title = (
-            f"{rel_savings:.1%} network costs ({savings:,.2f} {savings_unit}) can be saved\n"
-            f"by reducing the peak load by {reduc:,.0f} kW from {el_max:,.0f} to {target_peakload:,.0f} kW."
+            f"Peak load reduction of {reduc:,.0f} kW from {el_max:,.0f} to {target_peakload:,.0f} kW ({target_percentile:.0f} percentile)\n"
+            f"Savings: {rel_savings:.1%} network costs (={savings:,.2f} {savings_unit} with {self.params.c_GRID_peak:,.0f} €/kW)\n"
         )
         string_2 = (
             f"Peak loads above {target_peakload:,.0f} kW\n"
@@ -118,18 +116,14 @@ class PeakLoadAnalyzer(DateTimeHandler):
             label=(
                 f"Counts of peak-widths within the {nPeaks:,.0f} highest peaks\n"
                 f"(e.g. A peak duration of {uni[0][0]:,.0f} time steps occures {uni[1][0]:,.0f} times\n"
-                f"whereas a peak duration of {uni[0][-1]:,.0f} time steps occurs "
-                f"only {uni[1][-1]:,.0f} times.)"
+                f"and a peak duration of {uni[0][-1]:,.0f} time steps occurs "
+                f"{uni[1][-1]:,.0f} times.)"
             ),
             color="firebrick",
         )
         ax[1].set(xlabel=f"Peak duration [{self.freq_unit}]", ylabel="Frequency")
         ax[1].legend(loc="upper right")
         hp.add_thousands_formatter(ax[1], x=False)
-
-    def peak_heatmap(self) -> go.Figure:
-        sc = Scenario(year=self.year, freq=self.freq)
-        return sc.plot.heatmap_py(timeseries=self.p_el.where(self.p_el > self.target_peakload))
 
     def _get_peak_widths(self, p_el, target_peakload):
         p_el_np = p_el.values

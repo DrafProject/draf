@@ -32,7 +32,7 @@ class CsPlotter(BasePlotter):
         self.figsize = (16, 4)
         self.cs = cs
         self.notebook_mode: bool = self.script_type() == "jupyter"
-        self.optimize_layout_for_reveal_slides = True
+        self.optimize_layout_for_reveal_slides = False
 
     def __getstate__(self):
         """For serialization with pickle."""

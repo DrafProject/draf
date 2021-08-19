@@ -15,7 +15,7 @@ setup(
     url="https://github.com/mfleschutz/draf",
     license="LGPLv3",
     packages=find_packages(exclude=["tests"]),
-    python_requires="=3.7",
+    python_requires="==3.7",
     install_requires=[
         "elmada",
         "gsee",
@@ -40,7 +40,7 @@ setup(
             "pytest-xdist",
             "pytest",
         ],
-        "jupyter": ["jupyter"]
+        "jupyter": ["jupyter", "jupytext"]
     },
     classifiers=[
         "Development Status :: 4 - Alpha",

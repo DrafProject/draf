@@ -17,8 +17,8 @@ from draf import paths
 from draf.core.datetime_handler import DateTimeHandler
 from draf.core.draf_base_class import DrafBaseClass
 from draf.core.entity_stores import Dimensions, Params, Scenarios
-from draf.core.params_prepping import Prepper
 from draf.core.scenario import Scenario
+from draf.core.time_series_prepper import TimeSeriesPrepper
 from draf.plotting.cs_plotting import CsPlotter
 from draf.plotting.scen_plotting import ScenPlotter
 
@@ -41,7 +41,7 @@ def open_casestudy(fp) -> CaseStudy:
     cs.plot = CsPlotter(cs=cs)
     for sc in cs.scens.get_all().values():
         sc.plot = ScenPlotter(sc=sc)
-        sc.prep = Prepper(sc=sc)
+        sc.prep = TimeSeriesPrepper(sc=sc)
 
     logger.info(f"opened CaseStudy from {fp}")
 

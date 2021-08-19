@@ -15,6 +15,7 @@ class SRC:
     ISE_2018 = "https://www.ise.fraunhofer.de/content/dam/ise/de/documents/publications/studies/DE2018_ISE_Studie_Stromgestehungskosten_Erneuerbare_Energien.pdf"
     JUELCH_2016 = "https://doi.org/10.1016/j.apenergy.2016.08.165"
     KALTSCH_2020 = "https://doi.org/10.1007/978-3-662-61190-6"
+    MATHIESEN_2015 = "https://doi.org/10.1016/j.apenergy.2015.01.075"
     MTA = "MTA Galaxy tech GLT 210/SSN in https://www.mta.de/fileadmin/user_upload/MTA-Produktuebersicht-Prozesskuehlung.pdf"
     PLAN_BIOGAS = "https://planet-biogas.de/biogasprodukte/bhkw/"
     PVMAG_2020 = "https://www.pv-magazine.de/2020/03/13/pv-magazine-marktuebersicht-fuer-grossspeicher-aktualisiert"

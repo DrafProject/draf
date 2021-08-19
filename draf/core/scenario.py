@@ -20,9 +20,10 @@ from draf.core.datetime_handler import DateTimeHandler
 from draf.core.draf_base_class import DrafBaseClass
 from draf.core.entity_stores import Dimensions, Params, Results, Vars
 from draf.core.mappings import GRB_OPT_STATUS, VAR_PAR
-from draf.core.params_prepping import Prepper
+from draf.core.time_series_prepper import TimeSeriesPrepper
 from draf.plotting import ScenPlotter
 from draf.prep.data_base import ParDat
+from draf.tsa.demand_analyzer import DemandAnalyzer
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
@@ -64,7 +65,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.dims = Dimensions()
         self.params = Params()
         self.plot = ScenPlotter(sc=self)
-        self.prep = Prepper(sc=self)
+        self.prep = TimeSeriesPrepper(sc=self)
         self.vars = Vars()
 
         if dtindex is None and dtindex_custom is None and t1 is None and t2 is None:
@@ -141,6 +142,11 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def update_res_dic(self):
         self._res_dic = self.res._to_dims_dic()
+
+    def analyze_demand(self, data: pd.Series) -> DemandAnalyzer:
+        da = DemandAnalyzer(p_el=data, year=self.year, freq=self.freq)
+        da.show_stats()
+        return da
 
     @property
     def _is_optimal(self):

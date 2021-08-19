@@ -6,7 +6,6 @@ import seaborn as sns
 
 from draf import helper as hp
 from draf.core.datetime_handler import DateTimeHandler
-from draf.core.scenario import Scenario
 from draf.tsa.peak_load import PeakLoadAnalyzer
 
 
@@ -16,20 +15,28 @@ class DemandAnalyzer(DateTimeHandler):
         self._set_dtindex(year=year, freq=freq)
 
     def show_stats(self):
+        self._print_stats()
         self.line_plot()
         self.line_plot_ordered()
         self._make_violinplot()
-        self._print_stats()
 
     def get_peak_load_analyzer(self) -> PeakLoadAnalyzer:
         return PeakLoadAnalyzer(self.p_el, year=self.year, freq=self.freq, figsize=(10, 2))
+
+    def show_peaks(
+        self, target_percentile: int = 95, c_GRID: float = 0.12, c_GRID_peak: float = 50.0
+    ) -> PeakLoadAnalyzer:
+        pla = PeakLoadAnalyzer(self.p_el, year=self.year, freq=self.freq, figsize=(10, 2))
+        pla.set_prices(c_GRID=c_GRID, c_GRID_peak=c_GRID_peak)
+        pla.histo(target_percentile)
+        return pla
 
     def line_plot(self):
         _, ax = plt.subplots(1, figsize=(10, 2))
         data = self.dated(self.p_el)
         data.plot(linewidth=0.6, ax=ax, color="darkgray")
         sns.despine()
-        ax.set_title("Load curve")
+        ax.set_title("Load curve", fontdict=dict(fontweight="bold"))
         ax.set_ylabel("$P_{el}$ [kW]")
         hp.add_thousands_formatter(ax, x=False)
         ax.set_ylim(bottom=0)
@@ -38,9 +45,10 @@ class DemandAnalyzer(DateTimeHandler):
         _, ax = plt.subplots(1, figsize=(10, 2))
         data = self.p_el.sort_values(ascending=False).reset_index(drop=True)
         data.plot(linewidth=1.5, ax=ax, color="darkgray")
-        ax.set_title("Ordered annual duration curve")
+        ax.set_title("Ordered annual duration curve", fontdict=dict(fontweight="bold"))
         sns.despine()
         ax.set_ylabel("$P_{el}$ [kW]")
+        ax.set_xlabel(f"Time steps [{self.freq_unit}]")
         hp.add_thousands_formatter(ax)
         ax.set_ylim(bottom=0)
 
@@ -50,7 +58,7 @@ class DemandAnalyzer(DateTimeHandler):
         ax.set_ylabel("$P_{el}$ [kW]")
         ax.set_xlim()
         ax.set_ylim(bottom=0)
-        ax.set_title("Annotated violin plot")
+        ax.set_title("Annotated violin plot", fontdict=dict(fontweight="bold"))
         hp.add_thousands_formatter(ax, x=False)
         ax.get_xaxis().set_visible(False)
         sns.despine(bottom=True)
@@ -83,7 +91,7 @@ class DemandAnalyzer(DateTimeHandler):
             )
 
     def _annotate_violins_right_side(self, ax):
-        percentile_range = (70, 80, 90, 95, 97, 99)
+        percentile_range = (50, 60, 70, 80, 90, 95, 97, 99)
         percentile_locs = np.linspace(0.1, 0.95, len(percentile_range))
         y_max = self.p_el.max()
 
@@ -133,7 +141,3 @@ class DemandAnalyzer(DateTimeHandler):
             print(
                 (row[0]).rjust(col_width[0]), row[1].rjust(col_width[1]), row[2].ljust(col_width[2])
             )
-
-    def heatmap(self) -> go.Figure:
-        sc = Scenario(year=self.year, freq=self.freq)
-        return sc.plot.heatmap_py(self.p_el)

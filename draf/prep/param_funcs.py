@@ -109,6 +109,8 @@ def c_HOB_inv_() -> ParDat:
 def eta_CHP_el_(fuel: str = "bio") -> ParDat:
     if fuel == "bio":
         data, src = 0.42, SRC.PLAN_BIOGAS
+    elif fuel == "ng":
+        data, src = 0.40, SRC.MATHIESEN_2015
     else:
         ValueError("Only biogas implemented")
     return ParDat(
@@ -123,6 +125,8 @@ def eta_CHP_el_(fuel: str = "bio") -> ParDat:
 def eta_CHP_th_(fuel: str = "bio") -> ParDat:
     if fuel == "bio":
         data, src = 0.42, SRC.PLAN_BIOGAS
+    elif fuel == "ng":
+        data, src = 0.45, SRC.MATHIESEN_2015
     else:
         ValueError("Only biogas implemented")
     return ParDat(

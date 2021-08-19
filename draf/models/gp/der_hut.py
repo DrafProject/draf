@@ -141,8 +141,8 @@ def params_func(sc: draf.Scenario):
     sc.var("Q_P2H_T", doc="Produced heat", unit="kWh_th")
 
     # CHP
-    sc.param("eta_CHP_el_", data=0.35, doc="Electric efficiency of CHP")
-    sc.param("eta_CHP_th_", data=0.63, doc="Thermal efficiency")
+    sc.param(from_db=db.funcs.eta_CHP_th_(fuel="ng"))
+    sc.param(from_db=db.funcs.eta_CHP_el_(fuel="ng"))
     sc.param("P_CHP_CAPx_", data=0, doc="Existing capacity", unit="kW_el")
     sc.param("z_CHP_", data=0, doc="If new capacity is allowed")
     sc.param("z_CHP_minPL_", data=0, doc="If minimal part load is modeled.")

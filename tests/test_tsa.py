@@ -11,9 +11,7 @@ def test_histo():
 
     da = DemandAnalyzer(p_el, year, freq)
     da.show_stats()
-    da.heatmap()
 
     pla = da.get_peak_load_analyzer()
     pla.histo(target_percentile=95)
     pla.simulate_BES(e_bes_capa=2.0, p_bes_max=2.0)
-    pla.peak_heatmap()

@@ -14,7 +14,7 @@ import seaborn as sns
 from elmada import plots
 from IPython.display import display
 from matplotlib.colors import Colormap, DivergingNorm, LinearSegmentedColormap
-from plotly.tools import make_subplots
+from plotly.subplots import make_subplots
 
 from draf import helper as hp
 from draf.plotting.base_plotter import BasePlotter
@@ -40,7 +40,7 @@ class ScenPlotter(BasePlotter):
         self.figsize = (16, 4)
         self.sc = sc
         self.notebook_mode: bool = self.script_type() == "jupyter"
-        self.optimize_layout_for_reveal_slides = True
+        self.optimize_layout_for_reveal_slides = False
 
     def __getstate__(self):
         """Remove objects with dependencies for serialization with pickle."""
@@ -77,12 +77,14 @@ class ScenPlotter(BasePlotter):
         if ent_name is not None and timeseries is None:
             timeseries = self.sc.get_entity(ent=ent_name)
             colorbar_label = f"{colorbar_label} [{self.sc.get_unit(ent_name)}]"
-            title = f"{ent_name}: {self.sc.get_doc(ent_name)}"
+            if title is None:
+                title = f"{ent_name}: {self.sc.get_doc(ent_name)}"
 
         layout = go.Layout(
             title=title,
             xaxis=dict(title=f"Days of {self.sc.year}"),
             yaxis=dict(title=f"Time steps of a day [{self.sc.freq_unit}]"),
+            margin=dict(b=5, l=5, r=5, t=None if title else 5),
         )
 
         if self.optimize_layout_for_reveal_slides:
@@ -110,14 +112,15 @@ class ScenPlotter(BasePlotter):
     ) -> go.Figure:
         """Returns a combined heatmap-line Plotly plot of a given timeseries or entity name."""
 
-        if isinstance(timeseries, np.ndarray):
-            ser = pd.Series(timeseries)
-
-        elif ent_name is not None:
+        if ent_name is not None:
             ser = self.sc.get_entity(ent=ent_name)
             colorbar_label = f"{ent_name} [{self.sc.get_unit(ent_name)}]"
             title = f"{ent_name}: {self.sc.get_doc(ent_name)} [{self.sc.get_unit(ent_name)}]"
 
+        elif isinstance(timeseries, (np.ndarray, pd.Series)):
+            ser = timeseries
+            if isinstance(ser, np.ndarray):
+                ser = pd.Series(ser)
         else:
             raise Exception("No timeseries specified!")
 

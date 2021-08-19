@@ -6,6 +6,7 @@ dependencies:  # NOTE: here '=' (single)
   - ipython
   - ipywidgets
   - jupyter
+  - jupytext
   - matplotlib
   - numpy
   - pandas

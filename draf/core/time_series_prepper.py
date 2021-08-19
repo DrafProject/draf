@@ -14,10 +14,12 @@ logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
 
 
-class Prepper:
+class TimeSeriesPrepper:
     """This class holds convenience functions for paremeter preparation and hands the scenario
     object on them.
     """
+
+    from draf.prep import param_funcs as funcs
 
     def __init__(self, sc):
         self.sc = sc
