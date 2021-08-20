@@ -62,10 +62,10 @@ class PeakLoadAnalyzer(DateTimeHandler):
             f"(= {nPeaks / (self.steps_per_day / 24):,.0f} hours)"
         )
 
-        fig, ax = plt.subplots(2, 1, figsize=(self.figsize[0], self.figsize[1] * 2), sharex=True)
+        fig, ax = plt.subplots(2, 1, figsize=(self.figsize[0], self.figsize[1] * 1.5), sharex=True)
         fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
 
-        ax[0].plot(p_el, label="Original load curve", lw=1, c="darkgray")
+        ax[0].plot(p_el, label="Original load curve", lw=0.6, c="darkgray")
         ax[0].axhline(
             target_peakload,
             c="firebrick",
@@ -77,7 +77,7 @@ class PeakLoadAnalyzer(DateTimeHandler):
         ax[0].set_title(string_title, fontsize=12, weight="bold")
         ax[0].legend(loc="lower center", ncol=3)
         ax[0].set_ylim(bottom=0, top=p_el_ordered[0])
-        ax[0].margins(y=0.0)
+        ax[0].margins(y=0.0, x=0.0)
         hp.add_thousands_formatter(ax[0])
 
         ax[1].plot(p_el_ordered, label="Ordered load duration curve", lw=3, c="darkgray")
@@ -93,6 +93,7 @@ class PeakLoadAnalyzer(DateTimeHandler):
         ax[1].set_ylim(bottom=0, top=p_el_ordered[0])
         ax[1].margins(y=0.0)
         hp.add_thousands_formatter(ax[1])
+        sns.despine()
 
         fig, ax = plt.subplots(2, 1, figsize=(self.figsize[0], self.figsize[1] * 2))
         fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
@@ -124,6 +125,7 @@ class PeakLoadAnalyzer(DateTimeHandler):
         ax[1].set(xlabel=f"Peak duration [{self.freq_unit}]", ylabel="Frequency")
         ax[1].legend(loc="upper right")
         hp.add_thousands_formatter(ax[1], x=False)
+        sns.despine()
 
     def _get_peak_widths(self, p_el, target_peakload):
         p_el_np = p_el.values

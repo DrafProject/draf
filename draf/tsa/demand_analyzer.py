@@ -14,11 +14,6 @@ class DemandAnalyzer(DateTimeHandler):
         self.p_el = p_el
         self._set_dtindex(year=year, freq=freq)
 
-    def show_stats(self):
-        self._print_stats()
-        self.line_plot()
-        self.line_plot_ordered()
-        self._make_violinplot()
 
     def get_peak_load_analyzer(self) -> PeakLoadAnalyzer:
         return PeakLoadAnalyzer(self.p_el, year=self.year, freq=self.freq, figsize=(10, 2))
@@ -31,42 +26,124 @@ class DemandAnalyzer(DateTimeHandler):
         pla.histo(target_percentile)
         return pla
 
-    def line_plot(self):
-        _, ax = plt.subplots(1, figsize=(10, 2))
+    def show_stats(self):
+        self.print_stats()
+        self.violin_plot()
+        self.line_plot()
+        self.ordered_line_plot()
+        self.averages_plot()
+        self.weekdays_plot()
+
+    def print_stats(self) -> None:
+        from IPython.core.display import display, HTML
+        display(HTML('<h3>Metrics</h3>'))
+
+        step_width = hp.get_step_width(self.freq)
+        sum_value, sum_unit = hp.auto_fmt(self.p_el.sum() * step_width, "kWh")
+        std_value, std_unit = hp.auto_fmt(self.p_el.std(), "kW")
+        peak_to_average = self.p_el.max()/self.p_el.mean()
+
+        data = [
+            ("Year:", f"{self.year}", ""),
+            ("Frequency:", f"{hp.int_from_freq(self.freq)}", "Minutes"),
+            ("Number of time steps:", f"{len(self.p_el):,.0f}", ""),
+            ("Annual sum:", f"{sum_value:,.2f}", sum_unit),
+            ("Standard deviation:", f"{std_value:,.2f}", std_unit),
+            ("Peak-to-average ratio:", f"{peak_to_average:,.2f}", ""),
+            ("Full-load hours:", f"{8760*peak_to_average**-1:,.2f}","h"),
+        ]
+
+        col_width = [max([len(word) for word in col]) for col in zip(*data)]
+
+        for row in data:
+            print(
+                (row[0]).rjust(col_width[0]), row[1].rjust(col_width[1]), row[2].ljust(col_width[2])
+            )
+
+    def weekdays_plot(self) -> None:
+        fig, axes = plt.subplots(nrows=2,ncols=7, figsize=(10,3), sharey=True)
+        axes = zip(*axes)  # transpose
+        fig.suptitle("Weekdays", fontweight="bold")
+        plt.tight_layout(w_pad=-1.0, h_pad=0)
+
+        dated_demand = self.dated(self.p_el)
+        weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+        for weekday_number, (ax_tuple, weekday) in enumerate(zip(axes, weekdays)):
+            is_given_day = dated_demand.index.weekday == weekday_number
+            ser = dated_demand[is_given_day]
+            df =  pd.DataFrame(ser.values.reshape((self.steps_per_day, -1), order="F"))
+            
+            df.plot(legend=False, alpha=.1, color="k", linewidth=1, ax=ax_tuple[0])
+            sns.violinplot(y=ser, ax=ax_tuple[1], scale="width", color="lightblue", cut=0)
+            
+            ax_tuple[0].set_title(weekday)
+            for ax in ax_tuple:
+                ax.set_ylabel("$P_{el}$ [kW]")
+                ax.get_xaxis().set_visible(False)
+                hp.add_thousands_formatter(ax, x=False)
+
+            sns.despine()
+
+    def averages_plot(self):
+        timeframes = ["quarter", "month", "week"]
+        fig, axes = plt.subplots(
+            ncols=len(timeframes),
+            figsize=(10, 1.6),
+            gridspec_kw={"width_ratios": [4, 12, 53]},
+            sharey=True,
+        )
+        fig.suptitle("Averages", fontweight="bold")
+        plt.tight_layout()
+
+        for timeframe, ax in zip(timeframes, axes):
+            ser = self.dated(self.p_el)
+            ser = ser.groupby(getattr(ser.index, timeframe)).mean()
+            ser.plot.bar(width=0.8, ax=ax, color="darkgray")
+            ax.set_ylabel("$P_{el}$ [kW]")
+            ax.set_title(f"{timeframe.capitalize()}s")
+            hp.add_thousands_formatter(ax, x=False)
+        sns.despine()
+
+    def line_plot(self) -> None:
+        fig, ax = plt.subplots(1, figsize=(10, 2))
+        plt.tight_layout()
         data = self.dated(self.p_el)
         data.plot(linewidth=0.6, ax=ax, color="darkgray")
-        sns.despine()
-        ax.set_title("Load curve", fontdict=dict(fontweight="bold"))
         ax.set_ylabel("$P_{el}$ [kW]")
         hp.add_thousands_formatter(ax, x=False)
         ax.set_ylim(bottom=0)
+        sns.despine()
+        ax.set_title("Load curve", fontdict=dict(fontweight="bold"))
 
-    def line_plot_ordered(self):
-        _, ax = plt.subplots(1, figsize=(10, 2))
+    def ordered_line_plot(self) -> None:
+        fig, ax = plt.subplots(1, figsize=(10, 2))
+        plt.tight_layout()
         data = self.p_el.sort_values(ascending=False).reset_index(drop=True)
         data.plot(linewidth=1.5, ax=ax, color="darkgray")
         ax.set_title("Ordered annual duration curve", fontdict=dict(fontweight="bold"))
-        sns.despine()
         ax.set_ylabel("$P_{el}$ [kW]")
         ax.set_xlabel(f"Time steps [{self.freq_unit}]")
         hp.add_thousands_formatter(ax)
         ax.set_ylim(bottom=0)
+        sns.despine()
 
-    def _make_violinplot(self):
-        _, ax = plt.subplots(figsize=(8, 4))
+    def violin_plot(self) -> None:
+        fig, ax = plt.subplots(figsize=(10, 2.5))
+        plt.tight_layout()
         ax = sns.violinplot(y=self.p_el, cut=0, width=0.4, scale="width", color="lightblue", ax=ax)
         ax.set_ylabel("$P_{el}$ [kW]")
-        ax.set_xlim()
+        ax.set_xlim(-.5, .85)
         ax.set_ylim(bottom=0)
-        ax.set_title("Annotated violin plot", fontdict=dict(fontweight="bold"))
+        ax.set_title("Metrics", fontdict=dict(fontweight="bold"))
         hp.add_thousands_formatter(ax, x=False)
         ax.get_xaxis().set_visible(False)
-        sns.despine(bottom=True)
-
         self._annotate_violins_left_side(ax)
         self._annotate_violins_right_side(ax)
+        sns.despine(bottom=True)
 
-    def _annotate_violins_left_side(self, ax):
+
+    def _annotate_violins_left_side(self, ax) -> None:
         to_annotate = [
             ("Max", self.p_el.max()),
             ("Mean", self.p_el.mean()),
@@ -90,7 +167,7 @@ class DemandAnalyzer(DateTimeHandler):
                 arrowprops=dict(arrowstyle="-", linestyle="--", alpha=1),
             )
 
-    def _annotate_violins_right_side(self, ax):
+    def _annotate_violins_right_side(self, ax) -> None:
         percentile_range = (50, 60, 70, 80, 90, 95, 97, 99)
         percentile_locs = np.linspace(0.1, 0.95, len(percentile_range))
         y_max = self.p_el.max()
@@ -122,22 +199,3 @@ class DemandAnalyzer(DateTimeHandler):
                 alpha=alpha,
             )
 
-    def _print_stats(self):
-        step_width = hp.get_step_width(self.freq)
-        sum_value, sum_unit = hp.auto_fmt(self.p_el.sum() * step_width, "kWh")
-        std_value, std_unit = hp.auto_fmt(self.p_el.std(), "kW")
-        data = [
-            ("Year:", f"{self.year}", ""),
-            ("Frequency:", f"{hp.int_from_freq(self.freq)}", "Minutes"),
-            ("Number of time steps:", f"{len(self.p_el):,.0f}", ""),
-            ("Annual sum:", f"{sum_value:,.2f}", sum_unit),
-            ("Standard deviation:", f"{std_value:,.2f}", std_unit),
-            ("Peak-to-average ratio:", f"{self.p_el.max()/self.p_el.mean():,.2f}", ""),
-        ]
-
-        col_width = [max([len(word) for word in col]) for col in zip(*data)]
-
-        for row in data:
-            print(
-                (row[0]).rjust(col_width[0]), row[1].rjust(col_width[1]), row[2].ljust(col_width[2])
-            )
