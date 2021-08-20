@@ -13,7 +13,7 @@ import plotly.offline as po
 import seaborn as sns
 from elmada import plots
 from IPython.display import display
-from matplotlib.colors import Colormap, DivergingNorm, LinearSegmentedColormap
+from matplotlib.colors import Colormap, LinearSegmentedColormap, TwoSlopeNorm
 from plotly.subplots import make_subplots
 
 from draf import helper as hp
@@ -657,7 +657,7 @@ def _make_diverging_norm(ser, imshow_kws) -> Colormap:
     colors = ["white", "indianred", "darkred"]
 
     if ser.min() < 0 < ser.max():
-        imshow_kws.update(norm=DivergingNorm(vmin=ser.min(), vcenter=0.0, vmax=ser.max()))
+        imshow_kws.update(norm=TwoSlopeNorm(vmin=ser.min(), vcenter=0.0, vmax=ser.max()))
         colors = ["darkblue", "steelblue"] + colors
 
     return LinearSegmentedColormap.from_list("_cmap", colors=colors)

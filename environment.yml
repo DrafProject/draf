@@ -1,14 +1,14 @@
 name: draf
 channels:
   - conda-forge
-  - plotly
 dependencies:  # NOTE: here '=' (single)
+  - glpk
+  - gsee
   - ipython
   - ipywidgets
   - jupyter
-  - jupytext
   - matplotlib
-  - numpy
+  - numpy<1.20  # https://github.com/numpy/numpy/issues/18355
   - pandas
   - pip
   - plotly

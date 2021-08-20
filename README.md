@@ -65,7 +65,10 @@ An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showc
 
 # Usage
 
-For usage examples please see example models in [draf/models](draf/models). Start with [`minimal.py`](draf/models/minimal.py)
+For usage examples please see example models in [draf/models](draf/models).
+Start with [`minimal.py`](draf/models/minimal.py)
+
+For the usage of Gurobi a valid Gurobi license is required.
 
 # Documentation
 

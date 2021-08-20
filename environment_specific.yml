@@ -1,0 +1,22 @@
+name: draf
+channels:
+  - conda-forge
+dependencies:  # NOTE: here '=' (single)
+  - glpk=4.65
+  - gsee=0.3
+  - ipython=7.22
+  - ipywidgets=7.6
+  - jupyter=1.0
+  - matplotlib=3.3
+  - numpy=1.19
+  - pandas=0.24
+  - pip
+  - plotly=4.3
+  - pyomo=5.7
+  - python=3.7
+  - seaborn=0.11
+  - pip:  # NOTE: here '==' (double)
+    - elmada==0.0.*
+    - holidays==0.9.*
+    - plotly==4.3.*
+    - '--editable=.[dev,jupyter]'  # installs a full editable version of draf
