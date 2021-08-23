@@ -1,6 +1,8 @@
 import logging
+import textwrap
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
+import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -41,94 +43,124 @@ class PeakLoadAnalyzer(DateTimeHandler):
         """
         assert 1 < target_percentile < 100, "target_percentile must be in [1..100]"
         p_el = self.p_el
+        self.target_percentile = target_percentile
         self.p_el_ordered = p_el_ordered = p_el.sort_values(ascending=False).reset_index(drop=True)
         self.target_peakload = target_peakload = p_el.quantile(target_percentile / 100)
         self.trimmed_peaks = trimmed_peaks = p_el_ordered[p_el_ordered > target_peakload]
-        nPeaks = len(trimmed_peaks)
-        reduc = p_el_ordered[0] - target_peakload
+        self.nPeaks = len(trimmed_peaks)
 
+        fig, ax = plt.subplots(nrows=4, figsize=(self.figsize[0], self.figsize[1] * 5))
+        fig.suptitle(self._get_stats(self.target_percentile), fontweight="bold")
+        fig.set_facecolor("whitesmoke")
+        self.load_curve_with_threshold_plot(ax[0])
+        self.ordered_peaks_plot(ax[1])
+        self.zoomed_ordered_peaks_plot(ax[2])
+        self.peak_width_bar_plot(ax[3])
+        sns.despine()
+        fig.tight_layout()
+        plt.subplots_adjust(hspace=0.6)
+
+    def _get_stats(self, target_percentile):
+        reduc = self.p_el_ordered[0] - self.target_peakload
         savings_raw = reduc * self.params.c_GRID_peak
         rel_savings = savings_raw / self.params.C_GRID_peak
         savings, savings_unit = hp.auto_fmt(savings_raw, "€/a")
-        el_max = p_el.max()
-
-        string_title = (
-            f"Peak load reduction of {reduc:,.0f} kW from {el_max:,.0f} to {target_peakload:,.0f} kW ({target_percentile:.0f} percentile)\n"
-            f"Savings: {rel_savings:.1%} network costs (={savings:,.2f} {savings_unit} with {self.params.c_GRID_peak:,.0f} €/kW)\n"
-        )
-        string_2 = (
-            f"Peak loads above {target_peakload:,.0f} kW\n"
-            f"occur in {nPeaks:,.0f} time steps\n"
-            f"(= {nPeaks / (self.steps_per_day / 24):,.0f} hours)"
+        return textwrap.dedent(
+            f"""\
+            Peak load reduction of {reduc:,.0f} kW
+            from {self.p_el.max():,.0f} to {self.target_peakload:,.0f} kW ({target_percentile:.0f} percentile)
+            
+            Savings:{rel_savings:.1%} network costs (={savings:,.2f} {savings_unit} with {self.params.c_GRID_peak:,.0f} €/kW)
+        """
         )
 
-        fig, ax = plt.subplots(2, 1, figsize=(self.figsize[0], self.figsize[1] * 1.5), sharex=True)
-        fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-
-        ax[0].plot(p_el, label="Original load curve", lw=0.6, c="darkgray")
-        ax[0].axhline(
-            target_peakload,
+    def load_curve_with_threshold_plot(self, ax):
+        ax.plot(self.p_el, label="Original load curve", lw=0.6, c="darkgray")
+        ax.axhline(
+            self.target_peakload,
             c="firebrick",
             ls="--",
-            label=f"Threshold = {target_peakload:,.0f} kW",
+            label=f"Threshold = {self.target_peakload:,.0f} kW",
             lw=1,
         )
-        ax[0].set(ylabel="$P_{el}$ [kW]")
-        ax[0].set_title(string_title, fontsize=12, weight="bold")
-        ax[0].legend(loc="lower center", ncol=3)
-        ax[0].set_ylim(bottom=0, top=p_el_ordered[0])
-        ax[0].margins(y=0.0, x=0.0)
-        hp.add_thousands_formatter(ax[0])
+        ax.set(ylabel="$P_{el}$ [kW]")
+        ax.set_ylim(bottom=0, top=self.p_el.max())
+        ax.set_title("Load curve", fontweight="bold")
+        ax.margins(y=0.0, x=0.0)
+        ax.legend(loc="lower center", ncol=3)
+        hp.add_thousands_formatter(ax)
 
-        ax[1].plot(p_el_ordered, label="Ordered load duration curve", lw=3, c="darkgray")
-        ax[1].plot(trimmed_peaks, c="firebrick", lw=3)
-        ax[1].set(ylabel="$P_{el}$ [kW]", xlabel=f"Time [{self.freq_unit}]")
-        ax[1].legend(loc="upper right", ncol=1)
-        ax[1].annotate(
-            string_2,
+    def ordered_peaks_plot(self, ax):
+        trimmed_peaks = self.trimmed_peaks
+        target_peakload = self.target_peakload
+        p_el_ordered = self.p_el_ordered
+        nPeaks = self.nPeaks
+        ax.add_patch(
+            patches.Rectangle(
+                (0, target_peakload),
+                trimmed_peaks.size,
+                self.p_el.max() - target_peakload,
+                linewidth=0.5,
+                color="firebrick",
+                alpha=0.1,
+            )
+        )
+        ax.plot(p_el_ordered, lw=2, c="darkgray")
+        ax.set_title("Ordered load duration curve", fontweight="bold")
+        ax.plot(trimmed_peaks, c="firebrick", lw=2)
+        ax.margins(y=0.0, x=0.0)
+        ax.set(ylabel="$P_{el}$ [kW]", xlabel=f"Time [{self.freq_unit}]")
+        ax.annotate(
+            textwrap.dedent(
+                f"""\
+                Peak loads above {target_peakload:,.0f} kW
+                occur in {nPeaks:,.0f} time steps (≈ {nPeaks / (self.steps_per_day / 24):,.0f} hours)
+                """
+            ),
             xy=(nPeaks, target_peakload),
-            xytext=(nPeaks * 0.3, target_peakload * 0.3),
-            arrowprops=dict(facecolor="black", shrink=0.05),
+            xytext=(len(p_el_ordered) * 0.02, p_el_ordered[0] * 0.01),
+            arrowprops=dict(
+                facecolor="lightgray", shrink=0.05, linewidth=0, width=2, headwidth=8, headlength=8
+            ),
         )
-        ax[1].set_ylim(bottom=0, top=p_el_ordered[0])
-        ax[1].margins(y=0.0)
-        hp.add_thousands_formatter(ax[1])
-        sns.despine()
+        ax.set_ylim(bottom=0, top=p_el_ordered[0])
+        ax.margins(y=0.0)
+        hp.add_thousands_formatter(ax)
 
-        fig, ax = plt.subplots(2, 1, figsize=(self.figsize[0], self.figsize[1] * 2))
-        fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-
-        ax[0].plot(
-            trimmed_peaks,
-            marker="o",
-            markersize=0.1,
-            linewidth=0,
-            label=f"{nPeaks} highest peaks",
+    def zoomed_ordered_peaks_plot(self, ax):
+        ax.patch.set_facecolor("firebrick")
+        ax.patch.set_alpha(0.1)
+        plt.tight_layout()
+        self.trimmed_peaks.plot(
+            markersize=5,
+            linewidth=3,
             color="firebrick",
+            ax=ax,
         )
-        ax[0].set(ylabel="$P_{el}$ [kW]", xlabel=f"Time [{self.freq_unit}]")
-        ax[0].legend(loc="upper right")
-        hp.add_thousands_formatter(ax[0], x=False)
+        ax.set_title(f"Zoom on {self.nPeaks:,.0f} highest peaks", fontweight="bold")
+        ax.set(ylabel="$P_{el}$ [kW]", xlabel=f"Time [{self.freq_unit}]")
+        hp.add_thousands_formatter(ax, x=False)
 
-        uni = self._get_peak_widths(p_el, target_peakload)
-        ax[1].bar(
-            uni[0],
-            uni[1],
-            label=(
-                f"Counts of peak-widths within the {nPeaks:,.0f} highest peaks\n"
-                f"(e.g. A peak duration of {uni[0][0]:,.0f} time steps occures {uni[1][0]:,.0f} times\n"
-                f"and a peak duration of {uni[0][-1]:,.0f} time steps occurs "
-                f"{uni[1][-1]:,.0f} times.)"
+    def peak_width_bar_plot(self, ax):
+        ser = self._get_peak_widths()
+        ser.plot.bar(
+            width=0.9,
+            label=textwrap.dedent(
+                f"""\
+                Counts of peak-widths within the {self.nPeaks:,.0f} highest peaks
+                (e.g. A peak duration of {ser.index[0]:,.0f} time steps occures {ser.iloc[0]:,.0f} times)"""
             ),
             color="firebrick",
+            ax=ax,
         )
-        ax[1].set(xlabel=f"Peak duration [{self.freq_unit}]", ylabel="Frequency")
-        ax[1].legend(loc="upper right")
-        hp.add_thousands_formatter(ax[1], x=False)
-        sns.despine()
+        ax.set(xlabel=f"Peak duration [{self.freq_unit}]", ylabel="Frequency")
+        ax.set_title("Peak durations", fontweight="bold")
+        ax.legend(loc="upper right")
+        hp.add_thousands_formatter(ax, x=False)
 
-    def _get_peak_widths(self, p_el, target_peakload):
-        p_el_np = p_el.values
+    def _get_peak_widths(self):
+        p_el_np = self.p_el.values
+        target_peakload = self.target_peakload
         peak_width_list = np.array([])
         b = 0
         for i in range(len(p_el_np)):
@@ -139,7 +171,7 @@ class PeakLoadAnalyzer(DateTimeHandler):
                     peak_width_list = np.append(peak_width_list, b)
                 b = 0
         uni = np.unique(peak_width_list, return_counts=True)
-        return uni
+        return pd.Series(data=uni[1], index=uni[0].astype(int))
 
     def simulate_BES(
         self,
