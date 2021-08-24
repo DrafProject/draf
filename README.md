@@ -86,22 +86,12 @@ CaseStudy
     ⤷ Parameter, Model, Results, Plots
 ```
 
-## Data
-
-All data will be placed in the `draf/data`-folder. There are common data that come with the tool.
-Local data can be added (e.g. through a symbolic link).
-
-``` None
-Raw-data  parquet-files  pd.Series
-     |--prep--^   |--get--^
-```
-
 ## Naming conventions
 
 All parameter and variable names must satisfy the structure `<Type>_<Component>_<Descriptor>_<Dims>`.
 E.g. in 'P_GRID_buy_T' `P` is the entity type, `GRID` the component, `buy` the descriptor and `T` the dimension.
 Dimensions are denoted with individual capital letters, so `<Dims>` is `TE` if the entity has the dimensions `T` and `E`.
-For examples of types, components, and descriptors please see [conventions.py](draf/conventions.py)
+For examples of types, components, and descriptors please see [conventions.py](draf/conventions.py).
 
 ## Common abbreviated programming constructs
 
