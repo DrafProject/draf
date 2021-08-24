@@ -1,3 +1,4 @@
+from typing import Tuple, List
 import holidays
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,15 +27,13 @@ class DemandAnalyzer(DateTimeHandler):
         return pla
 
     def show_stats(self):
-        self.print_stats()
         self.violin_plot()
         self.line_plot()
         self.ordered_line_plot()
         self.averages_plot()
         self.weekdays_plot()
 
-    def print_stats(self) -> None:
-
+    def get_stats(self) -> None:
         step_width = hp.get_step_width(self.freq)
         sum_value, sum_unit = hp.auto_fmt(self.p_el.sum() * step_width, "kWh")
         std_value, std_unit = hp.auto_fmt(self.p_el.std(), "kW")
@@ -49,12 +48,24 @@ class DemandAnalyzer(DateTimeHandler):
             ("Peak-to-average ratio:", f"{peak_to_average:,.2f}", ""),
             ("Full-load hours:", f"{8760*peak_to_average**-1:,.2f}", "h"),
         ]
+        text_table, table_width = self.make_text_table(data)
+        header = " Metrics ".center(table_width, "-")
+        return f"{header}\n{text_table}\n"
 
+    def make_text_table(self, data: List[Tuple[str]]):
+        li = []
         col_width = [max([len(word) for word in col]) for col in zip(*data)]
         for row in data:
-            print(
-                (row[0]).rjust(col_width[0]), row[1].rjust(col_width[1]), row[2].ljust(col_width[2])
+            li.append(
+                " ".join(
+                    [row[0].rjust(col_width[0]),
+                    row[1].rjust(col_width[1]),
+                    row[2].ljust(col_width[2])]
+                )
             )
+        text_table = "\n".join(li)
+        table_width = len(li[0])
+        return text_table, table_width
 
     def weekdays_plot(self, consider_holidays: bool = True) -> None:
         dated_demand = self.dated(self.p_el)
@@ -91,7 +102,7 @@ class DemandAnalyzer(DateTimeHandler):
             sns.violinplot(y=ser, ax=ax_tuple[1], scale="width", color="lightblue", cut=0)
 
             ndays = df.shape[1]
-            ax_tuple[0].set_title(f"{weekday}\n({ndays})")
+            ax_tuple[0].set_title(f"{ndays} x\n{weekday}")
             for ax in ax_tuple:
                 ax.set_ylabel("$P_{el}$ [kW]")
                 ax.get_xaxis().set_visible(False)
@@ -154,7 +165,7 @@ class DemandAnalyzer(DateTimeHandler):
         ax.set_ylabel("$P_{el}$ [kW]")
         ax.set_xlim(-0.5, 0.85)
         ax.set_ylim(bottom=0)
-        ax.set_title("Metrics", fontdict=dict(fontweight="bold"))
+        ax.set_title(self.get_stats(), fontdict=dict(fontweight="bold"), fontfamily="monospace")
         hp.add_thousands_formatter(ax, x=False)
         ax.get_xaxis().set_visible(False)
         self._annotate_violins_left_side(ax)
