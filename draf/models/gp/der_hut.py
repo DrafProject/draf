@@ -23,29 +23,41 @@ def params_func(sc: draf.Scenario):
 
     # General
     sc.param("k__AF_", 0.1, doc="Annuity factor (it pays off in 1/k__AF_ years)")
-    sc.prep.k_comp_()
-    sc.var("C_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
-    sc.var("C_inv_", doc="Investment costs", unit="k€")
-    sc.var("C_op_", doc="Operating costs", unit="k€/a", lb=-GRB.INFINITY)
-    sc.var("C_RMI_", doc="Annual maintainance cost", unit="k€")
-    sc.var("CE_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
+    sc.prep.k__comp_()
     sc.prep.k__dT_()
 
+    # Total
+    sc.var("C_TOT_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
+    sc.var("C_TOT_inv_", doc="Total investment costs", unit="k€")
+    sc.var("C_TOT_op_", doc="Total operating costs", unit="k€/a", lb=-GRB.INFINITY)
+    sc.var("C_TOT_maint_", doc="Total annual maintainance cost", unit="k€")
+    sc.var("CE_TOT_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
+
     # Pareto
-    sc.param("k_alpha_", data=0, doc="Pareto weighting factor")
-    sc.param("k__C_", data=1, doc="Normalization factor")
-    sc.param("k__CE_", data=1 / 1e4, doc="Normalization factor")
+    sc.param("k_PTO_alpha_", data=0, doc="Pareto weighting factor")
+    sc.param("k_PTO_C_", data=1, doc="Pareto normalization factor")
+    sc.param("k_PTO_CE_", data=1 / 1e4, doc="Pareto normalization factor")
 
     # Fuels
     sc.param(from_db=db.c_FUEL_F)
     sc.param(from_db=db.ce_FUEL_F)
 
     # Demands
-    sc.prep.P_dem_T(profile="G1", annual_energy=5e6)
-    sc.prep.H_dem_C_TN()
-    p.H_dem_C_TN.loc[:, "7/12"] = sc.prep.H_dem_C_T(annual_energy=1.7e3).values
-    sc.prep.H_dem_H_TH()
-    p.H_dem_H_TH.loc[:, "60/40"] = sc.prep.H_dem_H_T(annual_energy=1.7e6).values
+    sc.prep.P_eDem_T(profile="G1", annual_energy=5e6)
+    sc.prep.H_cDem_TN()
+    p.H_cDem_TN.loc[:, "7/12"] = sc.prep.H_dem_C_T(annual_energy=1.7e3).values
+    sc.prep.H_hDem_TH()
+    p.H_hDem_TH.loc[:, "60/40"] = sc.prep.H_dem_H_T(annual_energy=1.7e6).values
+    sc.param(
+        "T_hDem_in_H", data=273 + pd.Series([40, 70], d.H), doc="Heating inlet temp.", unit="K"
+    )
+    sc.param(
+        "T_hDem_out_H", data=273 + pd.Series([60, 90], d.H), doc="Heating outlet temp.", unit="K"
+    )
+    sc.param("T_cDem_in_N", data=273 + pd.Series([7, 30], d.N), doc="Cooling inlet temp.", unit="K")
+    sc.param(
+        "T_cDem_out_N", data=273 + pd.Series([12, 35], d.N), doc="Cooling outlet temp.", unit="K"
+    )
 
     # GRID
     sc.param("c_GRID_peak_", data=50, doc="Peak price", unit="€/kW_el")
@@ -62,7 +74,7 @@ def params_func(sc: draf.Scenario):
     sc.param("P_PV_CAPx_", data=0, doc="Existing capacity", unit="kW_peak")
     sc.param("z_PV_", data=0, doc="If new capacity is allowed")
     sc.param(from_db=db.funcs.c_PV_inv_())
-    sc.param(from_db=db.k_PV_RMI_)
+    sc.param(from_db=db.k_PV_maint_)
     sc.prep.P_PV_profile_T(use_coords=True)
     sc.var("P_PV_FI_T", doc="Feed-in", unit="kW_el")
     sc.var("P_PV_OC_T", doc="Own consumption", unit="kW_el")
@@ -76,7 +88,7 @@ def params_func(sc: draf.Scenario):
     sc.param(from_db=db.eta_BES_in_)
     sc.param(from_db=db.eta_BES_time_)
     sc.param(from_db=db.funcs.c_BES_inv_(estimated_size=100, which="mean"))
-    sc.param(from_db=db.k_BES_RMI_)
+    sc.param(from_db=db.k_BES_maint_)
     sc.var("E_BES_CAPn_", doc="New capacity", unit="kWh_el")
     sc.var("E_BES_T", doc="Electricity stored", unit="kWh_el")
     sc.var("P_BES_in_T", doc="Charging power", unit="kW_el")
@@ -85,17 +97,13 @@ def params_func(sc: draf.Scenario):
     sc.var("P_BES_outMax_", doc="Maximum discharging power", unit="kW_el")
 
     # HP
-    sc.param("T_C_C", data=273 + pd.Series([25, 35, 60], d.C), doc="Condensing temp.", unit="K")
-    sc.param("T_H_in_H", data=273 + pd.Series([40, 70], d.H), doc="Heating inlet temp.", unit="K")
-    sc.param("T_H_out_H", data=273 + pd.Series([60, 90], d.H), doc="Heating outlet temp.", unit="K")
-    sc.param("T_N_in_N", data=273 + pd.Series([7, 30], d.N), doc="Cooling inlet temp.", unit="K")
-    sc.param("T_N_out_N", data=273 + pd.Series([12, 35], d.N), doc="Cooling outlet temp.", unit="K")
+    sc.param("T_HP_C", data=273 + pd.Series([25, 35, 60], d.C), doc="Condensing temp.", unit="K")
     sc.param("eta_HP_", data=0.5, doc="Ratio of reaching the ideal COP")
     sc.param(
         "cop_HP_ideal_CN",
         data=pd.Series(
             {
-                (c, n): (p.T_N_in_N[n] - 10) / ((p.T_C_C[c] + 10) - (p.T_N_in_N[n] - 10))
+                (c, n): (p.T_cDem_in_N[n] - 10) / ((p.T_HP_C[c] + 10) - (p.T_cDem_in_N[n] - 10))
                 for c in d.C
                 for n in d.N
             }
@@ -117,7 +125,7 @@ def params_func(sc: draf.Scenario):
     sc.param("P_HP_max_N", doc="Big-M number (upper bound for CAPn)", unit="kW_el", fill=5000)
     sc.param("z_HP_", data=0, doc="If new capacity is allowed")
     sc.param(from_db=db.funcs.c_HP_inv_())
-    sc.param(from_db=db.k_HP_RMI_)
+    sc.param(from_db=db.k_HP_maint_)
     sc.var("P_HP_TCN", doc="Consuming power", unit="kW_el")
     sc.var("P_HP_CAPn_N", doc="New capacity", unit="kW_el", ub=1e20 * p.z_HP_)
     sc.var("H_HP_C_TCN", doc="Heat flow released on condensation side", unit="kW_th")
@@ -128,7 +136,7 @@ def params_func(sc: draf.Scenario):
     sc.param("eta_HOB_", data=0.9, doc="Thermal efficiency", unit="kWh_th/kWh")
     sc.param(from_db=db.funcs.c_HOB_inv_())
     sc.param("H_HOB_CAPx_", data=10000, doc="Existing capacity", unit="kW_th")
-    sc.param(from_db=db.k_HOB_RMI_)
+    sc.param(from_db=db.k_HOB_maint_)
     sc.var("F_HOB_TF", doc="Input fuel flow", unit="kW")
     sc.var("H_HOB_CAPn_", doc="New capacity", unit="kW_th")
     sc.var("H_HOB_T", doc="Ouput heat flow", unit="kW_th")
@@ -148,7 +156,7 @@ def params_func(sc: draf.Scenario):
     sc.param("z_CHP_", data=0, doc="If new capacity is allowed")
     sc.param("z_CHP_minPL_", data=0, doc="If minimal part load is modeled.")
     sc.param(from_db=db.funcs.c_CHP_inv_(estimated_size=400, fuel_type="ng"))
-    sc.param(from_db=db.k_CHP_RMI_)
+    sc.param(from_db=db.k_CHP_maint_)
     sc.var("P_CHP_FI_T", doc="Feed-in", unit="kW_el")
     sc.var("P_CHP_OC_T", doc="Own consumption", unit="kW_el")
     sc.var("P_CHP_T", doc="Producing power", unit="kW_el")
@@ -165,7 +173,7 @@ def params_func(sc: draf.Scenario):
     sc.param("k_HS_outPerCapa_", data=0.5, doc="Ratio loading power / capacity")
     sc.param("z_HS_", data=0, doc="If new capacity is allowed")
     sc.param(from_db=db.funcs.c_HS_inv_(estimated_size=100, temp_spread=40))
-    sc.param(from_db=db.k_HS_RMI_)
+    sc.param(from_db=db.k_HS_maint_)
     sc.var("Q_HS_CAPn_H", doc="New capacity", unit="kWh_th", ub=1e20 * p.z_HS_)
     sc.var("H_HS_in_TH", doc="Storage input heat flow", unit="kW_th", lb=-GRB.INFINITY)
     sc.var("Q_HS_TH", doc="Stored heat", unit="kWh_th")
@@ -179,19 +187,20 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
     H = d.H
 
     m.setObjective(
-        ((1 - p.k_alpha_) * v.C_ * p.k__C_ + p.k_alpha_ * v.CE_ * p.k__CE_), GRB.MINIMIZE
+        ((1 - p.k_PTO_alpha_) * v.C_TOT_ * p.k_PTO_C_ + p.k_PTO_alpha_ * v.CE_TOT_ * p.k_PTO_CE_),
+        GRB.MINIMIZE,
     )
 
     # C
     # Note: all energy-specific costs are divided by 1e3 to get k€ and therefore to
     # ensure smaller coefficient ranges which speeds up the optimization.
-    m.addConstr(v.C_ == v.C_op_ + p.k__AF_ * v.C_inv_, "DEF_C_")
+    m.addConstr(v.C_TOT_ == v.C_TOT_op_ + p.k__AF_ * v.C_TOT_inv_, "DEF_C_")
     m.addConstr(
-        v.C_op_
+        v.C_TOT_op_
         == (
             v.P_GRID_buyPeak_ * p.c_GRID_peak_ / 1e3
-            + v.C_RMI_
-            + p.k_comp_
+            + v.C_TOT_maint_
+            + p.k__comp_
             * p.k__dT_
             * quicksum(
                 v.P_GRID_buy_T[t] * (p.c_GRID_T[t] + p.c_GRID_addon_T[t]) / 1e3
@@ -200,14 +209,14 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
                 for t in T
             )
         ),
-        "DEF_C_op_",
+        "DEF_C_TOT_op_",
     )
-    m.addConstr((v.C_inv_ == collectors.C_inv_(p, v) / 1e3))
-    m.addConstr((v.C_RMI_ == collectors.C_RMI_(p, v) / 1e3), "DEF_C_RMI")
+    m.addConstr((v.C_TOT_inv_ == collectors.C_TOT_inv_(p, v) / 1e3))
+    m.addConstr((v.C_TOT_maint_ == collectors.C_TOT_maint_(p, v) / 1e3), "DEF_C_TOT_maint_")
 
     # CE
     m.addConstr(
-        v.CE_
+        v.CE_TOT_
         == p.k__dT_
         * quicksum(
             v.P_GRID_buy_T[t] * p.ce_GRID_T[t]
@@ -222,7 +231,7 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
     m.addConstrs(
         (
             v.P_GRID_buy_T[t] + v.P_CHP_OC_T[t] + v.P_PV_OC_T[t] + v.P_BES_out_T[t]
-            == p.P_dem_T[t] + v.P_HP_TCN.sum(t, "*", "*") + v.P_P2H_T[t] + v.P_BES_in_T[t]
+            == p.P_eDem_T[t] + v.P_HP_TCN.sum(t, "*", "*") + v.P_P2H_T[t] + v.P_BES_in_T[t]
             for t in T
         ),
         "BAL_el",
@@ -232,7 +241,7 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
     m.addConstrs(
         (
             v.H_HOB_T[t] + v.H_CHP_T[t]
-            == p.H_dem_H_TH[t, "90/70"] + v.H_H2H1_T[t] + v.H_HS_in_TH[t, "90/70"]
+            == p.H_hDem_TH[t, "90/70"] + v.H_H2H1_T[t] + v.H_HS_in_TH[t, "90/70"]
             for t in T
         ),
         "BAL_H2",
@@ -240,7 +249,7 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
 
     # COOL
     m.addConstrs(
-        (v.H_HP_E_TCN.sum(t, "*", "7/12") == p.H_dem_C_TN[t, "7/12"] for t in T), "BAL_HP_N1"
+        (v.H_HP_E_TCN.sum(t, "*", "7/12") == p.H_cDem_TN[t, "7/12"] for t in T), "BAL_HP_N1"
     )
 
     # GRID
@@ -374,13 +383,13 @@ def sankey_func(sc: draf.Scenario):
     E PV SELL_el {gte(r.P_PV_FI_T)}
     E CHP SELL_el {gte(r.P_CHP_FI_T)}
     E EL HP {gte(r.P_HP_TCN)}
-    E EL DEM_el {gte(p.P_dem_T)}
+    E EL DEM_el {gte(p.P_eDem_T)}
     Q CHP H2 {gte(r.H_CHP_T)}
     Q HOB H2 {gte(r.H_HOB_T)}
     Q HP DEM_H1 {gte(r.H_HP_C_TCN)[:,3,:]}
     Q H2 H1 {gte(r.H_H2H1_T)}
     Q H1 DEM_H1 {gte(r.H_H2H1_T)}
-    Q H2 DEM_H2 {gte(p.H_dem_H_TH)[:,2]}
+    Q H2 DEM_H2 {gte(p.H_hDem_TH)[:,2]}
     Q H1 SELL_th {gte(r.H_sell_TH)[:,1]}
     Q H2 SELL_th {gte(r.H_sell_TH)[:,2]}
     Q H1 LOSS_th {gte(r.H_HS_in_TH[:,1]) - gte(r.H_HS_out_TH[:,1])}

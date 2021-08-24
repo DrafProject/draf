@@ -17,12 +17,12 @@ def _capas(v: Vars) -> List[Tuple[str, str]]:
     return {hp.get_component(key): _agg_cap(key, v) for key in v.filtered(acro="CAPn")}
 
 
-def C_inv_(p: Params, v: Vars):
+def C_TOT_inv_(p: Params, v: Vars):
     """Returns the sum product of all scalar capacities and investment costs.
     WARNING: The model must contain scalar investment prices `c_<COMPONENT>_inv_`.
 
     Example:
-        >>> model.addConstr((v.C_inv_ == collectors.C_inv_(p, v)))
+        >>> model.addConstr((v.C_TOT_inv_ == collectors.C_TOT_inv_(p, v)))
     """
     return sum([cap * p.get(f"c_{c}_inv_") for c, cap in _capas(v).items()])
 
@@ -38,11 +38,13 @@ def C_invAnnual_(p: Params, v: Vars):
     return sum([cap * p.get(f"c_{c}_inv_") / p.get(f"ol_{c}_") for c, cap in _capas(v).items()])
 
 
-def C_RMI_(p: Params, v: Vars):
+def C_TOT_maint_(p: Params, v: Vars):
     """Returns a linear expression for the repair, maintenance, and inspection per year.
     WARNING: The model must contain scalar parameters for investment prices `c_<COMPONENT>_inv_`.
 
     Example:
-        >>> model.addConstr((v.C_RMI_ == collectors.C_RMI_(p, v)))
+        >>> model.addConstr((v.C_TOT_maint_ == collectors.C_TOT_maint_(p, v)))
     """
-    return sum([cap * p.get(f"c_{c}_inv_") * p.get(f"k_{c}_RMI_") for c, cap in _capas(v).items()])
+    return sum(
+        [cap * p.get(f"c_{c}_inv_") * p.get(f"k_{c}_maint_") for c, cap in _capas(v).items()]
+    )

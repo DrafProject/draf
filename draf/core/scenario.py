@@ -437,9 +437,11 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
             if show_results:
                 try:
-                    print(f"{self.id}: C_={self.res.C_:.2f}, CE_={self.res.CE_:.2f} ({status_str})")
+                    print(
+                        f"{self.id}: C_TOT_={self.res.C_TOT_:.2f}, CE_TOT_={self.res.CE_TOT_:.2f} ({status_str})"
+                    )
                 except ValueError:
-                    logger.warning("res.C_ or res.CE_ not found.")
+                    logger.warning("res.C_TOT_ or res.CE_TOT_ not found.")
 
         else:
             if status in [gp.GRB.INF_OR_UNBD, gp.GRB.INFEASIBLE]:
@@ -489,9 +491,11 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
             if show_results:
                 try:
-                    print(f"{self.id}: C_={self.res.C_:.2f}, CE_={self.res.CE_:.2f} ({tc})")
+                    print(
+                        f"{self.id}: C_TOT_={self.res.C_TOT_:.2f}, CE_TOT_={self.res.CE_TOT_:.2f} ({tc})"
+                    )
                 except ValueError:
-                    logger.warning("res.C_ or res.CE_ not found.")
+                    logger.warning("res.C_TOT_ or res.CE_TOT_ not found.")
 
         else:
             raise RuntimeError(
@@ -682,8 +686,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         Args:
             name: The entity name. It has to end with an underscore followed by the
                 single-character dimensions i.e. a solely time-dependent parameter has
-                to end with `_T` e.g. `P_dem_T`;
-                a scalar has to end with `_` e.g. `C_inv_`.
+                to end with `_T` e.g. `P_eDem_T`;
+                a scalar has to end with `_` e.g. `C_TOT_inv_`.
             data: Data is normally given as int, float or pd.Series. Lists and np.ndarrays are
                 converted to pd.Series.
             doc: A description string.

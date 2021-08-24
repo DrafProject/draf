@@ -14,19 +14,19 @@ def params_func(sc: draf.Scenario):
     sc.dim("T", infer=True)
 
     # General
-    sc.prep.k_comp_()
-    sc.var("C_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
-    sc.var("C_op_", doc="Operating costs", unit="k€/a", lb=-GRB.INFINITY)
-    sc.var("CE_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
+    sc.prep.k__comp_()
+    sc.var("C_TOT_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
+    sc.var("C_TOT_op_", doc="Operating costs", unit="k€/a", lb=-GRB.INFINITY)
+    sc.var("CE_TOT_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
     sc.prep.k__dT_()
 
     # Pareto
-    sc.param("k_alpha_", data=0, doc="Pareto weighting factor")
-    sc.param("k__C_", data=1, doc="Normalization factor")
-    sc.param("k__CE_", data=1 / 1e4, doc="Normalization factor")
+    sc.param("k_PTO_alpha_", data=0, doc="Pareto weighting factor")
+    sc.param("k_PTO_C_", data=1, doc="Normalization factor")
+    sc.param("k_PTO_CE_", data=1 / 1e4, doc="Normalization factor")
 
     # Demands
-    sc.prep.P_dem_T(profile="G3", annual_energy=5e6)
+    sc.prep.P_eDem_T(profile="G3", annual_energy=5e6)
     # GRID
     sc.param("c_GRID_buyPeak_", data=40, doc="Peak price", unit="€/kW_el")
     sc.param(
@@ -64,31 +64,32 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
     T = d.T
 
     m.setObjective(
-        ((1 - p.k_alpha_) * v.C_ * p.k__C_ + p.k_alpha_ * v.CE_ * p.k__CE_), GRB.MINIMIZE
+        ((1 - p.k_PTO_alpha_) * v.C_TOT_ * p.k_PTO_C_ + p.k_PTO_alpha_ * v.CE_TOT_ * p.k_PTO_CE_),
+        GRB.MINIMIZE,
     )
 
     # C
-    m.addConstr(v.C_ == v.C_op_, "DEF_C_")
+    m.addConstr(v.C_TOT_ == v.C_TOT_op_, "DEF_C_")
     m.addConstr(
-        v.C_op_
+        v.C_TOT_op_
         == v.P_GRID_buyPeak_ * p.c_GRID_buyPeak_ / 1e3
         + p.k__dT_
         * (
             quicksum(v.P_GRID_buy_T[t] * (p.c_GRID_T[t] + p.c_GRID_addon_T[t]) / 1e3 for t in T)
             - quicksum(v.P_GRID_sell_T[t] * p.c_GRID_T[t] / 1e3 for t in T)
         ),
-        "DEF_C_op_",
+        "DEF_C_TOT_op_",
     )
 
     # CE
     m.addConstr(
-        v.CE_ == p.k__dT_ * quicksum(v.P_GRID_buy_T[t] * p.ce_GRID_T[t] for t in T), "DEF_CE_"
+        v.CE_TOT_ == p.k__dT_ * quicksum(v.P_GRID_buy_T[t] * p.ce_GRID_T[t] for t in T), "DEF_CE_"
     )
 
     # Electricity
     m.addConstrs(
         (
-            v.P_GRID_buy_T[t] + v.P_PV_OC_T[t] + v.P_BES_out_T[t] == p.P_dem_T[t] + v.P_BES_in_T[t]
+            v.P_GRID_buy_T[t] + v.P_PV_OC_T[t] + v.P_BES_out_T[t] == p.P_eDem_T[t] + v.P_BES_in_T[t]
             for t in T
         ),
         "BAL_el",
@@ -138,7 +139,7 @@ def sankey_func(sc: draf.Scenario):
     E PV GRID_sell {gte(r.P_PV_FI_T)}
     E eHub BES {gte(r.P_BES_in_T)}
     E BES eDemand {gte(r.P_BES_out_T)}
-    E eHub eDemand {gte(p.P_dem_T) - gte(r.P_BES_in_T)}
+    E eHub eDemand {gte(p.P_eDem_T) - gte(r.P_BES_in_T)}
     """
 
 

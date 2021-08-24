@@ -50,19 +50,19 @@ class CsPlotter(BasePlotter):
 
         rel_savings = savings / cs.pareto.iloc[0]
 
-        avoid_cost = -savings["C_"] / savings["CE_"] * 1e6  # in k€/kgCO2eq  # in €/tCO2eq
+        avoid_cost = -savings["C_TOT_"] / savings["CE_TOT_"] * 1e6  # in k€/kgCO2eq  # in €/tCO2eq
 
         df = pd.DataFrame(
             {
-                ("_____Absolute_____", "Costs"): cs.pareto["C_"],
-                ("_____Absolute_____", "Emissions"): cs.pareto["CE_"] / 1e3,
-                ("_Abolute savings_", "Costs"): savings["C_"],
-                ("_Abolute savings_", "Emissions"): savings["CE_"] / 1e3,
-                ("_Relative savings_", "Costs"): rel_savings["C_"],
-                ("_Relative savings_", "Emissions"): rel_savings["CE_"],
+                ("_____Absolute_____", "Costs"): cs.pareto["C_TOT_"],
+                ("_____Absolute_____", "Emissions"): cs.pareto["CE_TOT_"] / 1e3,
+                ("_Abolute savings_", "Costs"): savings["C_TOT_"],
+                ("_Abolute savings_", "Emissions"): savings["CE_TOT_"] / 1e3,
+                ("_Relative savings_", "Costs"): rel_savings["C_TOT_"],
+                ("_Relative savings_", "Emissions"): rel_savings["CE_TOT_"],
                 ("", "Emission avoidance costs"): avoid_cost,
-                ("", "CAPEX"): pd.Series(cs.get_ent("C_inv_")),
-                ("", "OPEX"): pd.Series(cs.get_ent("C_op_")),
+                ("", "CAPEX"): pd.Series(cs.get_ent("C_TOT_inv_")),
+                ("", "OPEX"): pd.Series(cs.get_ent("C_TOT_op_")),
             }
         )
         df[("", "Payback time")] = df[("", "CAPEX")] / (df[("", "OPEX")].iloc[0] - df[("", "OPEX")])
@@ -129,7 +129,7 @@ class CsPlotter(BasePlotter):
         pareto.index = [getattr(sc, options[label_verbosity]) for sc in scens_list]
 
         units = dict()
-        for x, target_unit in zip(["C_", "CE_"], [target_c_unit, target_ce_unit]):
+        for x, target_unit in zip(["C_TOT_", "CE_TOT_"], [target_c_unit, target_ce_unit]):
             pareto[x], units[x] = hp.auto_fmt(
                 pareto[x], scens_list[0].get_unit(x), target_unit=target_unit
             )
@@ -141,8 +141,8 @@ class CsPlotter(BasePlotter):
             c_saving_rel = 100 * (pareto.iloc[0, 0] - pareto.iloc[:, 0].min()) / pareto.iloc[0, 0]
 
             title = (
-                f"Max. cost savings: {c_saving:,.1f} {units['C_']} ({c_saving_rel:.2f}%)\n"
-                f"Max. carbon savings: {ce_saving:.1f} {units['CE_']} ({ce_saving_rel:.2f}%)"
+                f"Max. cost savings: {c_saving:,.1f} {units['C_TOT_']} ({c_saving_rel:.2f}%)\n"
+                f"Max. carbon savings: {ce_saving:.1f} {units['CE_TOT_']} ({ce_saving_rel:.2f}%)"
             )
             if use_plotly:
                 title = title.replace("\n", "<br>")
@@ -152,15 +152,15 @@ class CsPlotter(BasePlotter):
             return [c for sc in scens_list for i, c in c_dict.items() if i in sc.doc]
 
         colors = "black" if c_dict is None else get_colors(c_dict)
-        ylabel = f"Costs [{units['C_']}]"
-        xlabel = f"Carbon emissions [{units['CE_']}]"
+        ylabel = f"Costs [{units['C_TOT_']}]"
+        xlabel = f"Carbon emissions [{units['CE_TOT_']}]"
 
         if use_plotly:
             hwr_ = "<b>id:</b> {}<br><b>name:</b> {}<br><b>doc:</b> {}<br>"
 
             trace = go.Scatter(
-                x=pareto["CE_"],
-                y=pareto["C_"],
+                x=pareto["CE_TOT_"],
+                y=pareto["C_TOT_"],
                 mode="markers+text",
                 text=list(pareto.index) if label_verbosity else None,
                 hovertext=[hwr_.format(sc.id, sc.name, sc.doc) for sc in scens_list],
@@ -184,7 +184,7 @@ class CsPlotter(BasePlotter):
 
         else:
             fig, ax = plt.subplots(figsize=self.figsize)
-            pareto.plot.scatter("CE_", "C_", s=30, marker="o", ax=ax, color=colors)
+            pareto.plot.scatter("CE_TOT_", "C_TOT_", s=30, marker="o", ax=ax, color=colors)
             ax.set(ylabel=ylabel, xlabel=xlabel)
             if do_title:
                 ax.set(title=get_title(pareto))
@@ -192,7 +192,7 @@ class CsPlotter(BasePlotter):
             for sc_name in list(pareto.index):
                 ax.annotate(
                     s=sc_name,
-                    xy=(pareto["CE_"][sc_name], pareto["C_"][sc_name]),
+                    xy=(pareto["CE_TOT_"][sc_name], pareto["C_TOT_"][sc_name]),
                     rotation=45,
                     ha="left",
                     va="bottom",
@@ -211,12 +211,12 @@ class CsPlotter(BasePlotter):
         """EXPERIMENTAL: Plot based on pareto() considering multiple pareto curve-groups."""
 
         def get_hover_text(sc, ref_scen):
-            sav_C = ref_scen.res.C_ - sc.res.C_
-            sav_C_fmted, unit_C = hp.auto_fmt(sav_C, sc.get_unit("C_"))
-            sav_C_rel = sav_C / ref_scen.res.C_
-            sav_CE = ref_scen.res.CE_ - sc.res.CE_
-            sav_CE_fmted, unit_CE = hp.auto_fmt(sav_CE, sc.get_unit("CE_"))
-            sav_CE_rel = sav_CE / ref_scen.res.CE_
+            sav_C = ref_scen.res.C_TOT_ - sc.res.C_TOT_
+            sav_C_fmted, unit_C = hp.auto_fmt(sav_C, sc.get_unit("C_TOT_"))
+            sav_C_rel = sav_C / ref_scen.res.C_TOT_
+            sav_CE = ref_scen.res.CE_TOT_ - sc.res.CE_TOT_
+            sav_CE_fmted, unit_CE = hp.auto_fmt(sav_CE, sc.get_unit("CE_TOT_"))
+            sav_CE_rel = sav_CE / ref_scen.res.CE_TOT_
 
             return "<br>".join(
                 [
@@ -236,7 +236,7 @@ class CsPlotter(BasePlotter):
             elif label_verbosity == 3:
                 return sc.doc
             elif label_verbosity == 4:
-                return f"α={sc.params.k_alpha_:.2f}"
+                return f"α={sc.params.k_PTO_alpha_:.2f}"
 
         cs = self.cs
         pareto = cs.pareto.copy()
@@ -270,11 +270,11 @@ class CsPlotter(BasePlotter):
             logger.warning("\nPareto-Dataframe is empty!")
             return
 
-        pareto["C_"], c_unit = hp.auto_fmt(
-            pareto["C_"], scens[0].get_unit("C_"), target_unit=c_unit
+        pareto["C_TOT_"], c_unit = hp.auto_fmt(
+            pareto["C_TOT_"], scens[0].get_unit("C_TOT_"), target_unit=c_unit
         )
-        pareto["CE_"], ce_unit = hp.auto_fmt(
-            pareto["CE_"], scens[0].get_unit("CE_"), target_unit=ce_unit
+        pareto["CE_TOT_"], ce_unit = hp.auto_fmt(
+            pareto["CE_TOT_"], scens[0].get_unit("CE_TOT_"), target_unit=ce_unit
         )
         title = ""
 
@@ -294,8 +294,8 @@ class CsPlotter(BasePlotter):
             pareto_ = [getattr(cs.scens, ix) for ix in pareto.index]
 
             trace = go.Scatter(
-                x=[pareto.loc[sc.id, "CE_"] for sc in scens_],
-                y=[pareto.loc[sc.id, "C_"] for sc in scens_],
+                x=[pareto.loc[sc.id, "CE_TOT_"] for sc in scens_],
+                y=[pareto.loc[sc.id, "C_TOT_"] for sc in scens_],
                 mode="lines+markers+text" if bool(label_verbosity) else "lines+markers",
                 text=[get_text(sc, label_verbosity) for sc in scens_]
                 if bool(label_verbosity)
@@ -458,17 +458,17 @@ class CsPlotter(BasePlotter):
         r = sc.res
         p = sc.params
 
-        if not hasattr(cs.REF_scen.res, "C_op_") or not hasattr(cs.REF_scen.res, "C_inv_"):
+        if not hasattr(cs.REF_scen.res, "C_TOT_op_") or not hasattr(cs.REF_scen.res, "C_TOT_inv_"):
             for scen in cs.scens_list:
-                scen.res.C_op_ = scen.res.C_
-                scen.res.C_inv_ = 0
+                scen.res.C_TOT_op_ = scen.res.C_TOT_
+                scen.res.C_TOT_inv_ = 0
 
         css = cs.ordered_valid_scens if sort else cs.valid_scens
 
         def get_table_trace():
             trace = go.Table(
                 header=dict(
-                    values=["Total", f"{r.C_:,.0f}", "€ / a"],
+                    values=["Total", f"{r.C_TOT_:,.0f}", "€ / a"],
                     line=dict(color="lightgray"),
                     align=["left", "right", "left"],
                     font=dict(size=12),
@@ -477,10 +477,10 @@ class CsPlotter(BasePlotter):
                     values=[
                         ["Operation", "Invest", "Savings", "Depreciation", "Peakload"],
                         [
-                            f"{r.C_op_:,.0f}",
-                            f"{r.C_inv_:,.0f}",
-                            f"{cs.REF_scen.res.C_ - r.C_:,.0f}",
-                            f"{r.C_inv_ * p.k__AF_:,.0f}",
+                            f"{r.C_TOT_op_:,.0f}",
+                            f"{r.C_TOT_inv_:,.0f}",
+                            f"{cs.REF_scen.res.C_TOT_ - r.C_TOT_:,.0f}",
+                            f"{r.C_TOT_inv_ * p.k__AF_:,.0f}",
                             f"{r.P_GRID_buyPeak_:,.0f}",
                         ],
                         ["k€/a", "k€", "k€/a", "k€/a", "kW"],
@@ -495,7 +495,10 @@ class CsPlotter(BasePlotter):
 
         def get_bar_traces():
             d = OrderedDict(
-                {sc.id: [sc.res.C_inv_ * sc.params.k__AF_, sc.res.C_op_] for sc in css.values()}
+                {
+                    sc.id: [sc.res.C_TOT_inv_ * sc.params.k__AF_, sc.res.C_TOT_op_]
+                    for sc in css.values()
+                }
             )
             df = pd.DataFrame(d, ["Depreciation", "Operation"])
 
@@ -640,17 +643,17 @@ class CsPlotter(BasePlotter):
 
         fig = _get_capa_heatmap(df)
 
-        ser = pd.Series(cs.get_ent("C_inv_"))
+        ser = pd.Series(cs.get_ent("C_TOT_inv_"))
         fig.add_trace(
             go.Bar(y=ser.index.tolist(), x=ser.values, xaxis="x2", yaxis="y2", orientation="h")
         )
 
-        ser = pd.Series(cs.get_ent("C_op_"))
+        ser = pd.Series(cs.get_ent("C_TOT_op_"))
         fig.add_trace(
             go.Bar(y=ser.index.tolist(), x=ser.values, xaxis="x3", yaxis="y3", orientation="h")
         )
 
-        unit = cs.REF_scen.get_unit("C_inv_")
+        unit = cs.REF_scen.get_unit("C_TOT_inv_")
         capx_adder = " (decision variables in <b>bold</b>)" if include_capx else ""
         fig.update_layout(
             margin=dict(t=5, l=5, r=5, b=5),

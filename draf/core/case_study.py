@@ -78,7 +78,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         country: str = "DE",
         doc: str = "No doc available.",
         coords: Tuple[float, float] = None,
-        obj_vars: Tuple[str, str] = ("C_", "CE_"),
+        obj_vars: Tuple[str, str] = ("C_TOT_", "CE_TOT_"),
     ):
         assert freq in ["15min", "30min", "60min"]
 
@@ -135,7 +135,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
     def ordered_valid_scens(self):
         """Returns an OrderedDict of scenario objects sorted by descending system costs."""
         return OrderedDict(
-            sorted(self.valid_scens.items(), key=lambda kv: kv[1].res.C_, reverse=True)
+            sorted(self.valid_scens.items(), key=lambda kv: kv[1].res.C_TOT_, reverse=True)
         )
 
     @property
@@ -285,7 +285,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 RuntimeError("If `nParetoPoints` = 0, scens_vars must not be None.")
 
         if nParetoPoints > 0:
-            scen_vars.append(("k_alpha_", "a", np.linspace(0, 1, nParetoPoints)))
+            scen_vars.append(("k_PTO_alpha_", "a", np.linspace(0, 1, nParetoPoints)))
 
         self.scen_vars = scen_vars
 
@@ -398,7 +398,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         self, model_func: Callable, adjust_factor: float = 1.0, basis_scen_id: str = "REF"
     ) -> CaseStudy:
         """Solves the given model for both extreme points (alpha=0 and alpha=1) in order to
-        determine good pareto norm factors k__C_ and k__CE_, which are then set for all scenarios.
+        determine good pareto norm factors k_PTO_C_ and k_PTO_CE_, which are then set for all scenarios.
         """
 
         nC = []
@@ -406,17 +406,19 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
 
         for i in [0, 1]:
             sc = self.add_scen(str(i), name="pareto_improver", based_on=basis_scen_id)
-            sc.params.k_alpha_ = i
+            sc.params.k_PTO_alpha_ = i
             sc.set_model(model_func)
             sc.optimize(show_results=False, outputFlag=False)
-            nC.append(sc.res.C_ * adjust_factor)
-            nCE.append(sc.res.CE_)
+            nC.append(sc.res.C_TOT_ * adjust_factor)
+            nCE.append(sc.res.CE_TOT_)
             delattr(self.scens, str(i))
 
         for sc in self.scens_list:
-            sc.params.k__C_ = 1e3 / np.array(nC).mean()
-            sc.params.k__CE_ = 1e3 / np.array(nCE).mean()
-            logger.info(f"C/CE Pareto norm factors set to {sc.params.k__C_} and {sc.params.k__CE_}")
+            sc.params.k_PTO_C_ = 1e3 / np.array(nC).mean()
+            sc.params.k_PTO_CE_ = 1e3 / np.array(nCE).mean()
+            logger.info(
+                f"C/CE Pareto norm factors set to {sc.params.k_PTO_C_} and {sc.params.k_PTO_CE_}"
+            )
         return self
 
     def set_params(self, params_func: Callable, scens: List = None) -> CaseStudy:

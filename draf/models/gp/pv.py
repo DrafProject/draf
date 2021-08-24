@@ -15,12 +15,12 @@ def params_func(sc: draf.Scenario):
     sc.dim("T", infer=True)
 
     # General
-    sc.var("C_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
-    sc.var("CE_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
+    sc.var("C_TOT_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
+    sc.var("CE_TOT_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
     sc.prep.k__dT_()
 
     # Pareto
-    sc.param("k_alpha_", data=0, doc="Pareto weighting factor")
+    sc.param("k_PTO_alpha_", data=0, doc="Pareto weighting factor")
 
     # GRID
     sc.prep.c_GRID_RTP_T()
@@ -28,7 +28,7 @@ def params_func(sc: draf.Scenario):
     sc.var("P_GRID_buy_T", doc="Purchasing electrical power", unit="kW_el", lb=-GRB.INFINITY)
 
     # Demand
-    sc.prep.P_dem_T(profile="G1", annual_energy=5e6)
+    sc.prep.P_eDem_T(profile="G1", annual_energy=5e6)
 
     # PV
     sc.param("P_PV_CAPx_", 0, "existing capacity", "kW_peak")
@@ -37,23 +37,23 @@ def params_func(sc: draf.Scenario):
 
 def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
 
-    m.setObjective((1 - p.k_alpha_) * v.C_ + p.k_alpha_ * v.CE_, GRB.MINIMIZE)
+    m.setObjective((1 - p.k_PTO_alpha_) * v.C_TOT_ + p.k_PTO_alpha_ * v.CE_TOT_, GRB.MINIMIZE)
 
     # C
     m.addConstr(
-        v.C_ == p.k__dT_ * quicksum(v.P_GRID_buy_T[t] * p.c_GRID_RTP_T[t] / 1e3 for t in d.T),
+        v.C_TOT_ == p.k__dT_ * quicksum(v.P_GRID_buy_T[t] * p.c_GRID_RTP_T[t] / 1e3 for t in d.T),
         "DEF_C_",
     )
 
     # CE
     m.addConstr(
-        v.CE_ == p.k__dT_ * quicksum(v.P_GRID_buy_T[t] * p.ce_GRID_T[t] for t in d.T),
+        v.CE_TOT_ == p.k__dT_ * quicksum(v.P_GRID_buy_T[t] * p.ce_GRID_T[t] for t in d.T),
         "DEF_CE_",
     )
 
     # Electricity
     m.addConstrs(
-        (v.P_GRID_buy_T[t] + p.P_PV_CAPx_ * p.P_PV_profile_T[t] == p.P_dem_T[t] for t in d.T),
+        (v.P_GRID_buy_T[t] + p.P_PV_CAPx_ * p.P_PV_profile_T[t] == p.P_eDem_T[t] for t in d.T),
         "BAL_pur",
     )
 

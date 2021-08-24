@@ -28,7 +28,7 @@ class TimeSeriesPrepper:
         """For serialization with pickle."""
         return None
 
-    def k_comp_(self, name: str = "k_comp_") -> float:
+    def k__comp_(self, name: str = "k__comp_") -> float:
         """Add cost weighting factor to compensate part year analysis."""
         sc = self.sc
         return self.sc.param(
@@ -170,9 +170,9 @@ class TimeSeriesPrepper:
         )
 
     @hp.copy_doc(prep.get_el_SLP)
-    def P_dem_T(
+    def P_eDem_T(
         self,
-        name: str = "P_dem_T",
+        name: str = "P_eDem_T",
         profile: str = "G1",
         peak_load: Optional[float] = None,
         annual_energy: Optional[float] = None,
@@ -200,13 +200,13 @@ class TimeSeriesPrepper:
             ),
         )
 
-    def H_dem_H_TH(self) -> pd.Series:
+    def H_hDem_TH(self) -> pd.Series:
         data = pd.Series(0, pd.MultiIndex.from_product([self.sc.dims.T, self.sc.dims.H]))
-        return self.sc.param(name="H_dem_H_TH", data=data, doc="Heating demand", unit="kW_th")
+        return self.sc.param(name="H_hDem_TH", data=data, doc="Heating demand", unit="kW_th")
 
-    def H_dem_C_TN(self) -> pd.Series:
+    def H_cDem_TN(self) -> pd.Series:
         data = pd.Series(0, pd.MultiIndex.from_product([self.sc.dims.T, self.sc.dims.N]))
-        return self.sc.param(name="H_dem_C_TN", data=data, doc="Cooling demand", unit="kW_th")
+        return self.sc.param(name="H_cDem_TN", data=data, doc="Cooling demand", unit="kW_th")
 
     @hp.copy_doc(prep.get_heating_demand)
     def H_dem_H_T(

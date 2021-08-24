@@ -14,12 +14,12 @@ def params_func(sc: draf.Scenario):
 
     # General
     sc.dim("T", infer=True)
-    sc.var("C_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
-    sc.var("CE_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
+    sc.var("C_TOT_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
+    sc.var("CE_TOT_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
     sc.prep.k__dT_()
 
     # Pareto
-    sc.param("k_alpha_", 0, "Pareto weighting factor", "")
+    sc.param("k_PTO_alpha_", 0, "Pareto weighting factor", "")
 
     # GRID
     sc.prep.c_GRID_RTP_T()
@@ -27,7 +27,7 @@ def params_func(sc: draf.Scenario):
     sc.var("P_GRID_buy_T", doc="Purchasing electrical power", unit="kW_el", lb=-GRB.INFINITY)
 
     # Demand
-    sc.prep.P_dem_T(profile="G1", annual_energy=5e6)
+    sc.prep.P_eDem_T(profile="G1", annual_energy=5e6)
 
     # PV
     sc.param("P_PV_CAPx_", 0, "existing capacity", "kW_peak")
@@ -36,25 +36,27 @@ def params_func(sc: draf.Scenario):
 
 def model_func(m: pyo.Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
 
-    m.obj = pyo.Objective(expr=(1 - p.k_alpha_) * v.C_ + p.k_alpha_ * v.CE_, sense=pyo.minimize)
+    m.obj = pyo.Objective(
+        expr=(1 - p.k_PTO_alpha_) * v.C_TOT_ + p.k_PTO_alpha_ * v.CE_TOT_, sense=pyo.minimize
+    )
 
     # C
     m.DEF_C_ = pyo.Constraint(
         expr=(
-            v.C_
+            v.C_TOT_
             == p.k__dT_ * pyo.quicksum(v.P_GRID_buy_T[t] * p.c_GRID_RTP_T[t] / 1e3 for t in d.T)
         )
     )
 
     # CE
     m.DEF_CE_ = pyo.Constraint(
-        expr=(v.CE_ == p.k__dT_ * pyo.quicksum(v.P_GRID_buy_T[t] * p.ce_GRID_T[t] for t in d.T))
+        expr=(v.CE_TOT_ == p.k__dT_ * pyo.quicksum(v.P_GRID_buy_T[t] * p.ce_GRID_T[t] for t in d.T))
     )
 
     # Electricity
     m.BAL_pur = pyo.Constraint(
         d.T,
-        rule=lambda v, t: v.P_GRID_buy_T[t] + p.P_PV_CAPx_ * p.P_PV_profile_T[t] == p.P_dem_T[t],
+        rule=lambda v, t: v.P_GRID_buy_T[t] + p.P_PV_CAPx_ * p.P_PV_profile_T[t] == p.P_eDem_T[t],
     )
 
 
