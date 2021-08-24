@@ -99,10 +99,11 @@ Raw-data  parquet-files  pd.Series
 ## Naming conventions
 
 All parameter and variable names must satisfy the structure `<Type>_<Component>_<Descriptor>_<Dims>`.
-E.g. in 'E_GRID_buy_T' `E` is the entity type, `GRID` the component, `buy` the descriptor and `T` the dimension.
-Dimensions are denoted with individual capital letters, so `<Dims>` could be `TE` if the entity has the dimensions `T` and `E`.
+E.g. in 'P_GRID_buy_T' `P` is the entity type, `GRID` the component, `buy` the descriptor and `T` the dimension.
+Dimensions are denoted with individual capital letters, so `<Dims>` is `TE` if the entity has the dimensions `T` and `E`.
+For examples of types, components, and descriptors please see [conventions.py](draf/conventions.py)
 
-## Common Abbreviations
+## Common abbreviated programming constructs
 
 | short | long |
 |-------|------------------|
@@ -121,8 +122,6 @@ Dimensions are denoted with individual capital letters, so `<Dims>` could be `TE
 | `ser` | Pandas `Series` |
 | `fp` | file path |
 | `gp` | `gurobipy` - the Gurobi Python Interface |
-| `XEFs` | Average Electricity Mix Emission Factors |
-| `MEFs` | Marginal Power Plant Emission Factors |
 
 # For developers
 

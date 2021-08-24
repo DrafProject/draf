@@ -57,8 +57,8 @@ def test_set_time_horizon(start: str, steps: str, end: str, t1: int, t2: int, ca
         ["10", slice(6552, 7296, None)],
     ],
 )
-def test__get_datetime_int_loc_from_string(string: str, expected: str, case):
-    assert case._get_datetime_int_loc_from_string(s=string) == expected
+def test__get_int_loc_from_dtstring(string: str, expected: str, case):
+    assert case._get_int_loc_from_dtstring(s=string) == expected
 
 
 @pytest.fixture

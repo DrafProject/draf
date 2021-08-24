@@ -133,6 +133,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
     def update_par_dic(self):
         self._par_dic = self.params._to_dims_dic()
 
+    def get_total_energy(self, data: pd.Series) -> float:
+        return data.sum() * self.step_width
+
     @property
     def par_dic(self):
         """Creates the par_dic at the first use then caches it. Use `update_par_dic()` to update."""
@@ -679,7 +682,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         Args:
             name: The entity name. It has to end with an underscore followed by the
                 single-character dimensions i.e. a solely time-dependent parameter has
-                to end with `_T` e.g. `E_dem_T`;
+                to end with `_T` e.g. `P_dem_T`;
                 a scalar has to end with `_` e.g. `C_inv_`.
             data: Data is normally given as int, float or pd.Series. Lists and np.ndarrays are
                 converted to pd.Series.

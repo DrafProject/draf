@@ -30,8 +30,8 @@ class SRC:
 
 
 class DataBase:
+    from draf.conventions import Acronyms
     from draf.prep import param_funcs as funcs
-    from draf.prep.conventions import Acronyms
 
     c_EEG_ = ParDat(name="c_EEG_", data=0.065, doc=f"EEG levy", src=SRC.BMWI_2020, unit="€/kWh_el")
     c_FUEL_co2_ = ParDat(

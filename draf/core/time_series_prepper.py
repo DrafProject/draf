@@ -28,7 +28,7 @@ class TimeSeriesPrepper:
         """For serialization with pickle."""
         return None
 
-    def n_comp_(self, name: str = "n_comp_") -> float:
+    def k_comp_(self, name: str = "k_comp_") -> float:
         """Add cost weighting factor to compensate part year analysis."""
         sc = self.sc
         return self.sc.param(
@@ -37,6 +37,9 @@ class TimeSeriesPrepper:
             doc="Weighting factor to compensate part year analysis",
             data=len(sc.dtindex) / len(sc.dtindex_custom),
         )
+
+    def k__dT_(self, name: str = "k__dT_"):
+        return self.sc.param(name=name, unit="h", doc="Time steps width", data=self.sc.step_width)
 
     @hp.copy_doc(get_emissions, start="Args:")
     def ce_GRID_T(self, name: str = "ce_GRID_T", method: str = "XEF_PP", **kwargs) -> pd.Series:
@@ -167,9 +170,9 @@ class TimeSeriesPrepper:
         )
 
     @hp.copy_doc(prep.get_el_SLP)
-    def E_dem_T(
+    def P_dem_T(
         self,
-        name: str = "E_dem_T",
+        name: str = "P_dem_T",
         profile: str = "G1",
         peak_load: Optional[float] = None,
         annual_energy: Optional[float] = None,
@@ -181,7 +184,7 @@ class TimeSeriesPrepper:
 
         return sc.param(
             name=name,
-            unit="kWh_el",
+            unit="kW_el",
             doc=f"Electricity demand from standard load profile {profile}: {SLP_PROFILES[profile]}",
             data=sc.trim_to_datetimeindex(
                 prep.get_el_SLP(
@@ -197,18 +200,18 @@ class TimeSeriesPrepper:
             ),
         )
 
-    def Q_dem_H_TH(self) -> pd.Series:
+    def H_dem_H_TH(self) -> pd.Series:
         data = pd.Series(0, pd.MultiIndex.from_product([self.sc.dims.T, self.sc.dims.H]))
-        return self.sc.param(name="Q_dem_H_TH", data=data, doc="Heating demand", unit="kWh_th")
+        return self.sc.param(name="H_dem_H_TH", data=data, doc="Heating demand", unit="kW_th")
 
-    def Q_dem_C_TN(self) -> pd.Series:
+    def H_dem_C_TN(self) -> pd.Series:
         data = pd.Series(0, pd.MultiIndex.from_product([self.sc.dims.T, self.sc.dims.N]))
-        return self.sc.param(name="Q_dem_C_TN", data=data, doc="Cooling demand", unit="kWh_th")
+        return self.sc.param(name="H_dem_C_TN", data=data, doc="Cooling demand", unit="kW_th")
 
     @hp.copy_doc(prep.get_heating_demand)
-    def Q_dem_H_T(
+    def H_dem_H_T(
         self,
-        name: str = "Q_dem_H_T",
+        name: str = "H_dem_H_T",
         annual_energy: float = 1e6,
         target_temp: float = 22.0,
         threshold_temp: float = 15.0,
@@ -233,9 +236,9 @@ class TimeSeriesPrepper:
         )
 
     @hp.copy_doc(prep.get_cooling_demand)
-    def Q_dem_C_T(
+    def H_dem_C_T(
         self,
-        name: str = "Q_dem_C_T",
+        name: str = "H_dem_C_T",
         annual_energy: float = 1e6,
         target_temp: float = 22.0,
         threshold_temp: float = 22.0,
@@ -247,7 +250,7 @@ class TimeSeriesPrepper:
 
         return sc.param(
             name=name,
-            unit="kWh_th",
+            unit="kW_th",
             doc=f"Cooling demand derived from ambient temperature near {sc.coords}.",
             data=sc.trim_to_datetimeindex(
                 prep.get_cooling_demand(
@@ -259,8 +262,8 @@ class TimeSeriesPrepper:
             ),
         )
 
-    def E_PV_profile_T(
-        self, name: str = "E_PV_profile_T", use_coords: bool = True, **gsee_kw
+    def P_PV_profile_T(
+        self, name: str = "P_PV_profile_T", use_coords: bool = True, **gsee_kw
     ) -> pd.Series:
         """Add a photovoltaic profile.
 

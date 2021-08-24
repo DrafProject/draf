@@ -236,7 +236,7 @@ class CsPlotter(BasePlotter):
             elif label_verbosity == 3:
                 return sc.doc
             elif label_verbosity == 4:
-                return f"α={sc.params.alpha_:.2f}"
+                return f"α={sc.params.k_alpha_:.2f}"
 
         cs = self.cs
         pareto = cs.pareto.copy()
@@ -480,7 +480,7 @@ class CsPlotter(BasePlotter):
                             f"{r.C_op_:,.0f}",
                             f"{r.C_inv_:,.0f}",
                             f"{cs.REF_scen.res.C_ - r.C_:,.0f}",
-                            f"{r.C_inv_ * p.AF_:,.0f}",
+                            f"{r.C_inv_ * p.k__AF_:,.0f}",
                             f"{r.P_GRID_buyPeak_:,.0f}",
                         ],
                         ["k€/a", "k€", "k€/a", "k€/a", "kW"],
@@ -495,7 +495,7 @@ class CsPlotter(BasePlotter):
 
         def get_bar_traces():
             d = OrderedDict(
-                {sc.id: [sc.res.C_inv_ * sc.params.AF_, sc.res.C_op_] for sc in css.values()}
+                {sc.id: [sc.res.C_inv_ * sc.params.k__AF_, sc.res.C_op_] for sc in css.values()}
             )
             df = pd.DataFrame(d, ["Depreciation", "Operation"])
 

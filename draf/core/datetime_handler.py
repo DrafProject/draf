@@ -56,16 +56,31 @@ class DateTimeHandler(ABC):
         self._t1 = 0
         self._t2 = self.dtindex.size - 1  # =8759 for a normal year
 
-    def _get_datetime_int_loc_from_string(self, s: str) -> int:
+    def _get_int_loc_from_dtstring(self, s: str) -> int:
         return self.dtindex.get_loc(f"{self.year}-{s}")
 
+    def _get_first_int_loc_from_dtstring(self, s: str) -> int:
+        x = self._get_int_loc_from_dtstring(s)
+        try:
+            return x.start
+        except AttributeError:
+            return x
+
+    def _get_last_int_loc_from_dtstring(self, s: str) -> int:
+        x = self._get_int_loc_from_dtstring(s)
+        try:
+            return x.end
+        except AttributeError:
+            return x
+
     def _get_integer_locations(self, start, steps, end) -> Tuple[int, int]:
-        t1 = self._get_datetime_int_loc_from_string(start) if isinstance(start, str) else start
+        t1 = self._get_first_int_loc_from_dtstring(start) if isinstance(start, str) else start
         if steps is not None and end is None:
+            print(t1, steps)
             assert t1 + steps < self.dtindex.size, "Too many steps are given."
             t2 = t1 + steps - 1
         elif steps is None and end is not None:
-            t2 = self._get_datetime_int_loc_from_string(end) if isinstance(end, str) else end
+            t2 = self._get_last_int_loc_from_dtstring(end) if isinstance(end, str) else end
         elif steps is None and end is None:
             t2 = self.dtindex.size - 1
         else:

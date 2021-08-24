@@ -5,8 +5,8 @@ from draf.tsa import DemandAnalyzer
 
 
 @pytest.mark.slow
-def test_histo():
-    year, freq = 2020, "15min"
+def test_tsa():
+    year, freq = 2020, "60min"
     p_el = get_el_SLP(year, freq, annual_energy=10e6, profile="G0")
 
     da = DemandAnalyzer(p_el, year, freq)

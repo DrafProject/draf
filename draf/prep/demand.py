@@ -140,7 +140,7 @@ def get_el_SLP(
     if peak_load is not None:
         ser = ser * (peak_load - offset) / ser.max()
 
-    delta_T = hp.int_from_freq(freq) / 60
+    delta_T = hp.get_step_width(freq)
 
     if annual_energy is not None:
         ser = ser * (annual_energy - (offset * dt_index.size * delta_T)) / (ser.sum() * delta_T)
@@ -166,7 +166,7 @@ def get_heating_demand(
     year: Optional[int] = None,
     coords: Optional[Tuple[float, float]] = None,
 ) -> pd.Series:
-    """Returns a heating demand based on the air temperature."""
+    """Returns a heating demand profile based on the air temperature."""
     if ser_amb_temp is None:
         assert coords is not None
         assert year is not None
@@ -177,7 +177,7 @@ def get_heating_demand(
     ser = target_temp - ser
     scaling_factor = annual_energy / ser.sum()
     ser *= scaling_factor
-    ser.name = "Q_dem_H_T"
+    ser.name = "H_dem_H_T"
     logger.info(
         f"Heating demand created with annual energy={annual_energy}, target_temp={target_temp}"
         f", threshold_temp={threshold_temp}."
@@ -193,7 +193,7 @@ def get_cooling_demand(
     year: Optional[int] = None,
     coords: Optional[Tuple[float, float]] = None,
 ) -> pd.Series:
-    """Returns a cooling demand based on the ambient air temperature."""
+    """Returns a cooling demand profile based on the ambient air temperature."""
     if ser_amb_temp is None:
         assert coords is not None
         assert year is not None
@@ -204,7 +204,7 @@ def get_cooling_demand(
     ser = ser - target_temp
     scaling_factor = annual_energy / ser.sum()
     ser = ser * scaling_factor
-    ser.name = "Q_dem_C_T"
+    ser.name = "H_dem_C_T"
     logger.info(
         f"Cooling demand created with annual energy={annual_energy}, target_temp={target_temp}"
         f", threshold_temp={threshold_temp}."

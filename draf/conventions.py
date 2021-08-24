@@ -9,20 +9,18 @@ class Acro:
 
 class Types:
     A = Acro(en="Area", de="Fläche")
-    AF = Acro(en="Annuity factor", de="Annuitätsfaktor")
-    alpha = Acro(en="Pareto weighting factor", de="Pareto Gewichtungsfaktor")
     C = Acro(en="Costs", de="Kosten")
     c = Acro(en="Specific costs", de="Spezifische Kosten")
     CE = Acro(en="Carbon emissions", de="Kohlenstoff-vergleichs-Emissionen")
     ce = Acro(en="Specific carbon emissions", de="Spezifische Kohlenstoff-Emissionen")
     cop = Acro(en="Coefficient of performance", de="Leistungszahl")
-    E = Acro(en="Electricity", de="Elektrischer Strom")
+    E = Acro(en="Electrical energy", de="Elektrische Energie")
     eta = Acro(en="Efficiency", de="Effizienz")
     F = Acro(en="Fuel", de="Brennstoff")
+    H = Acro(en="Heat flow", de="Wärmestrom")
     k = Acro(en="a ratio", de="ein Verhältnis")
     ol = Acro(en="Operation life", de="Betriebsdauer")
-    P = Acro(en="Power", de="Elektrische Leistung")
-    penalty = Acro(en="Penalty term", de="Strafterm")
+    P = Acro(en="Electrical power", de="Elektrische Leistung")
     Q = Acro(en="Thermal Energy", de="Thermische Energie")
     T = Acro(en="Temperature", de="Temperatur")
     y = Acro(en="Binary indicator", de="Binärindikator")
@@ -40,6 +38,14 @@ class Acronyms:
     TOU = Acro(en="Time-of-use", de="Zeitabhängige Strompreise")
     FI = Acro(en="Feed-in", de="Einspeisungsanteil")
     OC = Acro(en="Own consumption", de="Eigenerzeugungsanteil")
+    XEF = Acro(
+        en="Average Electricity Mix Emission Factors",
+        de="Durchschnittliche CO2-Emissionsfaktoren des Stromsystems",
+    )
+    MEF = Acro(
+        en="Marginal Power Plant Emission Factors",
+        de="Marginale CO2-Emissionsfaktoren des Stromsystems",
+    )
 
 
 class Components:
