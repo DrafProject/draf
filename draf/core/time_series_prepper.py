@@ -42,7 +42,7 @@ class TimeSeriesPrepper:
     def ce_GRID_T(self, name: str = "ce_GRID_T", method: str = "XEF_PP", **kwargs) -> pd.Series:
         """Add dynamic carbon emission factors."""
         sc = self.sc
-        return self.sc.param(
+        return sc.param(
             name=name,
             unit="kgCO2eq/kWh_el",
             doc=f"{method} for {sc.year}, {sc.freq}, {sc.country}",
@@ -76,7 +76,7 @@ class TimeSeriesPrepper:
     def c_GRID_PP_T(self, name: str = "c_GRID_PP_T", method: str = "PP") -> pd.Series:
         """Add marginal costs from PP-method. Only for Germany."""
         sc = self.sc
-        return self.sc.param(
+        return sc.param(
             name=name,
             unit="€/kWh_el",
             doc=f"Marginal Costs {sc.year}, {sc.freq}, {sc.country}",
@@ -88,7 +88,7 @@ class TimeSeriesPrepper:
     def c_GRID_PWL_T(self, name: str = "c_GRID_PWL_T", method: str = "PWL", **kwargs) -> pd.Series:
         """Add marginal costs from PWL-method."""
         sc = self.sc
-        return self.sc.param(
+        return sc.param(
             name=name,
             unit="€/kWh_el",
             doc=f"Marginal Costs {sc.year}, {sc.freq}, {sc.country}",
@@ -135,7 +135,7 @@ class TimeSeriesPrepper:
                 low_price = min(prices)
                 high_price = max(prices)
 
-        return self.sc.param(
+        return sc.param(
             name=name,
             unit="€/kWh_el",
             doc=f"Time-Of-Use-tariff with the prices {low_price:.3f}€ and {high_price:.3f}€",
@@ -179,7 +179,7 @@ class TimeSeriesPrepper:
         """Add an electricity demand"""
         sc = self.sc
 
-        return self.sc.param(
+        return sc.param(
             name=name,
             unit="kWh_el",
             doc=f"Electricity demand from standard load profile {profile}: {SLP_PROFILES[profile]}",

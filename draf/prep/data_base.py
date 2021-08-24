@@ -8,6 +8,7 @@ class SRC:
     ASUE_2011 = "https://asue.de/sites/default/files/asue/themen/blockheizkraftwerke/2011/broschueren/05_07_11_asue-bhkw-kenndaten-0311.pdf, p.12"
     BMWI_2020 = "https://www.bmwi-energiewende.de/EWD/Redaktion/Newsletter/2020/11/Meldung/News1.html"
     BRACCO_2016 = "https://doi.org/10.1016/j.energy.2016.01.050"
+    CARROQUINO_2021 = "https://doi.org/10.3390/app11083587"
     FFE_2016 = "https://www.ffe.de/images/stories/Themen/414_MOS/20160728_MOS_Speichertechnologien.pdf"
     FIGGENER_2020 = "https://doi.org/10.1016/j.est.2020.101982"
     GEG9_2020 = "https://www.buzer.de/Anlage_9_GEG.htm"
@@ -19,12 +20,12 @@ class SRC:
     MTA = "MTA Galaxy tech GLT 210/SSN in https://www.mta.de/fileadmin/user_upload/MTA-Produktuebersicht-Prozesskuehlung.pdf"
     PLAN_BIOGAS = "https://planet-biogas.de/biogasprodukte/bhkw/"
     PVMAG_2020 = "https://www.pv-magazine.de/2020/03/13/pv-magazine-marktuebersicht-fuer-grossspeicher-aktualisiert"
+    REDONDO_2016 = "https://doi.org/10.1109%2FVPPC.2016.7791723"
     SMT_2018 = "https://www.strommarkttreffen.org/2018-02_Hinterberger_P2H-Anlagen_zur_Verwertung_von_EE-Ueberschussstrom.pdf"
     VARTIAINEN_2019 = "https://doi.org/10.1002/pip.3189"
     VDI2067 = "https://www.beuth.de/de/technische-regel/vdi-2067-blatt-1/151420393"
     VIESSMANN = "http://www.heizungs-discount.de/Kataloge/Viessmann/viessmann_preisliste_mittel_und_grosskessel_vitoplex_vitocell_vitorond_vitotrans_vitoradial_vitomax_vitoplex_vitocontrol_kwt_vitocal_pyrot_pyrotec_mawera_vitocom_vitodata_vitohome.pdf"
-    WOLF_2017 = "http://dx.doi.org/10.18419/opus-9593"
-
+    WOLF_2017 = "https://doi.org/10.18419/opus-9593"
 # fmt: on
 
 
@@ -74,6 +75,16 @@ class DataBase:
         data=0.7,
         doc=f"Ratio charging power / capacity.",
         src=SRC.FIGGENER_2020,
+    )
+    eta_BES_time_ = ParDat(
+        name="eta_BES_time_",
+        # "0.35% to 2.5% per month depending on state of charge"
+        data=1 - (0.0035 + 0.024) / 2 / (30 * 24),
+        doc="Efficiency due to self-discharge rate",
+        src=SRC.REDONDO_2016,
+    )
+    eta_BES_in_ = ParDat(
+        name="eta_BES_in_", data=0.95, doc="Cycling efficiency", src=SRC.CARROQUINO_2021
     )
 
     k_BES_RMI_ = ParDat(name="k_BES_RMI_", data=0.02, doc=Acronyms.RMI.en, src=SRC.JUELCH_2016)

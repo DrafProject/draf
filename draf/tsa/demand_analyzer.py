@@ -1,4 +1,5 @@
-from typing import Tuple, List
+from typing import List, Tuple
+
 import holidays
 import matplotlib.pyplot as plt
 import numpy as np
@@ -58,9 +59,11 @@ class DemandAnalyzer(DateTimeHandler):
         for row in data:
             li.append(
                 " ".join(
-                    [row[0].rjust(col_width[0]),
-                    row[1].rjust(col_width[1]),
-                    row[2].ljust(col_width[2])]
+                    [
+                        row[0].rjust(col_width[0]),
+                        row[1].rjust(col_width[1]),
+                        row[2].ljust(col_width[2]),
+                    ]
                 )
             )
         text_table = "\n".join(li)

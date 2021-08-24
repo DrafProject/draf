@@ -69,8 +69,8 @@ def params_func(sc: draf.Scenario):
     sc.var("P_PV_CAPn_", doc="New capacity", unit="kW_el", ub=1e20 * p.z_PV_)
 
     # BES
-    sc.param("eta_BES_in_", data=0.999, doc="Discharging efficiency")
-    sc.param("eta_BES_time_", data=0.999, doc="Charging efficiency")
+    sc.param(from_db=db.eta_BES_in_)
+    sc.param(from_db=db.eta_BES_time_)
     sc.param("k_BES_inPerCapa_", data=1.0, doc="Ratio charging power / capacity")
     sc.param("k_BES_outPerCapa_", data=1.0, doc="Ratio discharging power / capacity")
     sc.param("z_BES_", data=0, doc="If new capacity is allowed")

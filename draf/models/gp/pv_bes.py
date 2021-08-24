@@ -5,6 +5,7 @@ see: https://mfleschutz.github.io/draf-showcase/#/2
 from gurobipy import GRB, Model, quicksum
 
 import draf
+from draf.prep import DataBase as db
 
 
 def params_func(sc: draf.Scenario):
@@ -47,8 +48,8 @@ def params_func(sc: draf.Scenario):
 
     # BES
     sc.param("E_BES_CAPx_", data=0, doc="Existing capacity", unit="kW_el")
-    sc.param("eta_BES_in_", data=0.999, doc="Discharging efficiency")
-    sc.param("eta_BES_time_", data=0.999, doc="Charging efficiency")
+    sc.param(from_db=db.eta_BES_in_)
+    sc.param(from_db=db.eta_BES_time_)
     sc.param("k_BES_inPerCapa_", data=1, doc="Ratio charging power / capacity")
     sc.param("k_BES_outPerCapa_", data=1, doc="Ratio discharging power / capacity")
     sc.var("E_BES_in_T", doc="Charged electricity", unit="kWh_el")
