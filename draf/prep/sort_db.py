@@ -1,23 +1,18 @@
-def sort_sections(s):
-    new = ""
+def sort_lines_in_string(s: str) -> str:
+    return "\n".join(sorted(s.split("\n")))
+
+
+def sort_sections(s: str) -> str:
     starter = "\n    # SORTING_START\n"
     ender = "    # SORTING_END\n"
 
     whole_string = s.split(starter)
-    new += whole_string[0]
+    new = whole_string[0]
     rest = whole_string[1:]
 
     for part in rest:
         x = part.split(ender)
-        to_sort = x[0]
-        new += starter[:-1]
-        sorted_list = sorted(to_sort.split("\n"))
-        sorted_string = "\n".join(sorted_list)
-        new += sorted_string
-        new += "\n" + ender
-
-        new += x[1]
-
+        new += starter[:-1] + sort_lines_in_string(x[0]) + "\n" + ender + x[1]
     return new
 
 
