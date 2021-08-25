@@ -4,6 +4,9 @@ from draf.prep.par_dat import ParDat
 
 # fmt: off
 
+# This file is ignored from the black formatter.
+# Data entries are alphabetically sorted within the formatting routine.
+
 class SRC:
     # SORTING_START
     ASUE_2011 = "https://asue.de/sites/default/files/asue/themen/blockheizkraftwerke/2011/broschueren/05_07_11_asue-bhkw-kenndaten-0311.pdf, p.12"
