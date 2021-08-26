@@ -78,24 +78,14 @@ def get_el_SLP(
     Public holidays (dependent on country and province or state) receive the Sunday profile.
     """
     warnings.filterwarnings("ignore", message="indexing past lexsort depth")
-
     assert profile in SLP_PROFILES
 
     if offset > 0 and peak_load is not None:
         assert offset < peak_load
 
-    fp = paths.DATA / f"demand/electricity/SLP/Lastprofil_{profile}.xls"
-    df1 = pd.read_excel(io=fp, skiprows=[1, 2, 3, 4, 5, 6, 7, 9], header=[1], usecols=range(0, 5))
-    df2 = pd.read_excel(io=fp, skiprows=[1, 2, 3, 4, 5, 6, 7, 9], header=[1], usecols=range(6, 11))
-    df3 = pd.read_excel(io=fp, skiprows=[1, 2, 3, 4, 5, 6, 7, 9], header=[1], usecols=range(12, 17))
-
-    df2.columns = df1.columns
-    df3.columns = df1.columns
-
-    df = df1.append(df2).append(df3)
-
-    df = df.set_index(["Jahreszeit", "Tagestyp", "Zeit von"])
-    df = df.drop(columns="Zeit bis")
+    fp = paths.DATA / f"demand/electricity/SLP_BDEW/Repräsentative Profile VDEW.xls"
+    df = pd.read_excel(io=fp, sheet_name=profile, header=[1, 2], index_col=0, skipfooter=1)
+    df = df.reset_index(drop=True)
 
     def _get_season(date):
         is_summer = (datetime.datetime(date.year, 5, 15) <= date) and (
@@ -122,17 +112,17 @@ def get_el_SLP(
         elif is_saturday:
             return "Samstag"
         else:
-            return "Montag - Freitag"
+            return "Werktag"
 
-    day_list = hp.make_datetimeindex(year=year, freq="D")
-    season = [_get_season(day) for day in day_list]
-    day_type = [_get_day_type(day) for day in day_list]
+    days = hp.make_datetimeindex(year=year, freq="D")
+    seasons = [_get_season(day) for day in days]
+    day_types = [_get_day_type(day) for day in days]
 
     dt_index = hp.make_datetimeindex(year=year, freq="15min")
     ser = pd.Series(index=dt_index)
 
-    for i, day in enumerate(day_list):
-        ser.loc[day.strftime("%Y-%m-%d")] = df.loc[season[i], day_type[i]]["Wert"].values
+    for day, season, day_type in zip(days, seasons, day_types):
+        ser.loc[day.strftime("%Y-%m-%d")] = df[season, day_type].values
 
     ser = hp.resample(ser, year=year, start_freq="15min", target_freq=freq, aggfunc="mean")
     ser = ser.reset_index(drop=True)
