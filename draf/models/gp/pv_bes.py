@@ -15,10 +15,12 @@ def params_func(sc: draf.Scenario):
 
     # General
     sc.prep.k__comp_()
+    sc.prep.k__dT_()
+
+    # Total
     sc.var("C_TOT_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
     sc.var("C_TOT_op_", doc="Operating costs", unit="k€/a", lb=-GRB.INFINITY)
     sc.var("CE_TOT_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
-    sc.prep.k__dT_()
 
     # Pareto
     sc.param("k_PTO_alpha_", data=0, doc="Pareto weighting factor")
