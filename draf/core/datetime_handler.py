@@ -76,7 +76,6 @@ class DateTimeHandler(ABC):
     def _get_integer_locations(self, start, steps, end) -> Tuple[int, int]:
         t1 = self._get_first_int_loc_from_dtstring(start) if isinstance(start, str) else start
         if steps is not None and end is None:
-            print(t1, steps)
             assert t1 + steps < self.dtindex.size, "Too many steps are given."
             t2 = t1 + steps - 1
         elif steps is None and end is not None:
