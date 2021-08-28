@@ -77,7 +77,7 @@ def get_pv_power(
         system_loss: Total system power losses (fraction).
     """
     warnings.simplefilter(action="ignore", category=FutureWarning)
-    df = get_data_for_gsee_with_data_of_nearest_station(year=year, coords=coords)
+    df = get_nearestStationData_for_gsee(year=year, coords=coords)
     return gsee_pv.run_model(
         data=df,
         coords=coords,
@@ -90,9 +90,9 @@ def get_pv_power(
     )
 
 
-def get_data_for_gsee_with_data_of_nearest_station(year: int, coords: Tuple):
+def get_nearestStationData_for_gsee(year: int, coords: Tuple[float, float]):
     meta = get_nearest_stations(coords=coords, year=year)
-    logger.info("Used stations:\n" + meta.to_string())
+    logger.info(f"Used stations:\n{meta.to_string()}")
     return get_data_for_gsee(
         stations_id_air=meta.loc["Stations_id", "air_temperature"],
         stations_id_solar=meta.loc["Stations_id", "solar"],

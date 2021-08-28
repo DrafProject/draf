@@ -41,7 +41,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
     def __init__(
         self,
         freq: str,
-        year: str,
+        year: int,
         country: str = "DE",
         dtindex: Optional[int] = None,
         dtindex_custom: Optional[int] = None,
@@ -623,16 +623,16 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             idx = pd.MultiIndex.from_product(coords, names=list(dims))
         return idx
 
-    def get_unit(self, ent_name: str) -> str:
+    def get_unit(self, ent_name: str) -> Optional[str]:
         return self.get_meta(ent_name=ent_name, meta_type="unit")
 
-    def get_doc(self, ent_name: str) -> str:
+    def get_doc(self, ent_name: str) -> Optional[str]:
         return self.get_meta(ent_name=ent_name, meta_type="doc")
 
-    def get_src(self, ent_name: str) -> str:
+    def get_src(self, ent_name: str) -> Optional[str]:
         return self.get_meta(ent_name=ent_name, meta_type="src")
 
-    def get_meta(self, ent_name: str, meta_type: str) -> str:
+    def get_meta(self, ent_name: str, meta_type: str) -> Optional[str]:
         """Returns meta-information such as doc or unit for a given entity.
 
         Note:
@@ -641,12 +641,15 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             sc.res._meta (dict)
             sc.res._meta[<entity-name>] (dict with metas {"doc":..., "unit":...})
         """
+        return_value = None
         for attr in ["params", "res", "dims"]:
             obj = getattr(self, attr, None)
             if obj is not None:
                 metas = obj._meta.get(ent_name, "")
                 if metas is not "":
-                    return metas.get(meta_type, "")
+                    return_value = metas.get(meta_type, "")
+                    break
+        return return_value
 
     def update_params(self, **kwargs) -> Scenario:
         """Update multiple existing parameters.
@@ -779,7 +782,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         else:
             unit_nd = f" [{unit}]" if show_units else ""
-            if only_header:
+            if only_header and isinstance(ent_value, pd.Series):
                 data = ent_value.head(4)
 
             else:

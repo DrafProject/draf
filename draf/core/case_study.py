@@ -6,7 +6,7 @@ import pickle
 import textwrap
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -159,14 +159,9 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         """Returns the reference scenario i.e. the scenario with the id=REF or if that not exists
         the first scenario."""
         try:
-            return self.scens.REF
+            return getattr(self.scens, "REF")
         except AttributeError:
-            pass
-        try:
             return self.scens_list[0]
-        except AttributeError:
-            pass
-        return None
 
     def set_solver_params(self, **kwargs) -> CaseStudy:
         """Set some gurobi solver parameters e.g.:

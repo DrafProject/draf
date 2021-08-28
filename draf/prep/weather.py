@@ -12,8 +12,6 @@ import requests
 from bs4 import BeautifulSoup
 from elmada.helper import read, write
 
-from draf import helper as hp
-from draf import paths
 from draf.paths import DATA
 
 DWD_BASE = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly"

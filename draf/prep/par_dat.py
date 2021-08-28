@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from typing import List, Union
+from typing import Union
+
+import pandas as pd
 
 from draf import helper as hp
 
@@ -7,7 +9,7 @@ from draf import helper as hp
 @dataclass
 class ParDat:
     name: str
-    data: Union[str, List]
+    data: Union[float, pd.Series]
     doc: str = ""
     src: str = ""
     unit: str = ""

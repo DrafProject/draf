@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 class DrafBaseClass:
     """This class mainly provides functions."""
 
-    def _build_repr(self, layout: str = None, which_metadata: Optional[List] = None) -> str:
+    def _build_repr(self, layout: str, which_metadata: Iterable) -> str:
 
         preface = "<{} object>".format(self.__class__.__name__)
 

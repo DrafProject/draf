@@ -160,11 +160,10 @@ def get_heating_demand(
     if ser_amb_temp is None:
         assert coords is not None
         assert year is not None
-        get_air_temp(coords=coords, year=year, with_dt=False)
+        ser_amb_temp = get_air_temp(coords=coords, year=year, with_dt=False)
     assert target_temp >= threshold_temp
-    ser = ser_amb_temp
-    ser[ser > threshold_temp] = target_temp
-    ser = target_temp - ser
+    ser_amb_temp[ser_amb_temp > threshold_temp] = target_temp
+    ser = target_temp - ser_amb_temp
     scaling_factor = annual_energy / ser.sum()
     ser *= scaling_factor
     ser.name = "H_dem_H_T"
@@ -187,11 +186,10 @@ def get_cooling_demand(
     if ser_amb_temp is None:
         assert coords is not None
         assert year is not None
-        get_air_temp(coords=coords, year=year, with_dt=False)
+        ser_amb_temp = get_air_temp(coords=coords, year=year, with_dt=False)
     assert target_temp <= threshold_temp
-    ser = ser_amb_temp
-    ser[ser < threshold_temp] = target_temp
-    ser = ser - target_temp
+    ser_amb_temp[ser_amb_temp < threshold_temp] = target_temp
+    ser = ser_amb_temp - target_temp
     scaling_factor = annual_energy / ser.sum()
     ser = ser * scaling_factor
     ser.name = "H_dem_C_T"
