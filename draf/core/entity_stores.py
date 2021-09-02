@@ -31,8 +31,8 @@ class Dimensions(DrafBaseClass):
 
 class EntityStore(DrafBaseClass):
     def __repr__(self):
-        layout = "{bullet}{name:<20}{dims:>5} {unit:>14} {doc}\n"
-        return self._build_repr(layout, which_metadata=["unit", "doc", "dims"])
+        layout = "{bullet}{name:<20} {comp:<5} {dims:<5} {unit:<14} {doc}\n"
+        return self._build_repr(layout, which_metadata=["unit", "comp", "doc", "dims"])
 
     def __init__(self):
         self._changed_since_last_dic_export: bool = False
@@ -85,7 +85,7 @@ class EntityStore(DrafBaseClass):
     def filtered(
         self,
         type: Optional[str] = None,
-        component: Optional[str] = None,
+        comp: Optional[str] = None,
         acro: Optional[str] = None,
         dims: Optional[str] = None,
     ) -> Dict:
@@ -94,11 +94,15 @@ class EntityStore(DrafBaseClass):
             for k, v in self.get_all().items()
             if (
                 (hp.get_type(k) == type or type is None)
-                and (hp.get_component(k) == component or component is None)
+                and (hp.get_component(k) == comp or comp is None)
                 and (hp.get_acro(k) == acro or acro is None)
                 and (hp.get_dims(k) == dims or dims is None)
             )
         }
+
+    def get(self, name: str):
+        """Returns entity"""
+        return getattr(self, name)
 
 
 class Params(EntityStore):
@@ -111,9 +115,18 @@ class Params(EntityStore):
     def _set_meta(self, ent_name: str, meta_type: str, value: str) -> None:
         self._meta.setdefault(ent_name, {})[meta_type] = value
 
-    def _convert_unit(self, ent_name: str, conversion_factor: float, return_unit: str):
+    def _convert_unit(
+        self,
+        ent_name: str,
+        return_unit: str,
+        conversion_factor: float = None,
+        conversion_func: Callable = None,
+    ):
         par = self.get(ent_name)
-        par *= conversion_factor
+        if conversion_factor is not None:
+            par *= conversion_factor
+        if conversion_func is not None:
+            par = conversion_func(par)
         self._set_meta(ent_name, "unit", return_unit)
 
 

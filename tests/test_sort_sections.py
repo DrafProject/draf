@@ -1,4 +1,4 @@
-from draf.prep.sort_db import sort_sections
+from draf.sort_sections import sort_sections
 
 a = """\
 a

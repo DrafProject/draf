@@ -76,7 +76,7 @@ def c_HP_inv_(estimated_size=100) -> ParDat:
     return ParDat(name="c_HP_inv_", data=value, doc="CAPEX", src=SRC.WOLF_2017, unit="€/kW_el")
 
 
-def c_HS_inv_(estimated_size=100, temp_spread=40) -> ParDat:
+def c_TES_inv_(estimated_size=100, temp_spread=40) -> ParDat:
     """CAPEX for heat storages.
 
     Parameters:
@@ -94,7 +94,7 @@ def c_HS_inv_(estimated_size=100, temp_spread=40) -> ParDat:
     kWh_per_m3 = specific_heat / kJ_per_kWh * temp_spread * density
     price_per_m3 = 8222.6 * estimated_size ** -0.394
     value = price_per_m3 / kWh_per_m3
-    return ParDat(name="c_HS_inv_", data=value, doc="CAPEX", src=SRC.FFE_2016, unit="€/kW_th")
+    return ParDat(name="c_TES_inv_", data=value, doc="CAPEX", src=SRC.FFE_2016, unit="€/kW_th")
 
 
 def c_HOB_inv_() -> ParDat:
@@ -116,7 +116,7 @@ def eta_CHP_el_(fuel: str = "bio") -> ParDat:
     return ParDat(
         name="eta_CHP_el_",
         data=data,
-        doc=f"Electric efficiency.",
+        doc=f"Electric efficiency",
         src=src,
         unit="kW_el/kW",
     )
@@ -132,7 +132,27 @@ def eta_CHP_th_(fuel: str = "bio") -> ParDat:
     return ParDat(
         name="eta_CHP_th_",
         data=data,
-        doc=f"Thermal efficiency.",
+        doc=f"Thermal efficiency",
         src=src,
         unit="kW_th/kW",
     )
+
+
+def eta_CHP_el_F() -> ParDat:
+    name = "eta_CHP_el_F"
+    bio = eta_CHP_el_(fuel="bio")
+    ng = eta_CHP_el_(fuel="ng")
+    ng.data = pd.Series({"ng": ng.data, "bio": bio.data}, name=name)
+    ng.name = name
+    ng.src += " " + bio.src
+    return ng
+
+
+def eta_CHP_th_F() -> ParDat:
+    name = "eta_CHP_th_F"
+    bio = eta_CHP_th_(fuel="bio")
+    ng = eta_CHP_th_(fuel="ng")
+    ng.data = pd.Series({"ng": ng.data, "bio": bio.data}, name=name)
+    ng.name = name
+    ng.src += " " + bio.src
+    return ng

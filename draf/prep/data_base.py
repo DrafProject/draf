@@ -29,6 +29,7 @@ class SRC:
     VARTIAINEN_2019 = "https://doi.org/10.1002/pip.3189"
     VDI2067 = "https://www.beuth.de/de/technische-regel/vdi-2067-blatt-1/151420393"
     VIESSMANN = "http://www.heizungs-discount.de/Kataloge/Viessmann/viessmann_preisliste_mittel_und_grosskessel_vitoplex_vitocell_vitorond_vitotrans_vitoradial_vitomax_vitoplex_vitocontrol_kwt_vitocal_pyrot_pyrotec_mawera_vitocom_vitodata_vitohome.pdf"
+    WANG_2018d = "https://doi.org/10.1016/j.apenergy.2018.08.124"
     WOLF_2017 = "https://doi.org/10.18419/opus-9593"
     # SORTING_END
 
@@ -43,28 +44,27 @@ class DataBase:
     c_P2H_inv_ = ParDat(name="c_P2H_inv_", data=100, doc=f"System CAPEX.", src=SRC.SMT_2018, unit="€/kW_th")
     ce_FUEL_F = ParDat(name="ce_FUEL_F", data=pd.Series({"ng": 0.240, "bio": 0.075}), doc=f"Fuel carbon emissions.", src=f"{SRC.GEG9_2020} documentation in {SRC.IFEU_2008}", unit="kgCO2eq/kWh")
     cop_CM_ = ParDat(name="cop_CM_", data=3.98, doc="Coefficient of performance.", src=SRC.MTA, unit="kWh_th/kW_el")
-    eta_BES_in_ = ParDat(name="eta_BES_in_", data=0.95, doc="Cycling efficiency", src=SRC.CARROQUINO_2021)
+    eta_BES_cycle_ = ParDat(name="eta_BES_cycle_", data=0.95, doc="Cycling efficiency", src=SRC.CARROQUINO_2021)
     eta_BES_time_ = ParDat(name="eta_BES_time_", data=1 - (0.0035 + 0.024) / 2 / (30 * 24), doc="Efficiency due to self-discharge rate", src=SRC.REDONDO_2016)  # "0.35% to 2.5% per month depending on state of charge"
-    eta_CS_in_ = ParDat(name="eta_CS_in_", data=0.99, doc=f"Loading efficiency.", src=SRC.FFE_2016)
-    eta_CS_time_ = ParDat(name="eta_CS_time_", data=0.95, doc=f"Storing efficiency.", src=SRC.FFE_2016)
+    eta_CHP_el_F = funcs.eta_CHP_el_F()
+    eta_CHP_th_F = funcs.eta_CHP_th_F()
     eta_HP_ = ParDat(name="eta_HP_", data=0.5, doc=f"Ratio of reaching the ideal COP.", src=SRC.KALTSCH_2020)
-    eta_HS_in_ = ParDat(name="eta_HS_in_", data=0.99, doc=f"Loading efficiency.", src=SRC.FFE_2016)
-    eta_HS_time_ = ParDat(name="eta_HS_time_", data=0.95, doc=f"Storing efficiency.", src=SRC.FFE_2016)
+    eta_P2H_ = ParDat(name="eta_P2H_",data=0.9, doc="Efficiency", src=SRC.WANG_2018d)
+    eta_TES_in_ = ParDat(name="eta_TES_in_", data=0.99, doc=f"Loading efficiency.", src=SRC.FFE_2016)
+    eta_TES_time_ = ParDat(name="eta_TES_time_", data=0.95, doc=f"Storing efficiency.", src=SRC.FFE_2016)
     k_BES_inPerCapa_ = ParDat(name="k_BES_inPerCapa_", data=0.7, doc=f"Ratio charging power / capacity.", src=SRC.FIGGENER_2020)
     k_BES_maint_ = ParDat(name="k_BES_maint_", data=0.02, doc=Acronyms.RMI.en, src=SRC.JUELCH_2016)
     k_CHP_maint_ = ParDat(name="k_CHP_maint_", data=0.06 + 0.02, doc=Acronyms.RMI.en, src=SRC.VDI2067)
     k_CM_maint_ = ParDat(name="k_CM_maint_", data=0.01 + 0.015, doc=Acronyms.RMI.en, src=SRC.VDI2067)
-    k_CS_maint_ = ParDat(name="k_CS_maint_", data=0.001, doc=Acronyms.RMI.en, src=SRC.FFE_2016)
     k_HOB_maint_ = ParDat(name="k_HOB_maint_", data=0.04, doc=Acronyms.RMI.en)  # TODO
     k_HP_maint_ = ParDat(name="k_HP_maint_", data=0.01 + 0.015, doc=Acronyms.RMI.en, src=SRC.VDI2067)
-    k_HS_maint_ = ParDat(name="k_HS_maint_", data=0.001, doc=Acronyms.RMI.en, src=SRC.FFE_2016)
     k_PV_maint_ = ParDat(name="k_PV_maint_", data=0.02, doc=Acronyms.RMI.en, src=SRC.ISE_2018)
+    k_TES_maint_ = ParDat(name="k_TES_maint_", data=0.001, doc=Acronyms.RMI.en, src=SRC.FFE_2016)
     ol_BES_ = ParDat(name="ol_BES_", data=20, doc=f"Operation life.", src=SRC.JUELCH_2016, unit="a")
     ol_CHP_ = ParDat(name="ol_CHP_", data=15, doc=f"Operation life.", src=SRC.VDI2067, unit="a")
-    ol_CS_ = ParDat(name="ol_CS_", data=30, doc=f"Operation life.", src=SRC.BRACCO_2016, unit="a")
     ol_HP_ = ParDat(name="ol_HP_", data=18, doc=f"Operation life.", src=SRC.VDI2067, unit="a")
-    ol_HS_ = ParDat(name="ol_HS_", data=30, doc=f"Operation life.", src=SRC.BRACCO_2016, unit="a")
     ol_PV_ = ParDat(name="ol_PV_", data=25, doc=f"Operation life.", src=SRC.ISE_2018, unit="a")
+    ol_TES_ = ParDat(name="ol_TES_", data=30, doc=f"Operation life.", src=SRC.BRACCO_2016, unit="a")
     # SORTING_END
 
 # fmt: on

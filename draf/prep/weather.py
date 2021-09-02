@@ -15,8 +15,9 @@ from elmada.helper import read, write
 from draf.paths import DATA
 
 DWD_BASE = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly"
-
 MIDDLE = dict(solar="/solar", air_temperature="/air_temperature/historical")
+
+# TODO: get 10min data and resample to 15min https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/10_minutes/
 
 ZIP = dict(
     solar="/stundenwerte_ST_{stations_id:05}_row.zip",

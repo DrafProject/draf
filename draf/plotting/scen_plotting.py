@@ -273,7 +273,6 @@ class ScenPlotter(BasePlotter):
             if hp.get_dims(ent_name) == "T":
                 data = self.sc.dated(data)
 
-        assert isinstance(data, pd.Series)
         return self._get_line_fig(data)
 
     def _get_line_fig(self, data: Union[pd.Series, pd.DataFrame]) -> go.Figure:
@@ -289,7 +288,7 @@ class ScenPlotter(BasePlotter):
 
         return go.Figure(data=plotly_data)
 
-    def line_T(self, what: str = "v", dated: bool = True) -> go.Figure:
+    def line_T(self, what: str = "v", dated: bool = True, df=None) -> go.Figure:
         """Returns a Plotly line plot of all entities with the dimension T using Plotly express.
 
         Attention: the figure might be very big.
@@ -298,22 +297,25 @@ class ScenPlotter(BasePlotter):
             what: 'v' for Variables, 'p' for Parameters.
             dated: If index has datetimes.
         """
-        df = self.sc.get_var_par_dic(what)["T"]
+        if df is None:
+            df = self.sc.get_var_par_dic(what)["T"]
 
         if dated:
             df = self.sc.dated(df)
 
         ser = df.stack()
         ser.index = ser.index.rename(["T", "ent"])
-        ser = ser.rename("values")
-        df = ser.reset_index()
+        df = ser.rename("values").reset_index()
         df["flow_type"] = df.ent.apply(lambda x: hp.get_type(x)).astype("category")
+        # df["comp"] = df.ent.apply(lambda x: hp.get_component(x)).astype("category")
         df["ent"] = df["ent"].astype("category")
 
         y_scaler = len(df.flow_type.unique())
-        fig = px.line(
+        fig = px.area(
             df, x="T", y="values", color="ent", facet_row="flow_type", height=200 * y_scaler
         )
+        fig.update_traces(line=dict(width=0, shape="hv"))  # shape=hv makes step function
+
         return fig
 
     def plot(
@@ -651,6 +653,66 @@ class ScenPlotter(BasePlotter):
         ax.tick_params(direction="out")
 
         return fig, ax, img
+
+    def ts_balance(
+        self,
+        data: Dict[str, List[str]],
+        data_ylabel: str,
+        data_conversion_factor: float,
+        addon_ts: str,
+        addon_ts_ylabel: str,
+        addon_conversion_factor: float,
+        colors: Dict[str, str],
+        ts_slicer: Union[str, slice] = slice(None),
+    ) -> go.Figure:
+        sc = self.sc
+
+        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.02)
+
+        for direction in data:
+            for ent_name in data[direction]:
+                ser = sc.dated(sc.get_entity(ent_name))[ts_slicer]
+                values = ser.values if direction == "pos" else -ser.values
+                fig.add_trace(
+                    go.Scatter(
+                        x=ser.index.tolist(),
+                        y=values * data_conversion_factor,
+                        legendgroup=direction,
+                        line=dict(shape="hv", width=0),
+                        fillcolor=colors[hp.get_component(ent_name)],
+                        mode="lines",
+                        name=ent_name,
+                        showlegend=True,
+                        stackgroup=direction,
+                    ),
+                    row=1,
+                    col=1,
+                )
+
+        ser = sc.dated(sc.get_entity(addon_ts))[ts_slicer]
+
+        fig.add_trace(
+            go.Scatter(
+                x=ser.index.tolist(),
+                y=ser.values * addon_conversion_factor,
+                line=dict(color="black", shape="hv", width=1),
+                mode="lines",
+                name=addon_ts,
+                showlegend=True,
+            ),
+            row=2,
+            col=1,
+        )
+
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0),
+            height=300,
+            template="plotly_white",
+            legend=dict(traceorder="grouped+reversed", tracegroupgap=50, yanchor="top", y=0.89),
+            yaxis=dict(title=data_ylabel, domain=[0.28, 1.0]),
+            yaxis2=dict(title=addon_ts_ylabel, domain=[0.0, 0.25]),
+        )
+        return fig
 
 
 def _make_diverging_norm(ser, imshow_kws) -> Colormap:

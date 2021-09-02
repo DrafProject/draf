@@ -19,7 +19,7 @@ class ParDat:
         return hp.get_type(self.name)
 
     @property
-    def component(self) -> str:
+    def comp(self) -> str:
         return hp.get_component(self.name)
 
     @property

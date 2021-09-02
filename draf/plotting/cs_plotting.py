@@ -605,10 +605,10 @@ class CsPlotter(BasePlotter):
         cs = self.cs
         df = pd.DataFrame(
             {
-                "Params": pd.Series(cs.get_ent("timelog_params_")),
-                "Vars": pd.Series(cs.get_ent("timelog_vars_")),
-                "Model": pd.Series(cs.get_ent("timelog_model_")),
-                "Solve": pd.Series(cs.get_ent("timelog_solve_")),
+                "Params": pd.Series(cs.get_ent("t__params_")),
+                "Vars": pd.Series(cs.get_ent("t__vars_")),
+                "Model": pd.Series(cs.get_ent("t__model_")),
+                "Solve": pd.Series(cs.get_ent("t__solve_")),
             }
         )
 

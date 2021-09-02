@@ -200,18 +200,18 @@ class TimeSeriesPrepper:
             ),
         )
 
-    def H_hDem_TH(self) -> pd.Series:
+    def dQ_hDem_TH(self) -> pd.Series:
         data = pd.Series(0, pd.MultiIndex.from_product([self.sc.dims.T, self.sc.dims.H]))
-        return self.sc.param(name="H_hDem_TH", data=data, doc="Heating demand", unit="kW_th")
+        return self.sc.param(name="dQ_hDem_TH", data=data, doc="Heating demand", unit="kW_th")
 
-    def H_cDem_TN(self) -> pd.Series:
+    def dQ_cDem_TN(self) -> pd.Series:
         data = pd.Series(0, pd.MultiIndex.from_product([self.sc.dims.T, self.sc.dims.N]))
-        return self.sc.param(name="H_cDem_TN", data=data, doc="Cooling demand", unit="kW_th")
+        return self.sc.param(name="dQ_cDem_TN", data=data, doc="Cooling demand", unit="kW_th")
 
     @hp.copy_doc(prep.get_heating_demand)
-    def H_dem_H_T(
+    def dQ_dem_H_T(
         self,
-        name: str = "H_dem_H_T",
+        name: str = "dQ_dem_H_T",
         annual_energy: float = 1e6,
         target_temp: float = 22.0,
         threshold_temp: float = 15.0,
@@ -236,9 +236,9 @@ class TimeSeriesPrepper:
         )
 
     @hp.copy_doc(prep.get_cooling_demand)
-    def H_dem_C_T(
+    def dQ_dem_C_T(
         self,
-        name: str = "H_dem_C_T",
+        name: str = "dQ_dem_C_T",
         annual_energy: float = 1e6,
         target_temp: float = 22.0,
         threshold_temp: float = 22.0,

@@ -238,7 +238,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             logger.error(e)
 
         self.param(
-            "timelog_params_",
+            "t__params_",
             self._get_time_diff(),
             doc="Time for building the params",
             unit="seconds",
@@ -267,7 +267,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self._set_time_trace()
         self._activate_vars()
         self.param(
-            "timelog_vars_",
+            "t__vars_",
             self._get_time_diff(),
             doc="Time for building the variables",
             unit="seconds",
@@ -285,7 +285,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         model_builder_func(m=self.mdl, d=self.dims, p=params, v=self.vars)
 
         self.param(
-            "timelog_model_",
+            "t__model_",
             self._get_time_diff(),
             doc="Time for building the model",
             unit="seconds",
@@ -417,7 +417,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.mdl.setParam("OutputFlag", int(outputFlag), verbose=False)
         self.mdl.optimize()
         self.param(
-            "timelog_solve_",
+            "t__solve_",
             self._get_time_diff(),
             doc="Time for solving the model",
             unit="seconds",
@@ -468,7 +468,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         results = solver.solve(self.mdl, tee=logToConsole, load_solutions=False, logfile=logfile)
 
         self.param(
-            "timelog_solve_",
+            "t__solve_",
             self._get_time_diff(),
             doc="Time for solving the model",
             unit="seconds",
@@ -592,7 +592,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             * This does not yet create a gurobipy or pyomo-variable-object.
             * Dims are inferred from name suffix
         """
-
         dims = hp.get_dims(name)
         is_scalar = dims == ""
         self.vars._meta[name] = dict(
@@ -601,6 +600,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             vtype=vtype,
             lb=lb,
             ub=ub,
+            comp=hp.get_component(name),
             dims=dims,
             is_scalar=is_scalar,
         )
@@ -706,7 +706,10 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 from_db.name = name
             return self.param(**from_db.__dict__)
 
+        assert name is not None
+
         dims = hp.get_dims(name)
+        comp = hp.get_component(name)
 
         if dims == "":
             assert isinstance(data, (float, int)), (
@@ -730,7 +733,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             )
 
         if not update:
-            self.params._meta[name] = dict(doc=doc, unit=unit, src=src, dims=dims)
+            self.params._meta[name] = dict(doc=doc, unit=unit, src=src, comp=comp, dims=dims)
 
         if isinstance(data, pd.Series):
             data.rename(name, inplace=True)

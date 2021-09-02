@@ -297,7 +297,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             sc = self.add_scen(
                 id=f"sc{len(self.scens_dic)}", name=sc_name, doc=long_doc, based_on=based_on
             )
-            sc.update_params(timelog_params_=0)
+            sc.update_params(t__params_=0)
 
             for ent_name, value in ser.items():
                 if isinstance(value, str):
@@ -466,7 +466,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             sc.optimize(postprocess_func=postprocess_func, **optimize_kwargs)
 
         if all([sc._is_optimal for sc in scens]):
-            mean = np.array([sc.params.timelog_solve_ for sc in scens]).mean()
+            mean = np.array([sc.params.t__solve_ for sc in scens]).mean()
             print(
                 f"Successfully solved {len(scens)} scenarios with an average solving time "
                 f"of {mean:.3} seconds."

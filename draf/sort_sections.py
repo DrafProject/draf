@@ -19,5 +19,7 @@ def sort_sections(s: str) -> str:
 if __name__ == "__main__":
     from pathlib import Path
 
-    fp = Path(__file__).parent / "data_base.py"
-    fp.write_text(sort_sections(fp.read_text()))
+    this_dir = Path(__file__).parent
+    for filename in ["prep/data_base.py", "conventions.py"]:
+        fp = this_dir / filename
+        fp.write_text(sort_sections(fp.read_text()))

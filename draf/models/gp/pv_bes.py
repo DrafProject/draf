@@ -19,7 +19,7 @@ def params_func(sc: draf.Scenario):
 
     # Total
     sc.var("C_TOT_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
-    sc.var("C_TOT_op_", doc="Operating costs", unit="k€/a", lb=-GRB.INFINITY)
+    sc.var("C_TOT_op_", doc="Total operating costs", unit="k€/a", lb=-GRB.INFINITY)
     sc.var("CE_TOT_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
 
     # Pareto
@@ -51,7 +51,7 @@ def params_func(sc: draf.Scenario):
 
     # BES
     sc.param("E_BES_CAPx_", data=0, doc="Existing capacity", unit="kW_el")
-    sc.param(from_db=db.eta_BES_in_)
+    sc.param(from_db=db.eta_BES_cycle_)
     sc.param(from_db=db.eta_BES_time_)
     sc.param("k_BES_inPerCapa_", data=1, doc="Ratio charging power / capacity")
     sc.param("k_BES_outPerCapa_", data=1, doc="Ratio discharging power / capacity")
@@ -91,7 +91,8 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
     # Electricity
     m.addConstrs(
         (
-            v.P_GRID_buy_T[t] + v.P_PV_OC_T[t] + v.P_BES_out_T[t] == p.P_eDem_T[t] + v.P_BES_in_T[t]
+            v.P_GRID_buy_T[t] + v.P_PV_OC_T[t] + v.P_BES_out_T[t]
+            == p.P_eDem_T[t] + v.P_BES_in_T[t] + v.P_GRID_sell_T[t]
             for t in T
         ),
         "BAL_el",
@@ -118,7 +119,7 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
         (
             v.E_BES_T[t]
             == v.E_BES_T[t - 1] * p.eta_BES_time_
-            + v.P_BES_in_T[t] * p.eta_BES_in_ * p.k__dT_
+            + v.P_BES_in_T[t] * p.eta_BES_cycle_ * p.k__dT_
             - v.P_BES_out_T[t] * p.k__dT_
             for t in T[1:]
         ),
