@@ -15,8 +15,8 @@ class ParDat:
     unit: str = ""
 
     @property
-    def type(self) -> str:
-        return hp.get_type(self.name)
+    def etype(self) -> str:
+        return hp.get_etype(self.name)
 
     @property
     def comp(self) -> str:

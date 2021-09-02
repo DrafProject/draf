@@ -3,11 +3,11 @@ import pandas as pd
 from draf import helper as hp
 
 
-def test_get_type():
-    assert hp.get_type("c_") == "c"
-    assert hp.get_type("c_T") == "c"
-    assert hp.get_type("c_GRID_TH") == "c"
-    assert hp.get_type("c_GRID_RTP_TH") == "c"
+def test_get_etype():
+    assert hp.get_etype("c_") == "c"
+    assert hp.get_etype("c_T") == "c"
+    assert hp.get_etype("c_GRID_TH") == "c"
+    assert hp.get_etype("c_GRID_RTP_TH") == "c"
 
 
 def test_get_dims():

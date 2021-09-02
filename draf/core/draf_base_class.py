@@ -7,7 +7,7 @@ class DrafBaseClass:
 
     def _build_repr(self, layout: str, which_metadata: Iterable) -> str:
 
-        preface = "<{} object>".format(self.__class__.__name__)
+        preface = f"<{self.__class__.__name__} object>"
 
         self_mapping = {k: k.capitalize() for k in which_metadata}
         header = layout.format(bullet="    ", name="Name", **self_mapping)
@@ -21,7 +21,11 @@ class DrafBaseClass:
                     metas["doc"] = textwrap.shorten(metas["doc"], width=68)
                 except KeyError:
                     pass
-                this_list.append(layout.format(bullet="  ⤷ ", name=ent_name, **metas))
+                try:
+                    appender = layout.format(bullet="  ⤷ ", name=ent_name, **metas)
+                except TypeError:
+                    appender = f"  ⤷ {ent_name} ====No Metadata found===="
+                this_list.append(appender)
 
         else:
             for k, v in self.get_all().items():

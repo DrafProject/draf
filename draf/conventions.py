@@ -8,7 +8,7 @@ class Acro:
 
 
 # fmt: off
-class Types:
+class Etypes:
     # SORTING_START
     A = Acro(en="Area", de="Fläche")
     C = Acro(en="Costs", de="Kosten")

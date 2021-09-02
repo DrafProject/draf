@@ -32,7 +32,7 @@ def fits_convention(ent_name: str, data: Union[int, float, pd.Series]) -> bool:
         return data.index.nlevels == len(dims)
 
 
-def get_type(ent_name: str) -> str:
+def get_etype(ent_name: str) -> str:
     return ent_name.split("_")[0]
 
 

@@ -600,6 +600,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             vtype=vtype,
             lb=lb,
             ub=ub,
+            etype=hp.get_etype(name),
             comp=hp.get_component(name),
             dims=dims,
             is_scalar=is_scalar,
@@ -710,6 +711,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         dims = hp.get_dims(name)
         comp = hp.get_component(name)
+        etype = hp.get_etype(name)
 
         if dims == "":
             assert isinstance(data, (float, int)), (
@@ -733,7 +735,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             )
 
         if not update:
-            self.params._meta[name] = dict(doc=doc, unit=unit, src=src, comp=comp, dims=dims)
+            self.params._meta[name] = dict(
+                doc=doc, unit=unit, src=src, etype=etype, comp=comp, dims=dims
+            )
 
         if isinstance(data, pd.Series):
             data.rename(name, inplace=True)

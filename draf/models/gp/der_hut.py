@@ -387,7 +387,7 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
 def postprocess_func(r: draf.Results):
     r.make_pos_ent("P_GRID_buy_T")
     r.make_pos_ent("P_CHP_OC_T")
-    r.make_pos_ent("dQ_TES_in_TH", "dQ_TES_out_TH")
+    r.make_pos_ent("dQ_TES_in_TH", "dQ_TES_out_TH", doc_target="Storage output heat flow")
 
 
 def sankey_func(sc: draf.Scenario):

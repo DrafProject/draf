@@ -31,8 +31,8 @@ class Dimensions(DrafBaseClass):
 
 class EntityStore(DrafBaseClass):
     def __repr__(self):
-        layout = "{bullet}{name:<20} {comp:<5} {dims:<5} {unit:<14} {doc}\n"
-        return self._build_repr(layout, which_metadata=["unit", "comp", "doc", "dims"])
+        layout = "{bullet}{name:<20} {etype:<4} {comp:<5} {dims:<5} {unit:<14} {doc}\n"
+        return self._build_repr(layout, which_metadata=["unit", "etype", "comp", "doc", "dims"])
 
     def __init__(self):
         self._changed_since_last_dic_export: bool = False
@@ -84,7 +84,7 @@ class EntityStore(DrafBaseClass):
 
     def filtered(
         self,
-        type: Optional[str] = None,
+        etype: Optional[str] = None,
         comp: Optional[str] = None,
         acro: Optional[str] = None,
         dims: Optional[str] = None,
@@ -93,7 +93,7 @@ class EntityStore(DrafBaseClass):
             k: v
             for k, v in self.get_all().items()
             if (
-                (hp.get_type(k) == type or type is None)
+                (hp.get_etype(k) == etype or etype is None)
                 and (hp.get_component(k) == comp or comp is None)
                 and (hp.get_acro(k) == acro or acro is None)
                 and (hp.get_dims(k) == dims or dims is None)
@@ -222,7 +222,9 @@ class Results(EntityStore):
                 setattr(self, target_neg, -source_ser.where(cond=source_ser < 0, other=0))
 
                 self._copy_meta(
-                    source_ent=source, target_ent=target_neg, which_metas=["doc", "unit", "dims"]
+                    source_ent=source,
+                    target_ent=target_neg,
+                    which_metas=["etype", "comp", "unit", "dims"],
                 )
 
                 if isinstance(doc_target, str):

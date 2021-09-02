@@ -306,7 +306,7 @@ class ScenPlotter(BasePlotter):
         ser = df.stack()
         ser.index = ser.index.rename(["T", "ent"])
         df = ser.rename("values").reset_index()
-        df["flow_type"] = df.ent.apply(lambda x: hp.get_type(x)).astype("category")
+        df["flow_type"] = df.ent.apply(lambda x: hp.get_etype(x)).astype("category")
         # df["comp"] = df.ent.apply(lambda x: hp.get_component(x)).astype("category")
         df["ent"] = df["ent"].astype("category")
 
