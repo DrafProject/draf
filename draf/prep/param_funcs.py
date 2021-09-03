@@ -12,7 +12,7 @@ def c_PV_inv_() -> ParDat:
     Valid for Europe in 2019 for P_inst=>500 kW_peak.
     """
     return ParDat(
-        name="c_PV_inv_", data=460, doc="CAPEX", src=SRC.VARTIAINEN_2019, unit="€/kW_peak"
+        name="c_PV_inv_", data=460, doc="CAPEX", src=SRC.Vartiainen_2019, unit="€/kW_peak"
     )
 
 
@@ -73,7 +73,7 @@ def c_HP_inv_(estimated_size=100) -> ParDat:
     """
     assert 0 < estimated_size < 200
     value = 1520.7 * estimated_size ** -0.363
-    return ParDat(name="c_HP_inv_", data=value, doc="CAPEX", src=SRC.WOLF_2017, unit="€/kW_el")
+    return ParDat(name="c_HP_inv_", data=value, doc="CAPEX", src=SRC.Wolf_2017, unit="€/kW_el")
 
 
 def c_TES_inv_(estimated_size=100, temp_spread=40) -> ParDat:
@@ -110,7 +110,7 @@ def eta_CHP_el_(fuel: str = "bio") -> ParDat:
     if fuel == "bio":
         data, src = 0.42, SRC.PLAN_BIOGAS
     elif fuel == "ng":
-        data, src = 0.40, SRC.MATHIESEN_2015
+        data, src = 0.40, SRC.Mathiesen_2015
     else:
         ValueError("Only biogas implemented")
     return ParDat(
@@ -126,7 +126,7 @@ def eta_CHP_th_(fuel: str = "bio") -> ParDat:
     if fuel == "bio":
         data, src = 0.42, SRC.PLAN_BIOGAS
     elif fuel == "ng":
-        data, src = 0.45, SRC.MATHIESEN_2015
+        data, src = 0.45, SRC.Mathiesen_2015
     else:
         ValueError("Only biogas implemented")
     return ParDat(

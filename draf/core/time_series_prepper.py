@@ -209,9 +209,9 @@ class TimeSeriesPrepper:
         return self.sc.param(name="dQ_cDem_TN", data=data, doc="Cooling demand", unit="kW_th")
 
     @hp.copy_doc(prep.get_heating_demand)
-    def dQ_dem_H_T(
+    def dQ_hDem_T(
         self,
-        name: str = "dQ_dem_H_T",
+        name: str = "dQ_hDem_T",
         annual_energy: float = 1e6,
         target_temp: float = 22.0,
         threshold_temp: float = 15.0,
@@ -236,9 +236,9 @@ class TimeSeriesPrepper:
         )
 
     @hp.copy_doc(prep.get_cooling_demand)
-    def dQ_dem_C_T(
+    def dQ_cDem_T(
         self,
-        name: str = "dQ_dem_C_T",
+        name: str = "dQ_cDem_T",
         annual_energy: float = 1e6,
         target_temp: float = 22.0,
         threshold_temp: float = 22.0,

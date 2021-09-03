@@ -166,7 +166,7 @@ def get_heating_demand(
     ser = target_temp - ser_amb_temp
     scaling_factor = annual_energy / ser.sum()
     ser *= scaling_factor
-    ser.name = "dQ_dem_H_T"
+    ser.name = "dQ_hDem_T"
     logger.info(
         f"Heating demand created with annual energy={annual_energy}, target_temp={target_temp}"
         f", threshold_temp={threshold_temp}."
@@ -192,7 +192,7 @@ def get_cooling_demand(
     ser = ser_amb_temp - target_temp
     scaling_factor = annual_energy / ser.sum()
     ser = ser * scaling_factor
-    ser.name = "dQ_dem_C_T"
+    ser.name = "dQ_cDem_T"
     logger.info(
         f"Cooling demand created with annual energy={annual_energy}, target_temp={target_temp}"
         f", threshold_temp={threshold_temp}."

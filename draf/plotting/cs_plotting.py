@@ -544,7 +544,15 @@ class CsPlotter(BasePlotter):
 
         return go.Figure(data=data, layout=layout)
 
-    def table(self, what: str = "p", show_unit: bool = True, show_doc: bool = True) -> pdStyler:
+    def table(
+        self,
+        what: str = "p",
+        show_unit: bool = True,
+        show_doc: bool = True,
+        show_src: bool = False,
+        show_etype: bool = False,
+        show_comp: bool = False,
+    ) -> pdStyler:
         """Creates a table with all scalars.
 
         Args:
@@ -563,6 +571,12 @@ class CsPlotter(BasePlotter):
             df["Unit"] = [cs.any_scen.get_unit(ent_name) for ent_name in df.index]
         if show_doc:
             df["Doc"] = [cs.any_scen.get_doc(ent_name) for ent_name in df.index]
+        if show_src:
+            df["Src"] = [cs.any_scen.get_src(ent_name) for ent_name in df.index]
+        if show_etype:
+            df["Etype"] = [hp.get_etype(ent_name) for ent_name in df.index]
+        if show_comp:
+            df["Comp"] = [hp.get_component(ent_name) for ent_name in df.index]
         df.index.name = what
         cm = sns.light_palette("green", n_colors=20, as_cmap=True)
 

@@ -45,9 +45,9 @@ def params_func(sc: draf.Scenario):
     # Demands
     sc.prep.P_eDem_T(profile="G1", annual_energy=5e6)
     sc.prep.dQ_cDem_TN()
-    p.dQ_cDem_TN.loc[:, "7/12"] = sc.prep.dQ_dem_C_T(annual_energy=1.7e3).values
+    p.dQ_cDem_TN.loc[:, "7/12"] = sc.prep.dQ_cDem_T(annual_energy=1.7e3).values
     sc.prep.dQ_hDem_TH()
-    p.dQ_hDem_TH.loc[:, "60/40"] = sc.prep.dQ_dem_H_T(annual_energy=1.7e6).values
+    p.dQ_hDem_TH.loc[:, "60/40"] = sc.prep.dQ_hDem_T(annual_energy=1.7e6).values
     sc.param(
         "T_hDem_out_H", data=273 + pd.Series([40, 70], d.H), doc="Heating outlet temp.", unit="K"
     )
@@ -82,8 +82,8 @@ def params_func(sc: draf.Scenario):
     sc.var("P_PV_CAPn_", doc="New capacity", unit="kW_el", ub=1e20 * p.z_PV_)
 
     # BES
-    sc.param("k_BES_inPerCapa_", data=1.0, doc="Ratio charging power / capacity")
-    sc.param("k_BES_outPerCapa_", data=1.0, doc="Ratio discharging power / capacity")
+    sc.param(from_db=db.k_BES_inPerCapa_)
+    sc.param(from_db=db.k_BES_outPerCapa_)
     sc.param("z_BES_", data=0, doc="If new capacity is allowed")
     sc.param(from_db=db.eta_BES_cycle_)
     sc.param(from_db=db.eta_BES_time_)
@@ -92,9 +92,7 @@ def params_func(sc: draf.Scenario):
     sc.var("E_BES_CAPn_", doc="New capacity", unit="kWh_el")
     sc.var("E_BES_T", doc="Electricity stored", unit="kWh_el")
     sc.var("P_BES_in_T", doc="Charging power", unit="kW_el")
-    sc.var("P_BES_inMax_", doc="Maximum charging power", unit="kW_el")
     sc.var("P_BES_out_T", doc="Discharging power", unit="kW_el")
-    sc.var("P_BES_outMax_", doc="Maximum discharging power", unit="kW_el")
 
     # HP
     sc.param("T__amb_", data=273 + 25)
@@ -105,9 +103,9 @@ def params_func(sc: draf.Scenario):
         unit="K",
     )
     sc.param("T_HP_E_N", data=p.T_cDem_in_N - 5, doc="Evaporation side temp.", unit="K")
-    sc.param("eta_HP_", data=0.5, doc="Ratio of reaching the ideal COP (exergy efficiency")
+    sc.param("eta_HP_", data=0.5, doc="Ratio of reaching the ideal COP (exergy efficiency)")
     sc.param(
-        "cop_HP_carnotH_CN",
+        "cop_HP_carnot_CN",
         data=pd.Series(
             {(c, n): p.T_HP_C_C[c] / (p.T_HP_C_C[c] - p.T_HP_E_N[n]) for c in d.C for n in d.N}
         ),
@@ -119,7 +117,7 @@ def params_func(sc: draf.Scenario):
             {
                 (c, n): 100
                 if p.T_HP_C_C[c] <= p.T_HP_E_N[n]
-                else p.cop_HP_carnotH_CN[c, n] * p.eta_HP_
+                else p.cop_HP_carnot_CN[c, n] * p.eta_HP_
                 for c in d.C
                 for n in d.N
             }
@@ -127,7 +125,7 @@ def params_func(sc: draf.Scenario):
         doc="Real heating COP",
     )
     sc.param("dQ_HP_CAPx_", data=5000, doc="Existing heating capacity", unit="kW_th")
-    sc.param("dQ_HP_max_", data=1e6, doc="Big-M number (upper bound for CAPn + CAPx)", unit="kW_th")
+    sc.param("dQ_HP_max_", data=1e5, doc="Big-M number (upper bound for CAPn + CAPx)", unit="kW_th")
     sc.param("z_HP_", data=0, doc="If new capacity is allowed")
     sc.param(from_db=db.funcs.c_HP_inv_())
     sc.param(from_db=db.k_HP_maint_)
@@ -135,7 +133,7 @@ def params_func(sc: draf.Scenario):
     sc.var("dQ_HP_CAPn_", doc="New heating capacity", unit="kW_th", ub=1e6 * p.z_HP_)
     sc.var("dQ_HP_Cond_TCN", doc="Heat flow released on condensation side", unit="kW_th")
     sc.var("dQ_HP_Eva_TCN", doc="Heat flow absorbed on evaporation side", unit="kW_th")
-    sc.var("Y_HP_TCN", doc="1, If source and sink are connected at time-step", vtype=GRB.BINARY)
+    sc.var("Y_HP_TCN", doc="If source and sink are connected at time-step", vtype=GRB.BINARY)
 
     # HOB
     sc.param("eta_HOB_", data=0.9, doc="Thermal efficiency", unit="kWh_th/kWh")
@@ -169,7 +167,7 @@ def params_func(sc: draf.Scenario):
     sc.var("F_CHP_TF", doc="Consumed fuel flow", unit="kW")
     sc.var("P_CHP_CAPn_", doc="New capacity", unit="kW_el", ub=1e6 * p.z_CHP_)
     sc.var("dQ_CHP_T", doc="Producing heat flow", unit="kW_th")
-    sc.param("P_CHP_max_", data=1e6, doc="Big-M number (upper bound for CAPn + CAPx)", unit="kW_el")
+    sc.param("P_CHP_max_", data=1e5, doc="Big-M number (upper bound for CAPn + CAPx)", unit="kW_el")
     if p.z_CHP_minPL_:
         sc.param("k_CHP_minPL_", data=0.5, doc="Minimal allowed part load")
         sc.var("Y_CHP_T", doc="If in operation", vtype=GRB.BINARY)
@@ -277,10 +275,10 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
     m.addConstrs((v.P_PV_T[t] == v.P_PV_FI_T[t] + v.P_PV_OC_T[t] for t in T), "PV_OC_FI")
 
     # BES
-    m.addConstr(v.P_BES_inMax_ == v.E_BES_CAPn_ * p.k_BES_inPerCapa_, "DEF_P_BES_inMax_")
-    m.addConstr(v.P_BES_outMax_ == v.E_BES_CAPn_ * p.k_BES_outPerCapa_, "DEF_P_BES_outMax_")
-    m.addConstrs((v.P_BES_in_T[t] <= v.P_BES_inMax_ for t in T), "MAX_BES_IN")
-    m.addConstrs((v.P_BES_out_T[t] <= v.P_BES_outMax_ for t in T), "MAX_BES_OUT")
+    m.addConstrs((v.P_BES_in_T[t] <= v.E_BES_CAPn_ * p.k_BES_inPerCapa_ for t in T), "MAX_BES_IN")
+    m.addConstrs(
+        (v.P_BES_out_T[t] <= v.E_BES_CAPn_ * p.k_BES_outPerCapa_ for t in T), "MAX_BES_OUT"
+    )
     m.addConstrs((v.E_BES_T[t] <= v.E_BES_CAPn_ for t in T), "MAX_BES_E")
     m.addConstrs((v.E_BES_T[t] == 0 for t in [min(T), max(T)]), "INI_BES")
     m.addConstrs(

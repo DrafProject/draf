@@ -86,7 +86,7 @@ class EntityStore(DrafBaseClass):
         self,
         etype: Optional[str] = None,
         comp: Optional[str] = None,
-        acro: Optional[str] = None,
+        desc: Optional[str] = None,
         dims: Optional[str] = None,
     ) -> Dict:
         return {
@@ -95,7 +95,7 @@ class EntityStore(DrafBaseClass):
             if (
                 (hp.get_etype(k) == etype or etype is None)
                 and (hp.get_component(k) == comp or comp is None)
-                and (hp.get_acro(k) == acro or acro is None)
+                and (hp.get_desc(k) == desc or desc is None)
                 and (hp.get_dims(k) == dims or dims is None)
             )
         }

@@ -18,13 +18,13 @@ def test_get_dims():
     assert hp.get_component("c_GRID_RTP_TH") == "GRID"
 
 
-def test_get_acro():
-    assert hp.get_acro("c_") == ""
-    assert hp.get_acro("c_TH") == ""
-    assert hp.get_acro("c_GRID_TH") == ""
-    assert hp.get_acro("c_GRID_RTP_TH") == "RTP"
-    assert hp.get_acro("c_GRID_RTP_addon_TH") == "RTP"
-    assert hp.get_acro("c_GRID_RTPaddon_TH") == "RTPaddon"
+def test_get_desc():
+    assert hp.get_desc("c_") == ""
+    assert hp.get_desc("c_TH") == ""
+    assert hp.get_desc("c_GRID_TH") == ""
+    assert hp.get_desc("c_GRID_RTP_TH") == "RTP"
+    assert hp.get_desc("c_GRID_RTP_addon_TH") == "RTP"
+    assert hp.get_desc("c_GRID_RTPaddon_TH") == "RTPaddon"
 
 
 def test_get_dims():

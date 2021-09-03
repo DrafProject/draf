@@ -14,7 +14,7 @@ def _agg_cap(capEntName: str, v: Vars) -> float:
 
 def _capas(v: Vars) -> List[Tuple[str, str]]:
     """Returns the new capacities per component type"""
-    return {hp.get_component(key): _agg_cap(key, v) for key in v.filtered(acro="CAPn")}
+    return {hp.get_component(key): _agg_cap(key, v) for key in v.filtered(desc="CAPn")}
 
 
 def C_TOT_inv_(p: Params, v: Vars):

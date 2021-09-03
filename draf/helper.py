@@ -1,4 +1,5 @@
 import logging
+import re
 import textwrap
 from datetime import datetime
 from pathlib import Path
@@ -41,7 +42,7 @@ def get_component(ent_name: str) -> str:
     return elements[1] if len(elements) >= 3 else ""
 
 
-def get_acro(ent_name: str) -> str:
+def get_desc(ent_name: str) -> str:
     elements = ent_name.split("_")
     return elements[2] if len(elements) >= 4 else ""
 
@@ -193,3 +194,18 @@ def add_thousands_formatter(ax, x: bool = True, y: bool = True):
         axlist.append(ax.get_yaxis())
     for axis in axlist:
         axis.set_major_formatter(ticker.FuncFormatter(lambda x, p: format(int(x), ",")))
+
+
+def replace_urls_with_link(urlstr: str) -> str:
+    # credits: https://stackoverflow.com/questions/1112012/replace-url-with-a-link-using-regex-in-python
+
+    pat1str = r"(^|[\n ])(([\w]+?://[\w\#$%&~.\-;:=,?@\[\]+]*)(/[\w\#$%&~/.\-;:=,?@\[\]+]*)?)"
+    pat2str = r"#(^|[\n ])(((www|ftp)\.[\w\#$%&~.\-;:=,?@\[\]+]*)(/[\w\#$%&~/.\-;:=,?@\[\]+]*)?)"
+
+    pat1 = re.compile(pat1str, re.IGNORECASE | re.DOTALL)
+    pat2 = re.compile(pat2str, re.IGNORECASE | re.DOTALL)
+
+    urlstr = pat1.sub(r'\1<a href="\2" target="_blank">\3</a>', urlstr)
+    urlstr = pat2.sub(r'\1<a href="http:/\2" target="_blank">\3</a>', urlstr)
+
+    return urlstr

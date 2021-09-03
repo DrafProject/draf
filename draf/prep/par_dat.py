@@ -23,8 +23,8 @@ class ParDat:
         return hp.get_component(self.name)
 
     @property
-    def acro(self) -> str:
-        return hp.get_acro(self.name)
+    def desc(self) -> str:
+        return hp.get_desc(self.name)
 
     @property
     def dims(self) -> str:
