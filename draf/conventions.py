@@ -51,7 +51,7 @@ class Components:
     CHP = Alias(en="Combined heat and power", de="Kraft-Wärme-Kopplung (BHKW)")
     CM = Alias(en="Cooling machine", de="Kältemaschine")
     Dem = Alias(en="Demands", de="Bedarf")
-    GRID = Alias(en="Electricity grid", de="Stromnetz")
+    EL = Alias(en="Electricity grid", de="Stromnetz")
     H2H = Alias(en="Heat downgrading", de="Wärmeabstufung")
     HOB = Alias(en="Heat only boiler", de="Heizkessel")
     HP = Alias(en="Heat pump", de="Wärmepumpe")

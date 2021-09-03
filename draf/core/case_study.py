@@ -256,12 +256,12 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 desired variations. The syntax can be taken from this example:
                 ```
                 scen_vars = [
-                    ("c_GRID_T", "t", ["c_GRID_RTP_T", "c_GRID_TOU_T"]]),
+                    ("c_EL_T", "t", ["c_EL_RTP_T", "c_EL_TOU_T"]]),
                     ("P_PV_CAPx_", "p", [0, 10, 20])
                 ]
                 ```
-                In the first tuple the parameter 'c_GRID_T' is set to the parameter 'c_GRID_RTP_T'
-                and then to the parameter 'c_GRID_TOU_T'. In the second tuple, the parameter
+                In the first tuple the parameter 'c_EL_T' is set to the parameter 'c_EL_RTP_T'
+                and then to the parameter 'c_EL_TOU_T'. In the second tuple, the parameter
                 'P_PV_CAPx_' is set to the different values of the list [0, 10, 20]. Since every
                 possible combination is created as a scenario, in this example 6 scenarios are
                 created.

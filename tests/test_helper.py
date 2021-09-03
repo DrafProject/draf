@@ -6,33 +6,33 @@ from draf import helper as hp
 def test_get_etype():
     assert hp.get_etype("c_") == "c"
     assert hp.get_etype("c_T") == "c"
-    assert hp.get_etype("c_GRID_TH") == "c"
-    assert hp.get_etype("c_GRID_RTP_TH") == "c"
+    assert hp.get_etype("c_EL_TH") == "c"
+    assert hp.get_etype("c_EL_RTP_TH") == "c"
 
 
 def test_get_dims():
     assert hp.get_component("c_") == ""
     assert hp.get_component("c_T") == ""
     assert hp.get_component("c_TH") == ""
-    assert hp.get_component("c_GRID_TH") == "GRID"
-    assert hp.get_component("c_GRID_RTP_TH") == "GRID"
+    assert hp.get_component("c_EL_TH") == "EL"
+    assert hp.get_component("c_EL_RTP_TH") == "EL"
 
 
 def test_get_desc():
     assert hp.get_desc("c_") == ""
     assert hp.get_desc("c_TH") == ""
-    assert hp.get_desc("c_GRID_TH") == ""
-    assert hp.get_desc("c_GRID_RTP_TH") == "RTP"
-    assert hp.get_desc("c_GRID_RTP_addon_TH") == "RTP"
-    assert hp.get_desc("c_GRID_RTPaddon_TH") == "RTPaddon"
+    assert hp.get_desc("c_EL_TH") == ""
+    assert hp.get_desc("c_EL_RTP_TH") == "RTP"
+    assert hp.get_desc("c_EL_RTP_addon_TH") == "RTP"
+    assert hp.get_desc("c_EL_RTPaddon_TH") == "RTPaddon"
 
 
 def test_get_dims():
     assert hp.get_dims("c_") == ""
     assert hp.get_dims("c_T") == "T"
     assert hp.get_dims("c_TH") == "TH"
-    assert hp.get_dims("c_GRID_TH") == "TH"
-    assert hp.get_dims("c_GRID_RTP_TH") == "TH"
+    assert hp.get_dims("c_EL_TH") == "TH"
+    assert hp.get_dims("c_EL_RTP_TH") == "TH"
 
 
 def test_datetime_to_int():

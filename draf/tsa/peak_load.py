@@ -24,15 +24,15 @@ class PeakLoadAnalyzer(DateTimeHandler):
         self.params = Params()
         self.set_prices()
 
-    def set_prices(self, c_GRID=0.12, c_GRID_peak=50.0):
+    def set_prices(self, c_EL=0.12, c_EL_peak=50.0):
         p = self.params
-        p.c_GRID = c_GRID
-        p.c_GRID_peak = c_GRID_peak
+        p.c_EL = c_EL
+        p.c_EL_peak = c_EL_peak
         p.p_max = self.p_el.max()
         p.e_annual_sum = self.p_el.sum() * self.step_width
-        p.C_GRID = p.c_GRID * p.e_annual_sum
-        p.C_GRID_peak = p.c_GRID_peak * p.p_max
-        p.C = p.C_GRID + p.C_GRID_peak
+        p.C_EL = p.c_EL * p.e_annual_sum
+        p.C_EL_peak = p.c_EL_peak * p.p_max
+        p.C = p.C_EL + p.C_EL_peak
 
     def histo(self, target_percentile: int = 95):
         """Presents the biggest peaks of a load curve as table and barchart.
@@ -62,15 +62,15 @@ class PeakLoadAnalyzer(DateTimeHandler):
 
     def _get_stats(self, target_percentile):
         reduc = self.p_el_ordered[0] - self.target_peakload
-        savings_raw = reduc * self.params.c_GRID_peak
-        rel_savings = savings_raw / self.params.C_GRID_peak
+        savings_raw = reduc * self.params.c_EL_peak
+        rel_savings = savings_raw / self.params.C_EL_peak
         savings, savings_unit = hp.auto_fmt(savings_raw, "€/a")
         return textwrap.dedent(
             f"""\
             Peak load reduction of {reduc:,.0f} kW
             from {self.p_el.max():,.0f} to {self.target_peakload:,.0f} kW ({target_percentile:.0f} percentile)
             
-            Savings:{rel_savings:.1%} network costs (={savings:,.2f} {savings_unit} with {self.params.c_GRID_peak:,.0f} €/kW)
+            Savings:{rel_savings:.1%} network costs (={savings:,.2f} {savings_unit} with {self.params.c_EL_peak:,.0f} €/kW)
         """
         )
 

@@ -29,18 +29,16 @@ def params_func(sc: draf.Scenario):
 
     # Demands
     sc.prep.P_eDem_T(profile="G3", annual_energy=5e6)
-    # GRID
-    sc.param("c_GRID_buyPeak_", data=40, doc="Peak price", unit="€/kW_el")
-    sc.param(
-        "c_GRID_T", data=sc.prep.c_GRID_RTP_T(), doc="Chosen electricity tariff", unit="€/kWh_el"
-    )
-    sc.prep.c_GRID_TOU_T()
-    sc.prep.c_GRID_FLAT_T()
-    sc.prep.c_GRID_addon_T()
-    sc.prep.ce_GRID_T()
-    sc.var("P_GRID_buy_T", doc="Purchased electrical power", unit="kW_el")
-    sc.var("P_GRID_sell_T", doc="Selling electrical power", unit="kW_el")
-    sc.var("P_GRID_buyPeak_", doc="Peak electrical power", unit="kW_el")
+    # EL
+    sc.param("c_EL_buyPeak_", data=40, doc="Peak price", unit="€/kW_el")
+    sc.param("c_EL_T", data=sc.prep.c_EL_RTP_T(), doc="Chosen electricity tariff", unit="€/kWh_el")
+    sc.prep.c_EL_TOU_T()
+    sc.prep.c_EL_FLAT_T()
+    sc.prep.c_EL_addon_T()
+    sc.prep.ce_EL_T()
+    sc.var("P_EL_buy_T", doc="Purchased electrical power", unit="kW_el")
+    sc.var("P_EL_sell_T", doc="Selling electrical power", unit="kW_el")
+    sc.var("P_EL_buyPeak_", doc="Peak electrical power", unit="kW_el")
 
     # PV
     sc.param("P_PV_CAPx_", data=0, doc="Existing capacity", unit="kW_peak")
@@ -72,33 +70,33 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
     m.addConstr(v.C_TOT_ == v.C_TOT_op_, "DEF_C_")
     m.addConstr(
         v.C_TOT_op_
-        == v.P_GRID_buyPeak_ * p.c_GRID_buyPeak_ / 1e3
+        == v.P_EL_buyPeak_ * p.c_EL_buyPeak_ / 1e3
         + p.k__dT_
         * (
-            quicksum(v.P_GRID_buy_T[t] * (p.c_GRID_T[t] + p.c_GRID_addon_T[t]) / 1e3 for t in T)
-            - quicksum(v.P_GRID_sell_T[t] * p.c_GRID_T[t] / 1e3 for t in T)
+            quicksum(v.P_EL_buy_T[t] * (p.c_EL_T[t] + p.c_EL_addon_T[t]) / 1e3 for t in T)
+            - quicksum(v.P_EL_sell_T[t] * p.c_EL_T[t] / 1e3 for t in T)
         ),
         "DEF_C_TOT_op_",
     )
 
     # CE
     m.addConstr(
-        v.CE_TOT_ == p.k__dT_ * quicksum(v.P_GRID_buy_T[t] * p.ce_GRID_T[t] for t in T), "DEF_CE_"
+        v.CE_TOT_ == p.k__dT_ * quicksum(v.P_EL_buy_T[t] * p.ce_EL_T[t] for t in T), "DEF_CE_"
     )
 
     # Electricity
     m.addConstrs(
         (
-            v.P_GRID_buy_T[t] + v.P_PV_OC_T[t] + v.P_BES_out_T[t]
-            == p.P_eDem_T[t] + v.P_BES_in_T[t] + v.P_GRID_sell_T[t]
+            v.P_EL_buy_T[t] + v.P_PV_OC_T[t] + v.P_BES_out_T[t]
+            == p.P_eDem_T[t] + v.P_BES_in_T[t] + v.P_EL_sell_T[t]
             for t in T
         ),
         "BAL_el",
     )
 
-    # GRID
-    m.addConstrs((v.P_GRID_sell_T[t] == v.P_PV_FI_T[t] for t in T), "DEF_E_sell")
-    m.addConstrs((v.P_GRID_buy_T[t] <= v.P_GRID_buyPeak_ for t in T), "DEF_peakPrice")
+    # EL
+    m.addConstrs((v.P_EL_sell_T[t] == v.P_PV_FI_T[t] for t in T), "DEF_E_sell")
+    m.addConstrs((v.P_EL_buy_T[t] <= v.P_EL_buyPeak_ for t in T), "DEF_peakPrice")
 
     # TECHNOLOGIES =====================================
 
@@ -126,7 +124,7 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
 
 
 def postprocess_func(r: draf.Results):
-    r.make_pos_ent("P_GRID_buy_T")
+    r.make_pos_ent("P_EL_buy_T")
 
 
 def sankey_func(sc: draf.Scenario):
@@ -135,9 +133,9 @@ def sankey_func(sc: draf.Scenario):
     gte = sc.get_total_energy
     return f"""\
     type source target value
-    E GRID_buy eHub {gte(r.P_GRID_buy_T)}
+    E EL_buy eHub {gte(r.P_EL_buy_T)}
     E PV eHub {gte(r.P_PV_OC_T)}
-    E PV GRID_sell {gte(r.P_PV_FI_T)}
+    E PV EL_sell {gte(r.P_PV_FI_T)}
     E eHub BES {gte(r.P_BES_in_T)}
     E BES eDemand {gte(r.P_BES_out_T)}
     E eHub eDemand {gte(p.P_eDem_T) - gte(r.P_BES_in_T)}
@@ -148,6 +146,6 @@ def main():
     cs = draf.CaseStudy("pv_bes", year=2019, freq="60min", coords=(49.01, 8.39))
     cs.set_time_horizon(start="Apr-01 00:00", steps=24 * 2)
     cs.add_REF_scen().set_params(params_func)
-    cs.add_scens(scen_vars=[("c_GRID_T", "t", ["c_GRID_RTP_T", "c_GRID_TOU_T"])], del_REF=True)
+    cs.add_scens(scen_vars=[("c_EL_T", "t", ["c_EL_RTP_T", "c_EL_TOU_T"])], del_REF=True)
     cs.set_model(model_func).optimize(logToConsole=False, postprocess_func=postprocess_func)
     return cs

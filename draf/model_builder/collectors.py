@@ -38,13 +38,11 @@ def C_invAnnual_(p: Params, v: Vars):
     return sum([cap * p.get(f"c_{c}_inv_") / p.get(f"ol_{c}_") for c, cap in _capas(v).items()])
 
 
-def C_TOT_maint_(p: Params, v: Vars):
+def C_TOT_RMI_(p: Params, v: Vars):
     """Returns a linear expression for the repair, maintenance, and inspection per year.
     WARNING: The model must contain scalar parameters for investment prices `c_<COMPONENT>_inv_`.
 
     Example:
-        >>> model.addConstr((v.C_TOT_maint_ == collectors.C_TOT_maint_(p, v)))
+        >>> model.addConstr((v.C_TOT_RMI_ == collectors.C_TOT_RMI_(p, v)))
     """
-    return sum(
-        [cap * p.get(f"c_{c}_inv_") * p.get(f"k_{c}_maint_") for c, cap in _capas(v).items()]
-    )
+    return sum([cap * p.get(f"c_{c}_inv_") * p.get(f"k_{c}_RMI_") for c, cap in _capas(v).items()])

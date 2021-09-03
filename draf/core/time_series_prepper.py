@@ -42,7 +42,7 @@ class TimeSeriesPrepper:
         return self.sc.param(name=name, unit="h", doc="Time steps width", data=self.sc.step_width)
 
     @hp.copy_doc(get_emissions, start="Args:")
-    def ce_GRID_T(self, name: str = "ce_GRID_T", method: str = "XEF_PP", **kwargs) -> pd.Series:
+    def ce_EL_T(self, name: str = "ce_EL_T", method: str = "XEF_PP", **kwargs) -> pd.Series:
         """Add dynamic carbon emission factors."""
         sc = self.sc
         return sc.param(
@@ -61,9 +61,7 @@ class TimeSeriesPrepper:
             ),
         )
 
-    def c_GRID_RTP_T(
-        self, name: str = "c_GRID_RTP_T", method: str = "hist_EP", **kwargs
-    ) -> pd.Series:
+    def c_EL_RTP_T(self, name: str = "c_EL_RTP_T", method: str = "hist_EP", **kwargs) -> pd.Series:
         """Add Real-time-prices-tariffs."""
         sc = self.sc
         return self.sc.param(
@@ -76,7 +74,7 @@ class TimeSeriesPrepper:
             ),
         )
 
-    def c_GRID_PP_T(self, name: str = "c_GRID_PP_T", method: str = "PP") -> pd.Series:
+    def c_EL_PP_T(self, name: str = "c_EL_PP_T", method: str = "PP") -> pd.Series:
         """Add marginal costs from PP-method. Only for Germany."""
         sc = self.sc
         return sc.param(
@@ -88,7 +86,7 @@ class TimeSeriesPrepper:
             ),
         )
 
-    def c_GRID_PWL_T(self, name: str = "c_GRID_PWL_T", method: str = "PWL", **kwargs) -> pd.Series:
+    def c_EL_PWL_T(self, name: str = "c_EL_PWL_T", method: str = "PWL", **kwargs) -> pd.Series:
         """Add marginal costs from PWL-method."""
         sc = self.sc
         return sc.param(
@@ -100,9 +98,9 @@ class TimeSeriesPrepper:
             ),
         )
 
-    def c_GRID_TOU_T(
+    def c_EL_TOU_T(
         self,
-        name: str = "c_GRID_TOU_T",
+        name: str = "c_EL_TOU_T",
         prices: Optional[Tuple[float, float]] = None,
         prov: str = "BW",
     ) -> pd.Series:
@@ -125,8 +123,8 @@ class TimeSeriesPrepper:
 
         if prices is None:
             try:
-                low_price = self.sc.params.c_GRID_RTP_T[isLowTime_T].mean()
-                high_price = self.sc.params.c_GRID_RTP_T[isHighTime_T].mean()
+                low_price = self.sc.params.c_EL_RTP_T[isLowTime_T].mean()
+                high_price = self.sc.params.c_EL_RTP_T[isHighTime_T].mean()
             except AttributeError as err:
                 logger.error(
                     f"Mean price for TOU tariff cannot be inferred"
@@ -145,8 +143,8 @@ class TimeSeriesPrepper:
             data=low_price * isLowTime_T + high_price * isHighTime_T,
         )
 
-    def c_GRID_FLAT_T(
-        self, price: Optional[float] = None, name: str = "c_GRID_FLAT_T", doc_addon: str = ""
+    def c_EL_FLAT_T(
+        self, price: Optional[float] = None, name: str = "c_EL_FLAT_T", doc_addon: str = ""
     ):
         """Add a flat electricity tariff.
 
@@ -154,7 +152,7 @@ class TimeSeriesPrepper:
         """
         if price is None:
             try:
-                price = self.sc.params.c_GRID_RTP_T.mean()
+                price = self.sc.params.c_EL_RTP_T.mean()
             except AttributeError as err:
                 logger.error(
                     f"Mean price for FLAT tariff cannot be inferred"
@@ -297,9 +295,9 @@ class TimeSeriesPrepper:
             data=sc.trim_to_datetimeindex(ser),
         )
 
-    def c_GRID_addon_T(
+    def c_EL_addon_T(
         self,
-        name: str = "c_GRID_addon_T",
+        name: str = "c_EL_addon_T",
         AbLa_surcharge=0.00006,
         Concession_fee=0.0011,
         EEG_surcharge=0.0688,

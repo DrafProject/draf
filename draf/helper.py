@@ -89,7 +89,7 @@ def make_quarterhourly_file_hourly(fp: Path, year: str = "2017", aggfunc: str = 
 def sizeof_fmt(num: float, suffix: str = "B") -> str:
     """Returns the short version of the storage size of e.g. digital information.
 
-    Idea from https://stackoverflow.com/questions/1094841
+    Idea from https://stackoverflow.com/q/1094841
     """
     for unit in ["", "K", "M", "G", "T", "P", "E", "Z"]:
         if abs(num) < 1000.0:
@@ -197,7 +197,7 @@ def add_thousands_formatter(ax, x: bool = True, y: bool = True):
 
 
 def replace_urls_with_link(urlstr: str) -> str:
-    # credits: https://stackoverflow.com/questions/1112012/replace-url-with-a-link-using-regex-in-python
+    # credits: https://stackoverflow.com/q/1112012
 
     pat1str = r"(^|[\n ])(([\w]+?://[\w\#$%&~.\-;:=,?@\[\]+]*)(/[\w\#$%&~/.\-;:=,?@\[\]+]*)?)"
     pat2str = r"#(^|[\n ])(((www|ftp)\.[\w\#$%&~.\-;:=,?@\[\]+]*)(/[\w\#$%&~/.\-;:=,?@\[\]+]*)?)"

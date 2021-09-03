@@ -654,7 +654,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def update_params(self, **kwargs) -> Scenario:
         """Update multiple existing parameters.
-        e.g. sc.update_params(E_GRID_dem_T=2000, c_GRID_addon_T=0, c_GRID_peak_=0)
+        e.g. sc.update_params(E_EL_dem_T=2000, c_EL_addon_T=0, c_EL_peak_=0)
         """
         for ent_name, data in kwargs.items():
 
