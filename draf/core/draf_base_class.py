@@ -39,5 +39,5 @@ class DrafBaseClass:
             return f"{preface} (empty)"
 
     def get_all(self) -> Dict:
-        """Returns a Dict with all public non-callable attributes from this container."""
-        return {k: v for k, v in vars(self).items() if not (k.startswith("_") or callable(v))}
+        """Returns a Dict with all public attributes from this container."""
+        return {k: v for k, v in self.__dict__.items() if not (k.startswith("_"))}

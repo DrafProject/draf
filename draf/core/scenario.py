@@ -21,6 +21,7 @@ from draf.core.draf_base_class import DrafBaseClass
 from draf.core.entity_stores import Dimensions, Params, Results, Vars
 from draf.core.mappings import GRB_OPT_STATUS, VAR_PAR
 from draf.core.time_series_prepper import TimeSeriesPrepper
+from draf.model_builder.abstract_component import Component
 from draf.plotting import ScenPlotter
 from draf.prep.data_base import ParDat
 from draf.tsa.demand_analyzer import DemandAnalyzer
@@ -52,6 +53,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         doc: str = "",
         coords: Optional[Tuple[float, float]] = None,
         cs_name: str = "no_case_study",
+        components: Optional[List[Component]] = None,
     ):
         self.id = id
         self.name = name
@@ -59,7 +61,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.country = country
         self.coords = coords
         self.cs_name = cs_name
-        self.mdl = None
         self.mdl_language = "gp"
 
         self.dims = Dimensions()
@@ -77,6 +78,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             self._t1 = t1
             self._t2 = t2
             self.freq = freq
+
+        if isinstance(components, Iterable):
+            self.add_components(components)
 
     def __repr__(self):
         """Get overview of attributes of the scenario object."""
@@ -96,10 +100,10 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         return d
 
     def _set_time_trace(self):
-        self._time = time.time()
+        self._time = time.perf_counter()
 
     def _get_time_diff(self):
-        return time.time() - self._time
+        return time.perf_counter() - self._time
 
     @property
     def _res_fp(self) -> Path:
@@ -229,7 +233,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self._set_time_trace()
 
         try:
-            params_builder_func(self)
+            params_builder_func(sc=self)
 
             for k, v in self.params.get_all().items():
                 warn_if_data_contains_nan(data=v, name=k)
@@ -237,16 +241,20 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         except RuntimeError as e:
             logger.error(e)
 
-        self.param(
-            "t__params_",
-            self._get_time_diff(),
-            doc="Time for building the params",
-            unit="seconds",
-        )
+        self._update_time_param("t__params_", "Time for building the params", self._get_time_diff())
         return self
 
+    def add_components(self, components: List):
+        self.components = components
+
+        for comp in components:
+            self.set_params(comp.param_func)
+
     def set_model(
-        self, model_builder_func: Callable, speed_up: bool = True, mdl_language: str = "gp"
+        self,
+        model_builder_func: Optional[Callable] = None,
+        speed_up: bool = True,
+        mdl_language: str = "gp",
     ) -> Scenario:
         """Instantiates an optimization model and sets the model_builder_func on top of the given
         parameters and meta-informations for variables.
@@ -266,31 +274,35 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         self._set_time_trace()
         self._activate_vars()
-        self.param(
-            "t__vars_",
-            self._get_time_diff(),
-            doc="Time for building the variables",
-            unit="seconds",
+        self._update_time_param(
+            "t__vars_", "Time for building the variables", self._get_time_diff()
         )
 
         self._set_time_trace()
-
         if speed_up and self.mdl_language == "gp":
             params = self.get_tuple_dict_container()
         else:
             params = self.params
-
         logger.info(f"Set model for scenario {self.id}.")
 
-        model_builder_func(m=self.mdl, d=self.dims, p=params, v=self.vars)
+        model_funcs = []
+        if model_builder_func is not None:
+            model_funcs.append(model_builder_func)
+        if hasattr(self, "components"):
+            model_funcs += [comp.model_func for comp in self.components]
 
-        self.param(
-            "t__model_",
-            self._get_time_diff(),
-            doc="Time for building the model",
-            unit="seconds",
-        )
+        for mf in model_funcs:
+            mf(m=self.mdl, d=self.dims, p=params, v=self.vars)
+
+        self._update_time_param("t__model_", "Time for building the model", self._get_time_diff())
         return self
+
+    def _update_time_param(self, ent_name: str, doc: str, time_in_seconds: float):
+        try:
+            ent = getattr(self.params, ent_name)
+            self.param(name=ent_name, data=ent + time_in_seconds, update=True)
+        except AttributeError:
+            self.param(name=ent_name, data=time_in_seconds, doc=doc, unit="seconds")
 
     def get_tuple_dict_container(self) -> Params:
         """Returns a copy of the params object where all Pandas Series objects are converted
@@ -331,12 +343,14 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
             kwargs = dict(lb=metas["lb"], ub=metas["ub"], name=name, vtype=metas["vtype"])
 
-            mdl = self.mdl
-            if mdl is None:
+            if hasattr(self, "mdl"):
+                mdl = self.mdl
+            else:
                 raise RuntimeError(
                     "The scenario has no model yet. Please first instantiate the model"
                     " e.g. with `sc.set_model` or `sc._instantiate_model`."
                 )
+
             if metas["is_scalar"]:
                 var_obj = mdl.addVar(**kwargs)
 
@@ -391,12 +405,23 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             postprocess_func: Function which is executed with the results container object as
                 argument.
         """
+        if not hasattr(self, "mdl"):
+            self.set_model()
+
+        pp_funcs = []
+        if postprocess_func is not None:
+            pp_funcs.append(postprocess_func)
+        if hasattr(self, "components"):
+            for comp in self.components:
+                if hasattr(comp, "postprocess_func"):
+                    pp_funcs.append(comp.postprocess_func)
+
         kwargs = dict(
             logToConsole=logToConsole,
             outputFlag=outputFlag,
             show_results=show_results,
             keep_vars=keep_vars,
-            postprocess_func=postprocess_func,
+            postprocess_funcs=pp_funcs,
         )
 
         if self.mdl_language == "gp":
@@ -409,7 +434,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         return self
 
     def _optimize_gurobipy(
-        self, logToConsole, outputFlag, show_results, keep_vars, postprocess_func
+        self, logToConsole, outputFlag, show_results, keep_vars, postprocess_funcs
     ):
         logger.info(f"Optimize {self.id}.")
         self._set_time_trace()
@@ -429,8 +454,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             if not keep_vars:
                 del self.vars
 
-            if postprocess_func is not None:
-                postprocess_func(self.res)
+            for ppf in postprocess_funcs:
+                ppf(self.res)
 
             if status == gp.GRB.TIME_LIMIT:
                 logger.warning("Time-limit reached")
@@ -457,7 +482,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             )
 
     def _optimize_pyomo(
-        self, logToConsole, outputFlag, show_results, keep_vars, postprocess_func, which_solver
+        self, logToConsole, outputFlag, show_results, keep_vars, postprocess_funcs, which_solver
     ):
         logger.info(f"Optimize {self.id}.")
         self._set_time_trace()
@@ -465,14 +490,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         logfile = str(self._res_fp / "pyomo.log") if outputFlag else None
 
-        results = solver.solve(self.mdl, tee=logToConsole, load_solutions=False, logfile=logfile)
+        results = solver.solve(self.mdl, tee=logToConsole, logfile=logfile)
 
-        self.param(
-            "t__solve_",
-            self._get_time_diff(),
-            doc="Time for solving the model",
-            unit="seconds",
-        )
+        self._update_time_param("t__solve_", "Time for solving the model", self._get_time_diff())
 
         status = results.solver.status
         tc = results.solver.termination_condition
@@ -483,8 +503,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             if not keep_vars:
                 del self.vars
 
-            if postprocess_func is not None:
-                postprocess_func(self.res)
+            for ppf in postprocess_funcs:
+                ppf(self.res)
 
             if tc == pyo.TerminationCondition.maxTimeLimit:
                 logger.warning("Time-limit reached")

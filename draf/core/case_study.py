@@ -19,6 +19,7 @@ from draf.core.draf_base_class import DrafBaseClass
 from draf.core.entity_stores import Dimensions, Params, Scenarios
 from draf.core.scenario import Scenario
 from draf.core.time_series_prepper import TimeSeriesPrepper
+from draf.model_builder.abstract_component import Component
 from draf.plotting.cs_plotting import CsPlotter
 from draf.plotting.scen_plotting import ScenPlotter
 
@@ -196,6 +197,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         doc: str = "",
         based_on: Optional[str] = "REF",
         based_on_last: bool = False,
+        components: Optional[List[Component]] = None,
     ) -> Scenario:
         """Add a Scenario with a name, a describing doc-string and a link to a model.
 
@@ -229,6 +231,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 dtindex_custom=self.dtindex_custom,
                 t1=self._t1,
                 t2=self._t2,
+                components=components,
             )
         else:
             sc = getattr(self.scens, based_on)._special_copy()
@@ -416,6 +419,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             )
         return self
 
+    @hp.copy_doc(Scenario.set_params)
     def set_params(self, params_func: Callable, scens: List = None) -> CaseStudy:
         """Executes the `params_func` for for multiple scenarios at once."""
         if scens is None:
@@ -426,9 +430,10 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
 
         return self
 
+    @hp.copy_doc(Scenario.set_model)
     def set_model(
         self,
-        model_func: Callable,
+        model_func: Optional[Callable] = None,
         speed_up: bool = True,
         scens: Optional[List] = None,
         mdl_language: str = "gp",

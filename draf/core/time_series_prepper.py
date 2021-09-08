@@ -314,7 +314,7 @@ class TimeSeriesPrepper:
         Source for defaults: https://www.bdew.de/media/documents/190723_BDEW-Strompreisanalyse_Juli-2019.pdf page 25
         """
 
-        components = [
+        price_components = [
             AbLa_surcharge,
             Concession_fee,
             EEG_surcharge,
@@ -330,5 +330,5 @@ class TimeSeriesPrepper:
             name=name,
             unit="€/kWh_el",
             doc="Add-on electricity price component",
-            data=pd.Series(sum(components), self.sc.dims.T),
+            data=pd.Series(sum(price_components), self.sc.dims.T),
         )
