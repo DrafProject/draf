@@ -20,10 +20,10 @@ class DemandAnalyzer(DateTimeHandler):
         return PeakLoadAnalyzer(self.p_el, year=self.year, freq=self.freq, figsize=(10, 2))
 
     def show_peaks(
-        self, target_percentile: int = 95, c_EL: float = 0.12, c_EL_peak: float = 50.0
+        self, target_percentile: int = 95, c_EG: float = 0.12, c_EG_peak: float = 50.0
     ) -> PeakLoadAnalyzer:
         pla = PeakLoadAnalyzer(self.p_el, year=self.year, freq=self.freq, figsize=(10, 2))
-        pla.set_prices(c_EL=c_EL, c_EL_peak=c_EL_peak)
+        pla.set_prices(c_EG=c_EG, c_EG_peak=c_EG_peak)
         pla.histo(target_percentile)
         return pla
 

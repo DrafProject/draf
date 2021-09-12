@@ -7,9 +7,10 @@ All variables are solves in the presolve. The aim of this file is to show the sy
 from gurobipy import GRB, Model, quicksum
 
 import draf
+from draf import Dimensions, Params, Results, Scenario, Vars
 
 
-def params_func(sc: draf.Scenario):
+def params_func(sc: Scenario):
 
     # Dimensions
     sc.dim("T", infer=True)
@@ -24,10 +25,10 @@ def params_func(sc: draf.Scenario):
     # Pareto
     sc.param("k_PTO_alpha_", data=0, doc="Pareto weighting factor")
 
-    # EL
-    sc.prep.c_EL_RTP_T()
-    sc.prep.ce_EL_T()
-    sc.var("P_EL_buy_T", doc="Purchasing electrical power", unit="kW_el", lb=-GRB.INFINITY)
+    # EG
+    sc.prep.c_EG_RTP_T()
+    sc.prep.ce_EG_T()
+    sc.var("P_EG_buy_T", doc="Purchasing electrical power", unit="kW_el", lb=-GRB.INFINITY)
 
     # Demand
     sc.prep.P_eDem_T(profile="G1", annual_energy=5e6)
@@ -37,25 +38,25 @@ def params_func(sc: draf.Scenario):
     sc.prep.P_PV_profile_T(use_coords=True)
 
 
-def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
+def model_func(sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
 
     m.setObjective((1 - p.k_PTO_alpha_) * v.C_TOT_ + p.k_PTO_alpha_ * v.CE_TOT_, GRB.MINIMIZE)
 
     # C
     m.addConstr(
-        v.C_TOT_ == p.k__dT_ * quicksum(v.P_EL_buy_T[t] * p.c_EL_RTP_T[t] / 1e3 for t in d.T),
+        v.C_TOT_ == p.k__dT_ * quicksum(v.P_EG_buy_T[t] * p.c_EG_RTP_T[t] / 1e3 for t in d.T),
         "DEF_C_",
     )
 
     # CE
     m.addConstr(
-        v.CE_TOT_ == p.k__dT_ * quicksum(v.P_EL_buy_T[t] * p.ce_EL_T[t] for t in d.T),
+        v.CE_TOT_ == p.k__dT_ * quicksum(v.P_EG_buy_T[t] * p.ce_EG_T[t] for t in d.T),
         "DEF_CE_",
     )
 
     # Electricity
     m.addConstrs(
-        (v.P_EL_buy_T[t] + p.P_PV_CAPx_ * p.P_PV_profile_T[t] == p.P_eDem_T[t] for t in d.T),
+        (v.P_EG_buy_T[t] + p.P_PV_CAPx_ * p.P_PV_profile_T[t] == p.P_eDem_T[t] for t in d.T),
         "BAL_pur",
     )
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import datetime
+import inspect
 import logging
 import math
 import pickle
@@ -18,7 +19,7 @@ from draf import helper as hp
 from draf import paths
 from draf.core.datetime_handler import DateTimeHandler
 from draf.core.draf_base_class import DrafBaseClass
-from draf.core.entity_stores import Dimensions, Params, Results, Vars
+from draf.core.entity_stores import Balances, Dimensions, Params, Results, Vars
 from draf.core.mappings import GRB_OPT_STATUS, VAR_PAR
 from draf.core.time_series_prepper import TimeSeriesPrepper
 from draf.model_builder.abstract_component import Component
@@ -53,12 +54,14 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         doc: str = "",
         coords: Optional[Tuple[float, float]] = None,
         cs_name: str = "no_case_study",
-        components: Optional[List[Component]] = None,
+        components: Optional[List[Union[Component, type]]] = None,
+        consider_invest: bool = False,
     ):
         self.id = id
         self.name = name
         self.doc = doc
         self.country = country
+        self.consider_invest = consider_invest
         self.coords = coords
         self.cs_name = cs_name
         self.mdl_language = "gp"
@@ -68,6 +71,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.plot = ScenPlotter(sc=self)
         self.prep = TimeSeriesPrepper(sc=self)
         self.vars = Vars()
+        self.balances = Balances()
 
         if dtindex is None and dtindex_custom is None and t1 is None and t2 is None:
             self._set_dtindex(year=year, freq=freq)
@@ -79,7 +83,15 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             self._t2 = t2
             self.freq = freq
 
-        if isinstance(components, Iterable):
+        if components is not None:
+            for i, comp in enumerate(components):
+                if inspect.isclass(comp):
+                    components[i] = comp()
+                assert isinstance(
+                    components[i], Component
+                ), f"The component at position {i} is invalid."
+            if len(components) > 1:
+                components = sorted(components, key=lambda k: k.order)
             self.add_components(components)
 
     def __repr__(self):
@@ -121,6 +133,13 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             d = self.params.__dict__
         d.pop("_meta", None)
         return d
+
+    @property
+    def has_thermal_entities(self) -> bool:
+        return len(self.params.filtered(etype="dQ")) != 0
+
+    def get_mdpv(self) -> Tuple[gp.Model, Dimensions, Params, Vars]:
+        return (self.mdl, self.dims, self.params, self.vars)
 
     def _set_default_solver_params(self) -> None:
         defaults = {
@@ -235,20 +254,21 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         try:
             params_builder_func(sc=self)
 
-            for k, v in self.params.get_all().items():
-                warn_if_data_contains_nan(data=v, name=k)
-
         except RuntimeError as e:
             logger.error(e)
 
-        self._update_time_param("t__params_", "Time for building the params", self._get_time_diff())
+        self._update_time_param("t__params_", "Time to build params", self._get_time_diff())
         return self
 
     def add_components(self, components: List):
-        self.components = components
-
+        self._set_time_trace()
+        logger.info(f"Set params for scenario {self.id}")
         for comp in components:
-            self.set_params(comp.param_func)
+            logger.debug(f" ⤷ component {comp.__class__.__name__}")
+            comp.param_func(sc=self)
+        self._update_time_param("t__params_", "Time to build params", self._get_time_diff())
+
+        self.components = components
 
     def set_model(
         self,
@@ -269,32 +289,28 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.mdl_language = mdl_language
         self._instantiate_model()
 
-        if self.mdl_language == "gp":
-            self._set_default_solver_params()
-
         self._set_time_trace()
         self._activate_vars()
-        self._update_time_param(
-            "t__vars_", "Time for building the variables", self._get_time_diff()
-        )
+        self._update_time_param("t__vars_", "Time to activate variables", self._get_time_diff())
 
         self._set_time_trace()
+
+        params = self.params
         if speed_up and self.mdl_language == "gp":
-            params = self.get_tuple_dict_container()
-        else:
-            params = self.params
+            params = self.get_tuple_dict_container(params)
+
         logger.info(f"Set model for scenario {self.id}.")
 
-        model_funcs = []
+        tmp = []
         if model_builder_func is not None:
-            model_funcs.append(model_builder_func)
+            tmp += [model_builder_func]
         if hasattr(self, "components"):
-            model_funcs += [comp.model_func for comp in self.components]
+            tmp += [comp.model_func for comp in self.components]
 
-        for mf in model_funcs:
-            mf(m=self.mdl, d=self.dims, p=params, v=self.vars)
+        for model_func in tmp:
+            model_func(sc=self, m=self.mdl, d=self.dims, p=params, v=self.vars)
 
-        self._update_time_param("t__model_", "Time for building the model", self._get_time_diff())
+        self._update_time_param("t__model_", "Time to build model", self._get_time_diff())
         return self
 
     def _update_time_param(self, ent_name: str, doc: str, time_in_seconds: float):
@@ -304,15 +320,14 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         except AttributeError:
             self.param(name=ent_name, data=time_in_seconds, doc=doc, unit="seconds")
 
-    def get_tuple_dict_container(self) -> Params:
+    def get_tuple_dict_container(self, params) -> Params:
         """Returns a copy of the params object where all Pandas Series objects are converted
          to gurobipy's tupledicts in order to speed up the execution of the model_builder_func.
 
         Meta data are not copied.
         """
-        p = self.params
         td = Params()
-        for name, obj in p.get_all().items():
+        for name, obj in params.get_all().items():
             if isinstance(obj, pd.Series):
                 data = gp.tupledict(obj.to_dict())
             else:
@@ -324,6 +339,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         if self.mdl_language == "gp":
             self.mdl = gp.Model(name=self.id)
+            self._set_default_solver_params()
 
         elif self.mdl_language == "pyo":
             self.mdl = pyo.ConcreteModel(name=self.id)
@@ -405,6 +421,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             postprocess_func: Function which is executed with the results container object as
                 argument.
         """
+        for k, v in self.params.get_all().items():
+            warn_if_data_contains_nan(data=v, name=k)
+
         if not hasattr(self, "mdl"):
             self.set_model()
 
@@ -444,7 +463,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.param(
             "t__solve_",
             self._get_time_diff(),
-            doc="Time for solving the model",
+            doc="Time to solve model",
             unit="seconds",
         )
         status = self.mdl.Status
@@ -492,7 +511,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         results = solver.solve(self.mdl, tee=logToConsole, logfile=logfile)
 
-        self._update_time_param("t__solve_", "Time for solving the model", self._get_time_diff())
+        self._update_time_param("t__solve_", "Time to solve the model", self._get_time_diff())
 
         status = results.solver.status
         tc = results.solver.termination_condition
@@ -674,7 +693,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def update_params(self, **kwargs) -> Scenario:
         """Update multiple existing parameters.
-        e.g. sc.update_params(E_EL_dem_T=2000, c_EL_addon_T=0, c_EL_peak_=0)
+        e.g. sc.update_params(P_EG_dem_T=2000, c_EG_addon_T=0, c_EG_peak_=0)
         """
         for ent_name, data in kwargs.items():
 
@@ -765,6 +784,16 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         setattr(self.params, name, data)
         self.params._changed_since_last_dic_export = True
         return data
+
+    def balance(
+        self,
+        name: str,
+        doc: str = "",
+        unit: str = "",
+    ) -> None:
+        """Add a balance to the scenario"""
+        setattr(self.balances, name, dict())
+        self.balances._meta[name] = dict(doc=doc, unit=unit)
 
     def dim(
         self,

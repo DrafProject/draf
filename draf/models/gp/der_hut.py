@@ -4,11 +4,12 @@ import pandas as pd
 from gurobipy import GRB, Model, quicksum
 
 import draf
+from draf import Dimensions, Params, Results, Scenario, Vars
 from draf.model_builder import collectors
 from draf.prep import DataBase as db
 
 
-def params_func(sc: draf.Scenario):
+def params_func(sc: Scenario):
 
     # Alias
     p = sc.params
@@ -40,8 +41,8 @@ def params_func(sc: draf.Scenario):
     sc.param("k_PTO_CE_", data=1 / 1e4, doc="Pareto normalization factor")
 
     # Fuels
-    sc.param(from_db=db.c_FUEL_F)
-    sc.param(from_db=db.ce_FUEL_F)
+    sc.param(from_db=db.c_Fuel_F)
+    sc.param(from_db=db.ce_Fuel_F)
 
     # Demands
     sc.prep.P_eDem_T(profile="G1", annual_energy=5e6)
@@ -60,14 +61,14 @@ def params_func(sc: draf.Scenario):
         "T_cDem_out_N", data=273 + pd.Series([12, 35], d.N), doc="Cooling outlet temp.", unit="K"
     )
 
-    # EL
-    sc.param("c_EL_peak_", data=50, doc="Peak price", unit="€/kW_el")
-    sc.param("c_EL_T", data=sc.prep.c_EL_RTP_T(), doc="Chosen electricity tariff", unit="€/kWh_el")
-    sc.prep.c_EL_addon_T()
-    sc.prep.ce_EL_T()
-    sc.var("P_EL_buy_T", doc="Purchasing power", unit="kW_el")
-    sc.var("P_EL_sell_T", doc="Sell power", unit="kW_el")
-    sc.var("P_EL_buyPeak_", doc="Peak power", unit="kW_el")
+    # EG
+    sc.param("c_EG_peak_", data=50, doc="Peak price", unit="€/kW_el")
+    sc.param("c_EG_T", data=sc.prep.c_EG_RTP_T(), doc="Chosen electricity tariff", unit="€/kWh_el")
+    sc.prep.c_EG_addon_T()
+    sc.prep.ce_EG_T()
+    sc.var("P_EG_buy_T", doc="Purchasing power", unit="kW_el")
+    sc.var("P_EG_sell_T", doc="Sell power", unit="kW_el")
+    sc.var("P_EG_buyPeak_", doc="Peak power", unit="kW_el")
 
     # PV
     sc.param("P_PV_CAPx_", data=0, doc="Existing capacity", unit="kW_peak")
@@ -82,14 +83,14 @@ def params_func(sc: draf.Scenario):
 
     # BES
     sc.param("E_BES_CAPx_", data=0, doc="Existing capacity", unit="kWh_el")
-    sc.param(from_db=db.k_BES_inPerCapa_)
-    sc.param(from_db=db.k_BES_outPerCapa_)
+    sc.param("k_BES_ini_", data=0, doc="Initial and final energy filling share", unit="kWh_el")
     sc.param("z_BES_", data=0, doc="If new capacity is allowed")
     sc.param(from_db=db.eta_BES_cycle_)
     sc.param(from_db=db.eta_BES_time_)
     sc.param(from_db=db.funcs.c_BES_inv_(estimated_size=100, which="mean"))
+    sc.param(from_db=db.k_BES_inPerCapa_)
+    sc.param(from_db=db.k_BES_outPerCapa_)
     sc.param(from_db=db.k_BES_RMI_)
-    sc.param("k_BES_ini_", data=0, doc="Initial and final energy filling share", unit="kWh_el")
     sc.var("E_BES_CAPn_", doc="New capacity", unit="kWh_el")
     sc.var("E_BES_T", doc="Electricity stored", unit="kWh_el")
     sc.var("P_BES_in_T", doc="Charging power", unit="kW_el")
@@ -146,7 +147,7 @@ def params_func(sc: draf.Scenario):
     sc.var("dQ_HOB_T", doc="Ouput heat flow", unit="kW_th")
 
     # H2H1
-    sc.var("dQ_H2H1_T", doc="Heat down-grading", unit="kWh_th")
+    sc.var("dQ_H2H1_T", doc="Heat down-grading", unit="kW_th")
 
     # P2H
     sc.param("dQ_P2H_CAPx_", data=10000, doc="Existing capacity", unit="kW_th")
@@ -187,7 +188,7 @@ def params_func(sc: draf.Scenario):
     sc.var("Q_TES_TL", doc="Stored heat", unit="kWh_th")
 
 
-def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
+def model_func(sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
 
     m.setObjective(
         ((1 - p.k_PTO_alpha_) * v.C_TOT_ * p.k_PTO_C_ + p.k_PTO_alpha_ * v.CE_TOT_ * p.k_PTO_CE_),
@@ -201,14 +202,14 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
     m.addConstr(
         v.C_TOT_op_
         == (
-            v.P_EL_buyPeak_ * p.c_EL_peak_ / 1e3
+            v.P_EG_buyPeak_ * p.c_EG_peak_ / 1e3
             + v.C_TOT_RMI_
             + p.k__comp_
             * p.k__dT_
             * quicksum(
-                v.P_EL_buy_T[t] * (p.c_EL_T[t] + p.c_EL_addon_T[t]) / 1e3
-                - v.P_EL_sell_T[t] * p.c_EL_T[t] / 1e3
-                + quicksum((v.F_HOB_TF[t, f] + v.F_CHP_TF[t, f]) * p.c_FUEL_F[f] / 1e3 for f in d.F)
+                v.P_EG_buy_T[t] * (p.c_EG_T[t] + p.c_EG_addon_T[t]) / 1e3
+                - v.P_EG_sell_T[t] * p.c_EG_T[t] / 1e3
+                + quicksum((v.F_HOB_TF[t, f] + v.F_CHP_TF[t, f]) * p.c_Fuel_F[f] / 1e3 for f in d.F)
                 for t in d.T
             )
         ),
@@ -223,47 +224,56 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
         == p.k__comp_
         * p.k__dT_
         * quicksum(
-            p.ce_EL_T[t] * (v.P_EL_buy_T[t] - v.P_EL_sell_T[t])
-            + quicksum(p.ce_FUEL_F[f] * (v.F_HOB_TF[t, f] + v.F_CHP_TF[t, f]) for f in d.F)
+            p.ce_EG_T[t] * (v.P_EG_buy_T[t] - v.P_EG_sell_T[t])
+            + quicksum(p.ce_Fuel_F[f] * (v.F_HOB_TF[t, f] + v.F_CHP_TF[t, f]) for f in d.F)
             for t in d.T
-        )
-        / 1e6,
+        ),
         "DEF_CE_",
     )
 
     # Electricity
     m.addConstrs(
         (
-            v.P_EL_buy_T[t] + v.P_CHP_OC_T[t] + v.P_PV_OC_T[t] + v.P_BES_out_T[t]
+            v.P_EG_buy_T[t] + v.P_CHP_OC_T[t] + v.P_PV_OC_T[t] + v.P_BES_out_T[t]
             == p.P_eDem_T[t]
             + v.P_HP_TCN.sum(t, "*", "*")
             + v.P_P2H_T[t]
             + v.P_BES_in_T[t]
-            + v.P_EL_sell_T[t]
+            + v.P_EG_sell_T[t]
             for t in d.T
         ),
         "BAL_el",
     )
 
-    # Heat
+    # Heat H1
     m.addConstrs(
         (
-            v.dQ_HOB_T[t] + v.dQ_CHP_T[t]
-            == p.dQ_hDem_TH[t, "90/70"] + v.dQ_H2H1_T[t] + v.dQ_TES_in_TL[t, "90/70"]
+            v.dQ_H2H1_T[t] + v.dQ_HP_Cond_TCN.sum(t, "60/40", "*")
+            == v.dQ_TES_in_TL[t, "60/40"] + p.dQ_hDem_TH[t, "60/40"]
+            for t in d.T
+        ),
+        "BAL_H1",
+    )
+
+    # Heat H2
+    m.addConstrs(
+        (
+            v.dQ_HOB_T[t] + v.dQ_CHP_T[t] + v.dQ_P2H_T[t]
+            == v.dQ_TES_in_TL[t, "90/70"] + v.dQ_H2H1_T[t] + p.dQ_hDem_TH[t, "90/70"]
             for t in d.T
         ),
         "BAL_H2",
     )
 
-    # COOL
+    # COOLING
     m.addConstrs(
         (p.dQ_cDem_TN[t, n] == v.dQ_HP_Eva_TCN.sum(t, "*", n) for t in d.T for n in d.N),
         "BAL_HP_N1",
     )
 
-    # EL
-    m.addConstrs((v.P_EL_sell_T[t] == v.P_CHP_FI_T[t] + v.P_PV_FI_T[t] for t in d.T), "DEF_E_sell")
-    m.addConstrs((v.P_EL_buy_T[t] <= v.P_EL_buyPeak_ for t in d.T), "DEF_peakPrice")
+    # EG
+    m.addConstrs((v.P_EG_sell_T[t] == v.P_CHP_FI_T[t] + v.P_PV_FI_T[t] for t in d.T), "DEF_E_sell")
+    m.addConstrs((v.P_EG_buy_T[t] <= v.P_EG_buyPeak_ for t in d.T), "DEF_peakPrice")
 
     # TECHNOLOGIES =====================================
 
@@ -411,13 +421,13 @@ def model_func(m: Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
     )
 
 
-def postprocess_func(r: draf.Results):
-    r.make_pos_ent("P_EL_buy_T")
+def postprocess_func(r: Results):
+    r.make_pos_ent("P_EG_buy_T")
     r.make_pos_ent("P_CHP_OC_T")
     r.make_pos_ent("dQ_TES_in_TL", "dQ_TES_out_TH", doc_target="Storage output heat flow")
 
 
-def sankey_func(sc: draf.Scenario):
+def sankey_func(sc: Scenario):
     p = sc.params
     r = sc.res
     gte = sc.get_total_energy
@@ -425,13 +435,13 @@ def sankey_func(sc: draf.Scenario):
     type source target value
     F GAS CHP {gte(r.F_CHP_TF)}
     F GAS HOB {gte(r.F_HOB_TF)}
-    E EL EL {gte(r.P_EL_buy_T)}
-    E PV EL {gte(r.P_PV_OC_T)}
-    E CHP EL {gte(r.P_CHP_OC_T)}
+    E EG EG {gte(r.P_EG_buy_T)}
+    E PV EG {gte(r.P_PV_OC_T)}
+    E CHP EG {gte(r.P_CHP_OC_T)}
     E PV SELL_el {gte(r.P_PV_FI_T)}
     E CHP SELL_el {gte(r.P_CHP_FI_T)}
-    E EL HP {gte(r.P_HP_TCN)}
-    E EL DEM_el {gte(p.P_eDem_T)}
+    E EG HP {gte(r.P_HP_TCN)}
+    E EG DEM_el {gte(p.P_eDem_T)}
     Q CHP H2 {gte(r.dQ_CHP_T)}
     Q HOB H2 {gte(r.dQ_HOB_T)}
     Q HP DEM_H1 {gte(r.dQ_HP_Cond_TCN)[:,3,:]}

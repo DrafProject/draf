@@ -57,6 +57,6 @@ def test_param(sc):
     sc.param(name="x_HP_test_", data=4, doc="test doc", unit="test_unit", src="test_source")
     sc.param(from_db=db.funcs.c_CHP_inv_())
     sc.param(from_db=db.eta_HP_)
-    sc.param(name="c_FUEL_other-name_", from_db=db.c_FUEL_co2_)
-    for ent in ["c_CHP_inv_", "eta_HP_", "c_FUEL_other-name_"]:
+    sc.param(name="c_Fuel_other-name_", from_db=db.c_Fuel_co2_)
+    for ent in ["c_CHP_inv_", "eta_HP_", "c_Fuel_other-name_"]:
         isinstance(sc.params.get(ent), float)

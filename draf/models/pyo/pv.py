@@ -8,6 +8,7 @@ import pyomo.environ as pyo
 from gurobipy import GRB
 
 import draf
+from draf import Dimensions, Params, Results, Scenario, Vars
 
 
 def params_func(sc: draf.Scenario):
@@ -23,10 +24,10 @@ def params_func(sc: draf.Scenario):
     # Pareto
     sc.param("k_PTO_alpha_", 0, "Pareto weighting factor", "")
 
-    # EL
-    sc.prep.c_EL_RTP_T()
-    sc.prep.ce_EL_T()
-    sc.var("P_EL_buy_T", doc="Purchasing electrical power", unit="kW_el", lb=-GRB.INFINITY)
+    # EG
+    sc.prep.c_EG_RTP_T()
+    sc.prep.ce_EG_T()
+    sc.var("P_EG_buy_T", doc="Purchasing electrical power", unit="kW_el", lb=-GRB.INFINITY)
 
     # Demand
     sc.prep.P_eDem_T(profile="G1", annual_energy=5e6)
@@ -36,7 +37,7 @@ def params_func(sc: draf.Scenario):
     sc.prep.P_PV_profile_T(use_coords=True)
 
 
-def model_func(m: pyo.Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
+def model_func(sc: Scenario, m: pyo.Model, d: Dimensions, p: Params, v: Vars):
 
     m.obj = pyo.Objective(
         expr=(1 - p.k_PTO_alpha_) * v.C_TOT_ + p.k_PTO_alpha_ * v.CE_TOT_, sense=pyo.minimize
@@ -46,19 +47,19 @@ def model_func(m: pyo.Model, d: draf.Dimensions, p: draf.Params, v: draf.Vars):
     m.DEF_C_ = pyo.Constraint(
         expr=(
             v.C_TOT_
-            == p.k__dT_ * pyo.quicksum(v.P_EL_buy_T[t] * p.c_EL_RTP_T[t] / 1e3 for t in d.T)
+            == p.k__dT_ * pyo.quicksum(v.P_EG_buy_T[t] * p.c_EG_RTP_T[t] / 1e3 for t in d.T)
         )
     )
 
     # CE
     m.DEF_CE_ = pyo.Constraint(
-        expr=(v.CE_TOT_ == p.k__dT_ * pyo.quicksum(v.P_EL_buy_T[t] * p.ce_EL_T[t] for t in d.T))
+        expr=(v.CE_TOT_ == p.k__dT_ * pyo.quicksum(v.P_EG_buy_T[t] * p.ce_EG_T[t] for t in d.T))
     )
 
     # Electricity
     m.BAL_pur = pyo.Constraint(
         d.T,
-        rule=lambda v, t: v.P_EL_buy_T[t] + p.P_PV_CAPx_ * p.P_PV_profile_T[t] == p.P_eDem_T[t],
+        rule=lambda v, t: v.P_EG_buy_T[t] + p.P_PV_CAPx_ * p.P_PV_profile_T[t] == p.P_eDem_T[t],
     )
 
 

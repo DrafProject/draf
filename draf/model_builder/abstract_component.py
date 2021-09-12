@@ -2,12 +2,10 @@ from abc import ABC, abstractmethod
 
 
 class Component(ABC):
-    @classmethod
     @abstractmethod
-    def param_func(cls):
+    def param_func(self, sc):
         pass
 
-    @classmethod
     @abstractmethod
-    def model_func(cls):
+    def model_func(self, sc, m, d, p, v):
         pass

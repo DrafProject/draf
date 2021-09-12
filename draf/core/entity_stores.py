@@ -10,6 +10,17 @@ logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
 
 
+class Balances(DrafBaseClass):
+    """Stores balances."""
+
+    def __init__(self):
+        self._meta: Dict[str, Dict] = dict()
+
+    def __repr__(self):
+        layout = "{bullet}{name:<13} {unit:>10} | {doc}\n"
+        return self._build_repr(layout, which_metadata=["doc", "unit"])
+
+
 class Scenarios(DrafBaseClass):
     """Stores scenarios."""
 
@@ -22,7 +33,7 @@ class Dimensions(DrafBaseClass):
     """Stores dimensions."""
 
     def __init__(self):
-        self._meta: Dict[str, Dict] = {}
+        self._meta: Dict[str, Dict] = dict()
 
     def __repr__(self):
         layout = "{bullet}{name:<5} {unit:>10}   {doc}\n"

@@ -390,7 +390,7 @@ class CsPlotter(BasePlotter):
                 ```
                 type source target value
                 F GAS CHP 1000
-                E CHP EL 450
+                E CHP EG 450
                 ```
         """
         cs = self.cs
@@ -447,7 +447,7 @@ class CsPlotter(BasePlotter):
                 ```
                 type source target value
                 F GAS CHP 1000
-                E CHP EL 450
+                E CHP EG 450
                 ```
             sc: Scenario object, which is selected.
             sort: If scenarios are sorted by total costs.
@@ -481,7 +481,7 @@ class CsPlotter(BasePlotter):
                             f"{r.C_TOT_inv_:,.0f}",
                             f"{cs.REF_scen.res.C_TOT_ - r.C_TOT_:,.0f}",
                             f"{r.C_TOT_inv_ * p.k__AF_:,.0f}",
-                            f"{r.P_EL_buyPeak_:,.0f}",
+                            f"{r.P_EG_buyPeak_:,.0f}",
                         ],
                         ["k€/a", "k€", "k€/a", "k€/a", "kW"],
                     ],
@@ -552,6 +552,8 @@ class CsPlotter(BasePlotter):
         show_src: bool = False,
         show_etype: bool = False,
         show_comp: bool = False,
+        show_desc: bool = False,
+        show_dims: bool = False,
     ) -> pdStyler:
         """Creates a table with all scalars.
 
@@ -569,14 +571,16 @@ class CsPlotter(BasePlotter):
         df = pd.concat(tmp_list, axis=1)
         if show_unit:
             df["Unit"] = [cs.any_scen.get_unit(ent_name) for ent_name in df.index]
-        if show_doc:
-            df["Doc"] = [cs.any_scen.get_doc(ent_name) for ent_name in df.index]
-        if show_src:
-            df["Src"] = [cs.any_scen.get_src(ent_name) for ent_name in df.index]
         if show_etype:
             df["Etype"] = [hp.get_etype(ent_name) for ent_name in df.index]
         if show_comp:
             df["Comp"] = [hp.get_component(ent_name) for ent_name in df.index]
+        if show_desc:
+            df["Desc"] = [hp.get_desc(ent_name) for ent_name in df.index]
+        if show_doc:
+            df["Doc"] = [cs.any_scen.get_doc(ent_name) for ent_name in df.index]
+        if show_src:
+            df["Src"] = [cs.any_scen.get_src(ent_name) for ent_name in df.index]
         df.index.name = what
         cm = sns.light_palette("green", n_colors=20, as_cmap=True)
 
@@ -588,11 +592,14 @@ class CsPlotter(BasePlotter):
             other_than_REF = s != df.iloc[:, 0]
             return ["font-weight: bold" if v else "" for v in other_than_REF]
 
+        left_aligner = list(df.dtypes[df.dtypes == object].index)
         return (
             df.style.background_gradient(cmap=cm)
             .apply(highlight_diff1, subset=df.columns[1:])
             .apply(highlight_diff2, subset=df.columns[1:])
             .set_caption("Note: Bold font indicate deviation from first/reference scenario.")
+            .set_properties(subset=left_aligner, **{"text-align": "left"})
+            .set_table_styles([dict(selector="th", props=[("text-align", "left")])])
         )
 
     @hp.copy_doc(ScenPlotter.describe, start="Args:")

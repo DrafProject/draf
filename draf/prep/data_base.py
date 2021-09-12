@@ -39,10 +39,10 @@ class DataBase:
 
     # SORTING_START
     c_EEG_ = ParDat(name="c_EEG_", data=0.065, doc=f"EEG levy", src=SRC.BMWI_2020, unit="€/kWh_el")
-    c_FUEL_F = ParDat(name="c_FUEL_F", data=pd.Series({"ng": 0.04, "bio": 0.02}), doc="Fuel cost", unit="€/kWh")
-    c_FUEL_co2_ = ParDat(name="c_FUEL_co2_", data=55, doc="CO2 price for non-electricity", unit="€/tCO2eq")
+    c_Fuel_F = ParDat(name="c_Fuel_F", data=pd.Series({"ng": 0.04, "bio": 0.02}), doc="Fuel cost", unit="€/kWh")
+    c_Fuel_co2_ = ParDat(name="c_Fuel_co2_", data=55, doc="CO2 price for non-electricity", unit="€/tCO2eq")
     c_P2H_inv_ = ParDat(name="c_P2H_inv_", data=100, doc=f"System CAPEX.", src=SRC.SMT_2018, unit="€/kW_th")
-    ce_FUEL_F = ParDat(name="ce_FUEL_F", data=pd.Series({"ng": 0.240, "bio": 0.075}), doc=f"Fuel carbon emissions.", src=f"{SRC.GEG9_2020} documentation in {SRC.IFEU_2008}", unit="kgCO2eq/kWh")
+    ce_Fuel_F = ParDat(name="ce_Fuel_F", data=pd.Series({"ng": 0.240, "bio": 0.075}), doc=f"Fuel carbon emissions.", src=f"{SRC.GEG9_2020} documentation in {SRC.IFEU_2008}", unit="kgCO2eq/kWh")
     cop_CM_ = ParDat(name="cop_CM_", data=3.98, doc="Coefficient of performance", src=SRC.MTA, unit="kWh_th/kW_el")
     eta_BES_cycle_ = ParDat(name="eta_BES_cycle_", data=0.95, doc="Cycling efficiency", src=SRC.Carroquino_2021)
     eta_BES_time_ = ParDat(name="eta_BES_time_", data=1 - (0.0035 + 0.024) / 2 / (30 * 24), doc="Efficiency due to self-discharge rate", src=SRC.Redondo_2016)  # "0.35% to 2.5% per month depending on state of charge"

@@ -3,12 +3,11 @@
 
 def main():
     import draf
-    from draf.models.gp.pv_bes import model_func, params_func, postprocess_func
+    from draf.model_builder.components import EG, POST, PRE, PV, eDem
 
     cs = draf.CaseStudy(name="min_imp", year=2019, freq="60min", country="DE", coords=(49.01, 8.39))
     cs.set_time_horizon(start="Apr-01 00:00", steps=24 * 2)
-    sc = cs.add_REF_scen(doc="no BES").set_params(params_func)
-    sc.update_params(P_PV_CAPx_=100, c_EL_buyPeak_=50)
+    cs.add_REF_scen(doc="no BES", components=[PRE, eDem, EG(c_buyPeak=50), PV, POST])
     cs.add_scens(nParetoPoints=2)
-    cs.set_model(model_func).optimize(postprocess_func=postprocess_func)
+    cs.optimize()
     return cs

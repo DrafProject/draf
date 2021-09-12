@@ -248,7 +248,7 @@ class ScenPlotter(BasePlotter):
             string_builder_func: Function that returns a string in the form of:
                 type source target value
                 F GAS CHP 1000
-                E CHP EL 450
+                E CHP EG 450
         """
         fig = self.get_sankey_fig(string_builder_func=string_builder_func, title=title)
 
@@ -426,7 +426,7 @@ class ScenPlotter(BasePlotter):
             string_builder_func: Function that returns a string in the form of:
                 type source target value
                 F GAS CHP 1000
-                E CHP EL 450
+                E CHP EG 450
             title: Title of the Sankey figure.
         """
 

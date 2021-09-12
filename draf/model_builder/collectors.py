@@ -5,7 +5,7 @@ from draf import helper as hp
 
 
 def _agg_cap(capEntName: str, v: Vars) -> float:
-    """Returns the aggregated new capacity of an entity such as `P_HP_CAPn_N` or `E_BES_CAPn_`."""
+    """Return aggregated new capacity of an entity such as `P_HP_CAPn_N` or `E_BES_CAPn_`."""
     if hp.get_dims(capEntName) == "":
         return v.get(capEntName)
     else:
@@ -13,13 +13,12 @@ def _agg_cap(capEntName: str, v: Vars) -> float:
 
 
 def _capas(v: Vars) -> List[Tuple[str, str]]:
-    """Returns the new capacities per component type"""
+    """Return new capacities per component type."""
     return {hp.get_component(key): _agg_cap(key, v) for key in v.filtered(desc="CAPn")}
 
 
 def C_TOT_inv_(p: Params, v: Vars):
-    """Returns the sum product of all scalar capacities and investment costs.
-    WARNING: The model must contain scalar investment prices `c_<COMPONENT>_inv_`.
+    """Return sum product of all scalar capacities and investment costs.
 
     Example:
         >>> model.addConstr((v.C_TOT_inv_ == collectors.C_TOT_inv_(p, v)))
@@ -28,8 +27,7 @@ def C_TOT_inv_(p: Params, v: Vars):
 
 
 def C_invAnnual_(p: Params, v: Vars):
-    """Returns the annualized investment costs.
-    WARNING: The model must contain scalar investment prices `c_<COMPONENT>_inv_`.
+    """Return annualized investment costs.
 
     Example:
         >>> model.addConstr((v.C_invAnnual_ == collectors.C_invAnnual_(p, v)))
@@ -39,8 +37,7 @@ def C_invAnnual_(p: Params, v: Vars):
 
 
 def C_TOT_RMI_(p: Params, v: Vars):
-    """Returns a linear expression for the repair, maintenance, and inspection per year.
-    WARNING: The model must contain scalar parameters for investment prices `c_<COMPONENT>_inv_`.
+    """Return linear expression for the repair, maintenance, and inspection per year.
 
     Example:
         >>> model.addConstr((v.C_TOT_RMI_ == collectors.C_TOT_RMI_(p, v)))

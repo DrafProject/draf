@@ -77,6 +77,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         year: int = 2019,
         freq: str = "60min",
         country: str = "DE",
+        consider_invest: bool = False,
         doc: str = "No doc available.",
         coords: Tuple[float, float] = None,
         obj_vars: Tuple[str, str] = ("C_TOT_", "CE_TOT_"),
@@ -87,6 +88,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         self.doc = doc
         self._set_dtindex(year=year, freq=freq)
         self.country = country
+        self.consider_invest = consider_invest
         self.coords = coords
         self.scens = Scenarios()
         self.plot = CsPlotter(cs=self)
@@ -232,6 +234,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 t1=self._t1,
                 t2=self._t2,
                 components=components,
+                consider_invest=self.consider_invest,
             )
         else:
             sc = getattr(self.scens, based_on)._special_copy()
@@ -259,12 +262,12 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 desired variations. The syntax can be taken from this example:
                 ```
                 scen_vars = [
-                    ("c_EL_T", "t", ["c_EL_RTP_T", "c_EL_TOU_T"]]),
+                    ("c_EG_T", "t", ["c_EG_RTP_T", "c_EG_TOU_T"]]),
                     ("P_PV_CAPx_", "p", [0, 10, 20])
                 ]
                 ```
-                In the first tuple the parameter 'c_EL_T' is set to the parameter 'c_EL_RTP_T'
-                and then to the parameter 'c_EL_TOU_T'. In the second tuple, the parameter
+                In the first tuple the parameter 'c_EG_T' is set to the parameter 'c_EG_RTP_T'
+                and then to the parameter 'c_EG_TOU_T'. In the second tuple, the parameter
                 'P_PV_CAPx_' is set to the different values of the list [0, 10, 20]. Since every
                 possible combination is created as a scenario, in this example 6 scenarios are
                 created.
