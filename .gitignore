@@ -1,14 +1,12 @@
-# local
+# directories
 local/
-
-# jupyter notebooks
 notebooks/
+results/
 
-# cache
-cache/
+# symlinks
+cache
 
 # results
-results/
 *.p
 *.pdf
 *.png

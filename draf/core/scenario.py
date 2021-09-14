@@ -17,6 +17,7 @@ import pyomo.environ as pyo
 
 from draf import helper as hp
 from draf import paths
+from draf.conventions import Etypes
 from draf.core.datetime_handler import DateTimeHandler
 from draf.core.draf_base_class import DrafBaseClass
 from draf.core.entity_stores import Balances, Dimensions, Params, Results, Vars
@@ -120,7 +121,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
     @property
     def _res_fp(self) -> Path:
         """Returns the path to the case study's default result directory."""
-        fp = paths.RESULTS / self.cs_name
+        fp = paths.RESULTS_DIR / self.cs_name
         fp.mkdir(exist_ok=True)
         return fp
 
@@ -633,6 +634,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         """
         dims = hp.get_dims(name)
         is_scalar = dims == ""
+        self._warn_if_unexpected_unit(name, unit)
         self.vars._meta[name] = dict(
             doc=doc,
             unit=unit,
@@ -759,10 +761,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             )
         else:
             if fill is not None:
-                assert dims != "", (
-                    f"fill works not for scalars as {name}."
-                    f"Please use the data argument instead."
-                )
+                assert dims != "", f"Don't use `fill` argument with scalar entity {name}."
                 data = pd.Series(data=fill, name=name, index=self._get_idx(name))
 
             if isinstance(data, (np.ndarray, list)):
@@ -774,6 +773,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             )
 
         if not update:
+            self._warn_if_unexpected_unit(name, unit)
+
             self.params._meta[name] = dict(
                 doc=doc, unit=unit, src=src, etype=etype, comp=comp, dims=dims
             )
@@ -784,6 +785,20 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         setattr(self.params, name, data)
         self.params._changed_since_last_dic_export = True
         return data
+
+    def _warn_if_unexpected_unit(self, name, unit):
+        etype = hp.get_etype(name)
+        try:
+            expected_units = getattr(Etypes, etype).units
+        except AttributeError:
+            pass
+        else:
+            adder = "one of " if len(expected_units) > 1 else ""
+            if not unit in expected_units:
+                logger.warning(
+                    f"Unexpected unit {unit} for entity {name}. "
+                    f"Expexted {adder}{expected_units}."
+                )
 
     def balance(
         self,

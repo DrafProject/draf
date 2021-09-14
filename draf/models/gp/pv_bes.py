@@ -53,8 +53,8 @@ def params_func(sc: Scenario):
     sc.param("E_BES_CAPx_", data=100, doc="Existing capacity", unit="kWh_el")
     sc.param(from_db=db.eta_BES_cycle_)
     sc.param(from_db=db.eta_BES_time_)
-    sc.param(from_db=db.k_BES_inPerCapa_)
-    sc.param(from_db=db.k_BES_outPerCapa_)
+    sc.param(from_db=db.k_BES_inPerCap_)
+    sc.param(from_db=db.k_BES_outPerCap_)
     sc.var("E_BES_T", doc="Electricity stored", unit="kWh_el")
     sc.var("P_BES_in_T", doc="Charging power", unit="kW_el")
     sc.var("P_BES_out_T", doc="Discharging power", unit="kW_el")
@@ -112,9 +112,9 @@ def model_func(sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
     m.addConstrs((v.P_PV_T[t] == v.P_PV_FI_T[t] + v.P_PV_OC_T[t] for t in d.T), "PV_OC_FI")
 
     # BES
-    m.addConstrs((v.P_BES_in_T[t] <= p.E_BES_CAPx_ * p.k_BES_inPerCapa_ for t in d.T), "MAX_BES_IN")
+    m.addConstrs((v.P_BES_in_T[t] <= p.E_BES_CAPx_ * p.k_BES_inPerCap_ for t in d.T), "MAX_BES_IN")
     m.addConstrs(
-        (v.P_BES_out_T[t] <= p.E_BES_CAPx_ * p.k_BES_outPerCapa_ for t in d.T), "MAX_BES_OUT"
+        (v.P_BES_out_T[t] <= p.E_BES_CAPx_ * p.k_BES_outPerCap_ for t in d.T), "MAX_BES_OUT"
     )
     m.addConstrs((v.E_BES_T[t] <= p.E_BES_CAPx_ for t in d.T), "MAX_BES_E")
     m.addConstrs((v.E_BES_T[t] == 0 for t in [min(d.T), max(d.T)]), "INI_BES")

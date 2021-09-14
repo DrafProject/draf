@@ -221,7 +221,7 @@ class TimeSeriesPrepper:
 
         return sc.param(
             name=name,
-            unit="kWh_th",
+            unit="kW_th",
             doc=f"Heating demand derived from ambient temperature near {sc.coords}.",
             data=sc.trim_to_datetimeindex(
                 prep.get_heating_demand(

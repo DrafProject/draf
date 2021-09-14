@@ -83,7 +83,7 @@ def get_el_SLP(
     if offset > 0 and peak_load is not None:
         assert offset < peak_load
 
-    fp = paths.DATA / f"demand/electricity/SLP_BDEW/Repräsentative Profile VDEW.xls"
+    fp = paths.DATA_DIR / f"demand/electricity/SLP_BDEW/Repräsentative Profile VDEW.xls"
     df = pd.read_excel(io=fp, sheet_name=profile, header=[1, 2], index_col=0, skipfooter=1)
     df = df.reset_index(drop=True)
 

@@ -328,7 +328,7 @@ class CsPlotter(BasePlotter):
         Args:
             what: Selects between Variables ('v') and Parameters ('p').
             dim: Dimensions to filter.
-            select: Indexer(s) for data with additional dimension(s) besides the time.
+            select: Tuple of indexers for data with additional dimension(s) besides the time.
             cmap: Color scale.
             show_info: If additional information such as Scenario, Entity, Stats are displayed.
         """

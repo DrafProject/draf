@@ -19,6 +19,8 @@ from elmada.helper import (
 )
 from matplotlib import ticker
 
+from draf import paths
+
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.CRITICAL)
 
@@ -252,3 +254,14 @@ def set_component_order_by_dependency(dependencies: List[Tuple[str, str]], class
     ordered_components_list = list(topological_sort(dependencies))
     for i, classname in enumerate(ordered_components_list):
         classes[classname].order = i
+
+
+def make_symlink_to_cache():
+    """Creates a symbolic link to the cache directory for easy access.
+
+    Note: This function requires admin privileges.
+    """
+    link_dir = paths.BASE_DIR / "cache"
+    cache_dir = paths.CACHE_DIR
+    link_dir.symlink_to(target=cache_dir, target_is_directory=True)
+    print(f"Symbolic link created: {link_dir} --> {cache_dir}")

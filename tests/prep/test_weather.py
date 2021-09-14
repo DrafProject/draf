@@ -4,6 +4,7 @@ import pytest
 from draf.prep import weather
 
 
+@pytest.mark.slow
 def test_get_data_for_gsee():
     df = weather.get_data_for_gsee(stations_id_air=4063, stations_id_solar=691, year=2019)
     mean = df["global_horizontal"].mean()

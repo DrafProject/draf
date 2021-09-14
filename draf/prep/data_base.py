@@ -53,8 +53,8 @@ class DataBase:
     eta_TES_in_ = ParDat(name="eta_TES_in_", data=0.99, doc=f"Loading efficiency", src=SRC.FFE_2016)
     eta_TES_time_ = ParDat(name="eta_TES_time_", data=0.95, doc=f"Storing efficiency", src=SRC.FFE_2016)
     k_BES_RMI_ = ParDat(name="k_BES_RMI_", data=0.02, doc=Descs.RMI.en, src=SRC.Juelch_2016)
-    k_BES_inPerCapa_ = ParDat(name="k_BES_inPerCapa_", data=0.7, doc=f"Ratio charging power / capacity", src=SRC.Figgener_2021)
-    k_BES_outPerCapa_ = ParDat(name="k_BES_outPerCapa_", data=0.7, doc=f"Ratio discharging power / capacity", src=SRC.Figgener_2021)
+    k_BES_inPerCap_ = ParDat(name="k_BES_inPerCap_", data=0.7, doc=f"Ratio charging power / capacity", src=SRC.Figgener_2021)
+    k_BES_outPerCap_ = ParDat(name="k_BES_outPerCap_", data=0.7, doc=f"Ratio discharging power / capacity", src=SRC.Figgener_2021)
     k_CHP_RMI_ = ParDat(name="k_CHP_RMI_", data=0.06 + 0.02, doc=Descs.RMI.en, src=SRC.VDI2067)
     k_CM_RMI_ = ParDat(name="k_CM_RMI_", data=0.01 + 0.015, doc=Descs.RMI.en, src=SRC.VDI2067)
     k_HOB_RMI_ = ParDat(name="k_HOB_RMI_", data=0.04, doc=Descs.RMI.en)  # TODO

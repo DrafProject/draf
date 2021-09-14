@@ -102,4 +102,4 @@ def get_nearestStationData_for_gsee(year: int, coords: Tuple[float, float]):
 
 def get_backup_PV_profile() -> pd.Series:
     """Get a 60min backup PV profile for 1 kWh_peak for a unspecific non-leapyear."""
-    return read(paths.DATA / "pv/backup/pv_el.csv")
+    return read(paths.DATA_DIR / "pv/backup/pv_el.csv")

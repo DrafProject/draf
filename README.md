@@ -2,15 +2,14 @@
 
 ---
 
-# **draf**: **d**emand **r**esponse **a**nalysis **f**ramework
+# **d**emand **r**esponse **a**nalysis **f**ramework (**draf**): a multi-objective decision support and analysis tool for multi-energy hubs with demand response
 
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1)](https://pycqa.github.io/isort/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![python](https://img.shields.io/badge/python-3.7-blue?logo=python&logoColor=white)](https://github.com/DrafProject/elmada)
 
-`draf` is a Python library for analyzing price-based demand response.
-It is developed by [Markus Fleschutz](https://www.linkedin.com/in/markus-fleschutz/) in a cooperative PhD between [MTU](https://www.mtu.ie/) and the [University of Applied Sciences Karlsruhe](https://www.h-ka.de/en/).
+`draf` is developed by [Markus Fleschutz](https://linktr.ee/m.fl) in a cooperative PhD between [MTU](https://www.mtu.ie/), Ireland and the [University of Applied Sciences Karlsruhe](https://www.h-ka.de/en/), Germany.
 An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showcase/).
 
 # Quick start
@@ -45,51 +44,57 @@ An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showc
 
 # Features
 
-- Intuitive handling of complex data structures.
-- Fast model formulation with gurobipy.
-- Open-source model formulation with pyomo.
-- Uses the power of gurobi, the fastest MILP solver available and its community for model formulation and solving.
-- Easy and automatic scenario generation and sensitivity analyses.
-- Naming conventions for parameters and variables.
-- Electricity prices, generation data, load etc. are downloaded on demand and cached for later use.
+![`draf` process](doc/images/draf_process.svg)
+
+- **Time series analysis tools:**
+  - `DemandAnalyzer`: analyze energy demand profiles
+  - `PeakLoadAnalyzer`: analyze peak loads or run simple battery simulation
+- **Pre defined [components](draf/model_builder/components.py):**
+  - E.g. Battery energy storage (BES), Battery electric vehicle (BEV), Combined heat and power (CHP), Heat pump (HP), Power to heat (P2H), Photovoltaic (PV), and Thermal energy storage (TES).
+  - Sensible naming conventions for parameters and variables, see [Naming conventions](#naming-conventions).
+- **Parameter preparation tools:**
+  - `TimeSeriesPrepper`: for time series data
+    - Electricity prices via [`elmada`](https://github.com/DrafProject/elmada)
+    - Carbon emission factors via [`elmada`](https://github.com/DrafProject/elmada)
+    - Standard load profiles from BDEW
+    - PV profiles via [`gsee`](https://github.com/renewables-ninja/gsee)
+  - [`DataBase`](draf/prep/data_base.py): for scientific data such as cost or efficiency factors.
+- **Scenario generation tools:** Easily build individual scenarios or sensitivity analyses.
+- **Multi-objective mathematical optimization** with support of different model languages and solvers:
+  - [`Pyomo`](https://github.com/Pyomo/pyomo): A free and open-source modeling language in Python that supports multiple solvers.
+  - [`GurobiPy`](https://pypi.org/project/gurobipy/): The Python interface to Gurobi, the fastest MILP solver (see [speed comparison](https://assets.gurobi.com/pdfs/webinars/switching-to-gurobi-webinar-slides.pdf#page=10)).
+- **Plotting tools:** Convenient plots such as heatmaps, tables, pareto plots, etc.
+  - support of meta data such as `unit`, `doc`, and `dims`
+  - automatic unit conversion
+- **Export tools:**
+  - `CaseStudy` objects containing all parameters, meta data and results can be saved to files.
+  - Data can be exported to [xarray](http://xarray.pydata.org/en/stable/) format.
+
+Other
+
+- Runs on Windows, macOS and Linux.
 - Ecological assessment uses dynamic carbon emission factors calculated from historic national electric generation data.
 - Economic assessment uses historic day-ahead market prices.
-- Modules for load profile creation.
-- Modules for peak-load analysis.
-- Economic assessment uses historic day-ahead market prices.
-- Convenient plotting and presentation functions.
-- Automatic unit conversion, descriptions and documentation.
-- Uses Python's modern type annotations.
-- Whole case studies and individual scenarios can be saved including all results.
-- `draf` can run on Windows, macOS and Linux.
 
 # Usage
 
 For usage examples please see example models in [draf/models](draf/models).
 Start with [`minimal.py`](draf/models/minimal.py)
 
-For the usage of Gurobi a valid Gurobi license is required.
+For the usage of Gurobi, a valid Gurobi license is required.
 
 # Documentation
 
 ## Structure
 
-A `CaseStudy` object can contain several `Scenario` instances e.g.:
+A `CaseStudy` object can contain several `Scenario` instances:
 
-```none
-CaseStudy
- ⤷ Year, Country, timely resolution (freq)
- ⤷ Plots (scenario comparision, pareto analysis)
- ⤷ Scenario_1
-    ⤷ Parameter, Model, Results, Plots
- ⤷ Scenario_2
-    ⤷ Parameter, Model, Results, Plots
-```
+![`draf` architecture](doc/images/draf_architecture.svg)
 
 ## Naming conventions
 
 All parameter and variable names must satisfy the structure `<Type>_<Component>_<Descriptor>_<Dims>`.
-E.g. in 'P_GRID_buy_T' `P` is the entity type, `GRID` the component, `buy` the descriptor and `T` the dimension.
+E.g. in 'P_EG_buy_T' `P` is the entity type which stands for electrical power, `EG` the component, `buy` the descriptor and `T` the dimension.
 Dimensions are denoted with individual capital letters, so `<Dims>` is `TE` if the entity has the dimensions `T` and `E`.
 For examples of types, components, and descriptors please see [conventions.py](draf/conventions.py).
 
@@ -122,9 +127,11 @@ bump2version patch
 git push --follow-tags
 ```
 
+Type annotations are used throughout the project.
+
 # Status
 
-This piece of software is in a very early stage. Use at your own risk.
+This piece of software is in an early stage. Use at your own risk.
 
 # License
 

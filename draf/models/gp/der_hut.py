@@ -83,13 +83,13 @@ def params_func(sc: Scenario):
 
     # BES
     sc.param("E_BES_CAPx_", data=0, doc="Existing capacity", unit="kWh_el")
-    sc.param("k_BES_ini_", data=0, doc="Initial and final energy filling share", unit="kWh_el")
+    sc.param("k_BES_ini_", data=0, doc="Initial and final energy filling share")
     sc.param("z_BES_", data=0, doc="If new capacity is allowed")
     sc.param(from_db=db.eta_BES_cycle_)
     sc.param(from_db=db.eta_BES_time_)
     sc.param(from_db=db.funcs.c_BES_inv_(estimated_size=100, which="mean"))
-    sc.param(from_db=db.k_BES_inPerCapa_)
-    sc.param(from_db=db.k_BES_outPerCapa_)
+    sc.param(from_db=db.k_BES_inPerCap_)
+    sc.param(from_db=db.k_BES_outPerCap_)
     sc.param(from_db=db.k_BES_RMI_)
     sc.var("E_BES_CAPn_", doc="New capacity", unit="kWh_el")
     sc.var("E_BES_T", doc="Electricity stored", unit="kWh_el")
@@ -175,10 +175,10 @@ def params_func(sc: Scenario):
         sc.var("Y_CHP_T", doc="If in operation", vtype=GRB.BINARY)
 
     # TES
-    sc.param("Q_TES_CAPx_L", fill=0, doc="Existing capacity", unit="kW_th")
+    sc.param("Q_TES_CAPx_L", fill=0, doc="Existing capacity", unit="kWh_th")
     sc.param("eta_TES_time_", data=0.995, doc="Storing efficiency")
-    sc.param("k_TES_inPerCapa_", data=0.5, doc="Ratio loading power / capacity")
-    sc.param("k_TES_outPerCapa_", data=0.5, doc="Ratio loading power / capacity")
+    sc.param("k_TES_inPerCap_", data=0.5, doc="Ratio loading power / capacity")
+    sc.param("k_TES_outPerCap_", data=0.5, doc="Ratio loading power / capacity")
     sc.param("z_TES_L", fill=0, doc="If new capacity is allowed")
     sc.param("k_TES_ini_L", fill=0, doc="Initial and final energy level share")
     sc.param(from_db=db.funcs.c_TES_inv_(estimated_size=100, temp_spread=40))
@@ -285,11 +285,11 @@ def model_func(sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
 
     # BES
     m.addConstrs(
-        (v.P_BES_in_T[t] <= p.k_BES_inPerCapa_ * (p.E_BES_CAPx_ + v.E_BES_CAPn_) for t in d.T),
+        (v.P_BES_in_T[t] <= p.k_BES_inPerCap_ * (p.E_BES_CAPx_ + v.E_BES_CAPn_) for t in d.T),
         "MAX_BES_IN",
     )
     m.addConstrs(
-        (v.P_BES_out_T[t] <= p.k_BES_outPerCapa_ * (p.E_BES_CAPx_ + v.E_BES_CAPn_) for t in d.T),
+        (v.P_BES_out_T[t] <= p.k_BES_outPerCap_ * (p.E_BES_CAPx_ + v.E_BES_CAPn_) for t in d.T),
         "MAX_BES_OUT",
     )
     m.addConstrs((v.E_BES_T[t] <= (p.E_BES_CAPx_ + v.E_BES_CAPn_) for t in d.T), "MAX_BES_E")
@@ -397,7 +397,7 @@ def model_func(sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
     )
     m.addConstrs(
         (
-            v.dQ_TES_in_TL[t, l] <= p.k_TES_inPerCapa_ * (p.Q_TES_CAPx_L[l] + v.Q_TES_CAPn_L[l])
+            v.dQ_TES_in_TL[t, l] <= p.k_TES_inPerCap_ * (p.Q_TES_CAPx_L[l] + v.Q_TES_CAPn_L[l])
             for t in d.T
             for l in d.L
         ),
@@ -405,7 +405,7 @@ def model_func(sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
     )
     m.addConstrs(
         (
-            v.dQ_TES_in_TL[t, l] >= -p.k_TES_outPerCapa_ * (p.Q_TES_CAPx_L[l] + v.Q_TES_CAPn_L[l])
+            v.dQ_TES_in_TL[t, l] >= -p.k_TES_outPerCap_ * (p.Q_TES_CAPx_L[l] + v.Q_TES_CAPn_L[l])
             for t in d.T
             for l in d.L
         ),

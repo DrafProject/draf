@@ -12,7 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 from elmada.helper import read, write
 
-from draf.paths import DATA
+from draf.paths import CACHE_DIR
 
 DWD_BASE = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly"
 MIDDLE = dict(solar="/solar", air_temperature="/air_temperature/historical")
@@ -115,7 +115,7 @@ def get_df_from_DWD(data_type: str, stations_id: int):
     """
     stat_id = get_stations_id_string(stations_id)
     type_id = PRODUKT_TYPE[data_type].lower()
-    globlist = list((DATA / "cache").glob(f"produkt_{type_id}_stunde_*_{stat_id}.parquet"))
+    globlist = list(CACHE_DIR.glob(f"produkt_{type_id}_stunde_*_{stat_id}.parquet"))
     if len(globlist) == 1:
         fp = globlist[0]
         df = read(fp)
@@ -132,7 +132,7 @@ def unzip_and_download(data_type: str, stations_id: int):
 
     with ZipFile(BytesIO(urlopen(url).read()), "r") as myzip:
         name = get_produkt_filename_in_zip(myzip)
-        fp = DATA / f"cache/{name}"
+        fp = CACHE_DIR / f"{name}"
         fp = fp.with_suffix(".parquet")
         with myzip.open(name) as myfile:
             my_bytes = myfile.read()
@@ -152,8 +152,7 @@ def get_produkt_filename_in_zip(zipfile):
 
 def get_zip_file_path(data_type: str, stations_id: int):
     stat = get_stations_id_string(stations_id)
-    zipdir = DATA / "cache"
-    zips = list(zipdir.glob(f"stundenwerte_{PRODUKT_TYPE[data_type]}_{stat}_*"))
+    zips = list(CACHE_DIR.glob(f"stundenwerte_{PRODUKT_TYPE[data_type]}_{stat}_*"))
     if len(zips) == 1:
         return zips[0]
     else:
@@ -174,7 +173,7 @@ def download_zip(data_type: str, stations_id: int):
     url = get_zip_url(data_type=data_type, stations_id=stations_id)
     zipresp = urlopen(url)
     zipfilename = get_zip_name(data_type=data_type, stations_id=stations_id)
-    with open(DATA / f"cache/{zipfilename}", "wb") as file:
+    with open(CACHE_DIR / f"{zipfilename}", "wb") as file:
         file.write(zipresp.read())
 
 
@@ -238,7 +237,7 @@ def filter_year(df, year):
 
 
 def read_stations(data_type: str, cache: bool = True) -> pd.DataFrame:
-    fp_cache = DATA / f"cache/stations_{data_type}.parquet"
+    fp_cache = CACHE_DIR / f"stations_{data_type}.parquet"
 
     if fp_cache.exists() and cache:
         df = read(fp_cache)

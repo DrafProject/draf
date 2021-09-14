@@ -1,30 +1,34 @@
 from dataclasses import dataclass
+from typing import Tuple
 
 
 @dataclass
 class Alias:
     en: str
     de: str
+    units: Tuple[str] = "None"
 
 
 # fmt: off
 class Etypes:
     # SORTING_START
     A = Alias(en="Area", de="Fläche")
-    C = Alias(en="Costs", de="Kosten")
-    CE = Alias(en="Carbon emissions", de="Kohlenstoff-vergleichs-Emissionen")
-    E = Alias(en="Electrical energy", de="Elektrische Energie")
-    F = Alias(en="Fuel", de="Brennstoff")
-    P = Alias(en="Electrical power", de="Elektrische Leistung")
-    Q = Alias(en="Thermal Energy", de="Thermische Energie")
-    T = Alias(en="Temperature", de="Temperatur")
-    c = Alias(en="Specific costs", de="Spezifische Kosten")
-    ce = Alias(en="Specific carbon emissions", de="Spezifische Kohlenstoff-Emissionen")
+    C = Alias(en="Costs", de="Kosten", units=("k€/a"))
+    CE = Alias(en="Carbon emissions", de="Kohlenstoff-vergleichs-Emissionen", units=("kgCO2eq/a"))
+    E = Alias(en="Electrical energy", de="Elektrische Energie", units=("kWh_el"))
+    F = Alias(en="Fuel", de="Brennstoff", units=("kW", "kWh"))
+    P = Alias(en="Electrical power", de="Elektrische Leistung", units=("kW_el", "kW_peak", "kW_el/kW_peak"))
+    Q = Alias(en="Thermal Energy", de="Thermische Energie", units=("kWh_th"))
+    T = Alias(en="Temperature", de="Temperatur", units=("K"))
+    c = Alias(en="Specific costs", de="Spezifische Kosten", units=("€/kW", "€/kWh","€/kW_th", "€/kWh_el","€/kW_el","€/kW_peak", "€/tco2eq"))
+    ce = Alias(en="Specific carbon emissions", de="Spezifische Kohlenstoff-Emissionen", units=("kgCO2eq/kWh_el", "kgCO2eq/kWh"))
     cop = Alias(en="Coefficient of performance", de="Leistungszahl")
-    dQ = Alias(en="Heat flow", de="Wärmestrom")
-    eta = Alias(en="Efficiency", de="Effizienz")
-    k = Alias(en="a ratio", de="ein Verhältnis")
+    dQ = Alias(en="Heat flow", de="Wärmestrom", units=("kW_th", "kW"))
+    eta = Alias(en="Efficiency", de="Effizienz", units=("", "kW_th/kW", "kW_el/kW", "kWh_th/kWh"))
+    k = Alias(en="a ratio", de="ein Verhältnis", units=("", "h"))
+    n = Alias(en="A natural number", de="Eine natürliche Zahl")
     ol = Alias(en="Operation life", de="Betriebsdauer")
+    t = Alias(en="Time", de="Zeit", units=("seconds"))
     y = Alias(en="Binary indicator", de="Binärindikator")
     z = Alias(en="Binary allowance indicator", de="Binärindikator")
     # SORTING_END
@@ -63,6 +67,9 @@ class Components:
     SN = Alias(en="Steam network", de="Dampfnetz")
     TES = Alias(en="Thermal energy storage", de="Thermischer speicher")
     WH = Alias(en="Waste heat", de="Abfallwärme")
+    cDem = Alias(en="Cooling demand", de="Kältebedarf")
+    eDem = Alias(en="Electricity demand", de="Strombedarf")
+    hDem = Alias(en="Heat demand", de="Heizbedarf")
     # SORTING_END
 
 # fmt: on

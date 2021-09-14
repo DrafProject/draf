@@ -50,7 +50,7 @@ def open_casestudy(fp) -> CaseStudy:
 
 
 def open_latest_casestudy(name: str, verbose: bool = True) -> CaseStudy:
-    fd = paths.RESULTS / name
+    fd = paths.RESULTS_DIR / name
     files = sorted(list(fd.glob("*.p")))
     fp = files[-1]
     if verbose:
@@ -144,7 +144,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
     @property
     def _res_fp(self) -> Path:
         """Returns the path to the case study's default result directory."""
-        fp = paths.RESULTS / self.name
+        fp = paths.RESULTS_DIR / self.name
         fp.mkdir(exist_ok=True)
         return fp
 

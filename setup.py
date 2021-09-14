@@ -17,6 +17,7 @@ setup(
     packages=find_packages(exclude=["tests"]),
     python_requires=">=3.7,<3.8",
     install_requires=[
+        "appdirs",
         "elmada",
         "gsee",
         "gurobipy",
@@ -43,8 +44,7 @@ setup(
         "jupyter": ["jupyter", "jupytext"]
     },
     classifiers=[
-        "Development Status :: 4 - Alpha",
-        "Environment :: Console",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
@@ -61,7 +61,7 @@ setup(
         "optimization",
         "mathematical programming",
         "demand response",
-        "microgrids",
+        "energy hubs",
         "distributed energy resources",
     ],
 )
