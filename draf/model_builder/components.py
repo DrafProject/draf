@@ -16,7 +16,7 @@ logger.setLevel(level=logging.WARN)
 
 @dataclass
 class PRE(Component):
-    """The base component including T, General, Total, Pareto"""
+    """The base component including T, General"""
 
     def param_func(self, sc: Scenario):
         sc.balance("P_EL_source_T", doc="Power sources", unit="kW_el")
@@ -29,27 +29,10 @@ class PRE(Component):
         sc.balance("CE_TOT_", doc="Total carbon emissions", unit="kgCO2eq/a")
         sc.balance("Penalty_", doc="Penalty term for objective function", unit="")
 
-        # Dimensions
-        sc.dim("T", infer=True)
-
         # General
+        sc.dim("T", infer=True)
         sc.prep.k__comp_()
         sc.prep.k__dT_()
-        if sc.consider_invest:
-            sc.param("k__AF_", 0.1, doc="Annuity factor (it pays off in 1/k__AF_ years)")
-
-        # Total
-        sc.var("C_TOT_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
-        sc.var("C_TOT_op_", doc="Total operating costs", unit="k€/a", lb=-GRB.INFINITY)
-        sc.var("CE_TOT_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
-        if sc.consider_invest:
-            sc.var("C_TOT_inv_", doc="Total investment costs", unit="k€")
-            sc.var("C_TOT_RMI_", doc="Total annual maintainance cost", unit="k€")
-
-        # Pareto
-        sc.param("k_PTO_alpha_", data=0, doc="Pareto weighting factor")
-        sc.param("k_PTO_C_", data=1, doc="Normalization factor")
-        sc.param("k_PTO_CE_", data=1 / 1e4, doc="Normalization factor")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
         pass
@@ -60,7 +43,20 @@ class POST(Component):
     """The base component including T, General, Total, Pareto"""
 
     def param_func(self, sc: Scenario):
+        # Total
+        sc.var("C_TOT_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
+        sc.var("C_TOT_op_", doc="Total operating costs", unit="k€/a", lb=-GRB.INFINITY)
+        sc.var("CE_TOT_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
+        if sc.consider_invest:
+            sc.param("k__AF_", 0.1, doc="Annuity factor (it pays off in 1/k__AF_ years)")
+            sc.var("C_TOT_inv_", doc="Total investment costs", unit="k€")
+            sc.var("C_TOT_RMI_", doc="Total annual maintainance cost", unit="k€")
         sc.var("Penalty_", "Penalty term for objective function")
+
+        # Pareto
+        sc.param("k_PTO_alpha_", data=0, doc="Pareto weighting factor")
+        sc.param("k_PTO_C_", data=1, doc="Normalization factor")
+        sc.param("k_PTO_CE_", data=1 / 1e4, doc="Normalization factor")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
 
@@ -232,11 +228,16 @@ class EG(Component):
 class Fuel(Component):
     """Fuels"""
 
+    c_ceTax: float = 55
+
     def param_func(self, sc: Scenario):
         sc.dim("F", ["ng", "bio"], doc="Types of fuel")
         sc.balance("F_fuel_F", doc="Fuel power", unit="kW")
         sc.param(from_db=db.c_Fuel_F)
+        sc.param("c_Fuel_ceTax_", data=self.c_ceTax, doc="Carbon tax on fuel", unit="€/tCO2eq")
         sc.param(from_db=db.ce_Fuel_F)
+        sc.var("C_Fuel_ceTax_", doc="Carbon tax on fuel", unit="€/a")
+        sc.var("CE_Fuel_", doc="Total carbon emissions for fuel", unit="kgCO2eq/a")
         sc.var("F_fuel_F", doc="Total fuel consumption", unit="kW")
 
     def model_func(self, sc, m, d, p, v):
@@ -244,11 +245,15 @@ class Fuel(Component):
             (v.F_fuel_F[f] == quicksum(x(f) for x in sc.balances.F_fuel_F.values()) for f in d.F),
             "DEF_F_fuel_F",
         )
+        m.addConstr(
+            v.CE_Fuel_
+            == p.k__comp_ * p.k__dT_ * quicksum(v.F_fuel_F[f] * p.ce_Fuel_F[f] for f in d.F)
+        )
+        m.addConstr(v.C_Fuel_ceTax_ == p.c_Fuel_ceTax_ * v.CE_Fuel_)
+        sc.balances.CE_TOT_["Fuel"] = v.CE_Fuel_
         sc.balances.C_TOT_op_["Fuel"] = (
             p.k__comp_ * p.k__dT_ * quicksum(v.F_fuel_F[f] * p.c_Fuel_F[f] / 1e3 for f in d.F)
-        )
-        sc.balances.CE_TOT_["Fuel"] = (
-            p.k__comp_ * p.k__dT_ * quicksum(v.F_fuel_F[f] * p.ce_Fuel_F[f] for f in d.F)
+            + v.C_Fuel_ceTax_
         )
 
 
@@ -269,7 +274,6 @@ class BES(Component):
         sc.var("E_BES_T", doc="Electricity stored", unit="kWh_el")
         sc.var("P_BES_in_T", doc="Charging power", unit="kW_el")
         sc.var("P_BES_out_T", doc="Discharging power", unit="kW_el")
-        sc.var("E_BES_CAP_", doc="Total capacity", unit="kWh_el")
 
         if sc.consider_invest:
             sc.param(from_db=db.k_BES_RMI_)
@@ -278,17 +282,18 @@ class BES(Component):
             sc.var("E_BES_CAPn_", doc="New capacity", unit="kWh_el")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
+        cap = p.E_BES_CAPx_ + v.E_BES_CAPn_ if sc.consider_invest else p.E_BES_CAPx_
         m.addConstrs(
-            (v.P_BES_in_T[t] <= p.k_BES_inPerCap_ * v.E_BES_CAP_ for t in d.T),
+            (v.P_BES_in_T[t] <= p.k_BES_inPerCap_ * cap for t in d.T),
             "MAX_BES_IN",
         )
         m.addConstrs(
-            (v.P_BES_out_T[t] <= p.k_BES_outPerCap_ * v.E_BES_CAP_ for t in d.T),
+            (v.P_BES_out_T[t] <= p.k_BES_outPerCap_ * cap for t in d.T),
             "MAX_BES_OUT",
         )
-        m.addConstrs((v.E_BES_T[t] <= v.E_BES_CAP_ for t in d.T), "MAX_BES_E")
+        m.addConstrs((v.E_BES_T[t] <= cap for t in d.T), "MAX_BES_E")
         m.addConstrs(
-            (v.E_BES_T[t] == p.k_BES_ini_ * v.E_BES_CAP_ for t in [min(d.T), max(d.T)]),
+            (v.E_BES_T[t] == p.k_BES_ini_ * cap for t in [min(d.T), max(d.T)]),
             "INI_BES",
         )
         m.addConstrs(
@@ -305,18 +310,13 @@ class BES(Component):
         sc.balances.P_EL_source_T["BES"] = lambda t: v.P_BES_out_T[t]
         sc.balances.P_EL_sink_T["BES"] = lambda t: v.P_BES_in_T[t]
 
-        if sc.consider_invest:
-            m.addConstr((v.E_BES_CAP_ == p.E_BES_CAPx_ + v.E_BES_CAPn_), "DEF_BES_CAP")
-
-        else:
-            m.addConstr((v.E_BES_CAP_ == p.E_BES_CAPx_), "DEF_BES_CAP")
-
 
 @dataclass
 class PV(Component):
     """Photovoltaic System"""
 
     P_CAPx: float = 100
+    A_avail_: float = 100
     allow_new: bool = False
 
     def param_func(self, sc: Scenario):
@@ -324,6 +324,20 @@ class PV(Component):
         sc.prep.P_PV_profile_T(use_coords=True)
         sc.var("P_PV_FI_T", doc="Feed-in", unit="kW_el")
         sc.var("P_PV_OC_T", doc="Own consumption", unit="kW_el")
+        sc.param(
+            "A_PV_PerPeak_",
+            data=6.5,
+            doc="Area efficiency of new PV",
+            unit="m²/kW_peak",
+            src="https://www.dachvermieten.net/wieviel-qm-dachflaeche-fuer-1-kw-kilowatt",
+        )
+        sc.param("A_PV_avail_", data=self.A_avail_, doc="Area available for new PV", unit="m²")
+        sc.param(
+            "c_PV_OC_",
+            data=0.4 * 0.0688,
+            doc="Renewable Energy Law (EEG) levy on own consumption",
+            unit="€/kWh_el",
+        )
 
         if sc.consider_invest:
             sc.param("z_PV_", data=int(self.allow_new), doc="If new capacity is allowed")
@@ -337,8 +351,13 @@ class PV(Component):
             (cap * p.P_PV_profile_T[t] == v.P_PV_FI_T[t] + v.P_PV_OC_T[t] for t in d.T),
             "PV1",
         )
+        if sc.consider_invest:
+            m.addConstr(v.P_PV_CAPn_ <= p.A_PV_avail_ / p.A_PV_PerPeak_, "LIM_P_PV_CAPn_")
         sc.balances.P_EL_source_T["PV"] = lambda t: v.P_PV_OC_T[t]
         sc.balances.P_EG_sell_T["PV"] = lambda t: v.P_PV_FI_T[t]
+        sc.balances.C_TOT_op_["PV_OC"] = (
+            p.k__comp_ * p.k__dT_ * p.c_PV_OC_ / 1e3 * v.P_PV_OC_T.sum()
+        )
 
 
 @dataclass
@@ -476,6 +495,12 @@ class CHP(Component):
         sc.param("z_CHP_minPL_", data=1, doc="If minimal part load is modeled.")
         sc.param(from_db=db.funcs.eta_CHP_el_(fuel="ng"))
         sc.param(from_db=db.funcs.eta_CHP_th_(fuel="ng"))
+        sc.param(
+            "c_CHP_OC_",
+            data=0.4 * 0.0688,
+            doc="Renewable Energy Law (EEG) levy on own consumption",
+            unit="€/kWh_el",
+        )
         sc.var("dQ_CHP_T", doc="Producing heat flow", unit="kW_th")
         sc.var("F_CHP_TF", doc="Consumed fuel flow", unit="kW")
         sc.var("P_CHP_FI_T", doc="Feed-in", unit="kW_el")
@@ -519,6 +544,9 @@ class CHP(Component):
         sc.balances.dQ_source_TL["CHP"] = lambda t, l: v.dQ_CHP_T[t] if l == "90/70" else 0
         sc.balances.P_EG_sell_T["CHP"] = lambda t: v.P_CHP_FI_T[t]
         sc.balances.F_fuel_F["CHP"] = lambda f: v.F_CHP_TF.sum("*", f)
+        sc.balances.C_TOT_op_["CHP_OC"] = (
+            p.k__comp_ * p.k__dT_ * p.c_CHP_OC_ / 1e3 * v.P_CHP_OC_T.sum()
+        )
 
 
 @dataclass
@@ -639,11 +667,11 @@ class BEV(Component):
         p = sc.params
         d = sc.dims
         sc.dim("B", data=[1, 2], doc="BEV batteries")
-        sc.param("E_BEV_CapOneBat_B", fill=100, doc="Capacity of one battery", unit="kWh_el")
+        sc.param("E_BEV_Cap1Bat_B", fill=100, doc="Capacity of one battery", unit="kWh_el")
         sc.param("n_BEV_nBats_B", fill=10, doc="Number of batteries")
         sc.param(
             "E_BEV_CAPx_B",
-            fill=p.E_BEV_CapOneBat_B * p.n_BEV_nBats_B,
+            fill=p.E_BEV_Cap1Bat_B * p.n_BEV_nBats_B,
             doc="Capacity of all batteries",
             unit="kWh_el",
         )
@@ -666,13 +694,7 @@ class BEV(Component):
         sc.param("z_BEV_smart_", data=int(self.z_smart), doc="If smart charging is allowed")
         sc.param("z_BEV_V2X_", data=int(self.z_V2X), doc="If vehicle-to-X is allowed")
         sc.param("k_BEV_ini_B", fill=0.7, doc="Initial and final state of charge")
-        sc.var(
-            "E_BEV_TB",
-            doc="Electricity stored in BEV battery",
-            unit="kWh_el",
-            lb={(t, b): p.k_BEV_empty_B[b] * p.E_BEV_CAPx_B[b] for t in d.T for b in d.B},
-            ub={(t, b): p.k_BEV_full_B[b] * p.E_BEV_CAPx_B[b] for t in d.T for b in d.B},
-        )
+        sc.var("E_BEV_TB", doc="Electricity stored in BEV battery", unit="kWh_el")
         sc.var("P_BEV_in_TB", doc="Charging power", unit="kW_el")
         sc.var("P_BEV_V2X_TB", doc="Discharging power for vehicle-to-X", unit="kW_el")
         sc.var("x_BEV_penalty_", doc="Penalty to ensure uncontrolled charging in REF")
@@ -701,7 +723,15 @@ class BEV(Component):
             ),
             "BAL_BEV",
         )
-        m.addConstrs((v.E_BEV_TB[t, b] <= p.E_BEV_CAPx_B[b] for t in T for b in B), "MAX_E_BEV")
+        m.addConstrs(
+            (v.E_BEV_TB[t, b] <= p.k_BEV_full_B[b] * p.E_BEV_CAPx_B[b] for t in T for b in B),
+            "MAX_E_BEV",
+        )
+        m.addConstrs(
+            (v.E_BEV_TB[t, b] >= p.k_BEV_empty_B[b] * p.E_BEV_CAPx_B[b] for t in T for b in B),
+            "MIN_E_BEV",
+        )
+
         m.addConstrs(
             (
                 v.E_BEV_TB[t, b] == p.k_BEV_ini_B[b] * p.E_BEV_CAPx_B[b]

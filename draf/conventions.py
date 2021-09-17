@@ -6,7 +6,7 @@ from typing import Tuple
 class Alias:
     en: str
     de: str
-    units: Tuple[str] = "None"
+    units: Tuple[str] = ()
 
 
 # fmt: off
@@ -20,7 +20,7 @@ class Etypes:
     P = Alias(en="Electrical power", de="Elektrische Leistung", units=("kW_el", "kW_peak", "kW_el/kW_peak"))
     Q = Alias(en="Thermal Energy", de="Thermische Energie", units=("kWh_th"))
     T = Alias(en="Temperature", de="Temperatur", units=("K"))
-    c = Alias(en="Specific costs", de="Spezifische Kosten", units=("€/kW", "€/kWh","€/kW_th", "€/kWh_el","€/kW_el","€/kW_peak", "€/tco2eq"))
+    c = Alias(en="Specific costs", de="Spezifische Kosten", units=("€/kW", "€/kWh","€/kW_th", "€/kWh_el","€/kW_el","€/kW_peak", "€/tCO2eq"))
     ce = Alias(en="Specific carbon emissions", de="Spezifische Kohlenstoff-Emissionen", units=("kgCO2eq/kWh_el", "kgCO2eq/kWh"))
     cop = Alias(en="Coefficient of performance", de="Leistungszahl")
     dQ = Alias(en="Heat flow", de="Wärmestrom", units=("kW_th", "kW"))

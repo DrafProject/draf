@@ -793,11 +793,15 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         except AttributeError:
             pass
         else:
+            if expected_units == ():
+                return
             adder = "one of " if len(expected_units) > 1 else ""
+            if expected_units == ():
+                expected_units = "None"
             if not unit in expected_units:
                 logger.warning(
                     f"Unexpected unit {unit} for entity {name}. "
-                    f"Expexted {adder}{expected_units}."
+                    f"Expected {adder}{expected_units}."
                 )
 
     def balance(

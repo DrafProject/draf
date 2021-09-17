@@ -9,7 +9,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![python](https://img.shields.io/badge/python-3.7-blue?logo=python&logoColor=white)](https://github.com/DrafProject/elmada)
 
-`draf` is developed by [Markus Fleschutz](https://linktr.ee/m.fl) in a cooperative PhD between [MTU](https://www.mtu.ie/), Ireland and the [University of Applied Sciences Karlsruhe](https://www.h-ka.de/en/), Germany.
+`draf` is developed by [Markus Fleschutz](https://linktr.ee/m.fl) since 2017 in a cooperative PhD between [MTU](https://www.mtu.ie/), Ireland and the [University of Applied Sciences Karlsruhe](https://www.h-ka.de/en/), Germany.
 An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showcase/).
 
 # Quick start

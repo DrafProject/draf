@@ -41,14 +41,20 @@ def params_func(sc: Scenario):
     sc.var("P_EG_buy_T", doc="Purchased electrical power", unit="kW_el")
     sc.var("P_EG_sell_T", doc="Selling electrical power", unit="kW_el")
     sc.var("P_EG_buyPeak_", doc="Peak electrical power", unit="kW_el")
+    sc.param(
+        "c_OC_",
+        data=0.4 * 0.0688,
+        doc="Renewable Energy Law (EEG) levy on own consumption",
+        unit="€/kWh_el",
+    )
 
     # PV
     sc.param("P_PV_CAPx_", data=100, doc="Existing capacity", unit="kW_peak")
+
     sc.prep.P_PV_profile_T(use_coords=True)
     sc.var("P_PV_FI_T", doc="Feed-in", unit="kW_el")
     sc.var("P_PV_OC_T", doc="Own consumption", unit="kW_el")
     sc.var("P_PV_T", doc="Producing electrical power", unit="kW_el")
-
     # BES
     sc.param("E_BES_CAPx_", data=100, doc="Existing capacity", unit="kWh_el")
     sc.param(from_db=db.eta_BES_cycle_)
@@ -78,6 +84,7 @@ def model_func(sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
         * (
             quicksum(v.P_EG_buy_T[t] * (p.c_EG_T[t] + p.c_EG_addon_T[t]) for t in d.T)
             - quicksum(v.P_EG_sell_T[t] * p.c_EG_T[t] for t in d.T)
+            + v.P_PV_OC_T.sum() * p.c_OC_
         ),
         "DEF_C_TOT_op_",
     )

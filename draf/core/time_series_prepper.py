@@ -308,8 +308,8 @@ class TimeSeriesPrepper:
         Offshore_surcharge=-0.00002,
         Sales=0.01537,
     ) -> pd.Series:
-        """Add electricity price components other than wholesale prices defaults for Industry for
-        2017.
+        """Add electricity price components other than wholesale prices defaults for German
+        Industry for 2017.
 
         Source for defaults: https://www.bdew.de/media/documents/190723_BDEW-Strompreisanalyse_Juli-2019.pdf page 25
         """
