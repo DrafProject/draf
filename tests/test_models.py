@@ -15,7 +15,6 @@ def test_comp():
     )
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("mdl", [minimal, minimal_comp, der_hut_comp, bev_comp])
 def test_models(mdl):
     c = mdl.main().REF_scen.res.C_TOT_

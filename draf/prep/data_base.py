@@ -57,13 +57,15 @@ class DataBase:
     k_BES_outPerCap_ = ParDat(name="k_BES_outPerCap_", data=0.7, doc=f"Ratio discharging power / capacity", src=SRC.Figgener_2021)
     k_CHP_RMI_ = ParDat(name="k_CHP_RMI_", data=0.06 + 0.02, doc=Descs.RMI.en, src=SRC.VDI2067)
     k_CM_RMI_ = ParDat(name="k_CM_RMI_", data=0.01 + 0.015, doc=Descs.RMI.en, src=SRC.VDI2067)
-    k_HOB_RMI_ = ParDat(name="k_HOB_RMI_", data=0.04, doc=Descs.RMI.en)  # TODO
+    k_HOB_RMI_ = ParDat(name="k_HOB_RMI_", data=0.04, doc=Descs.RMI.en)  # TODO find src
     k_HP_RMI_ = ParDat(name="k_HP_RMI_", data=0.01 + 0.015, doc=Descs.RMI.en, src=SRC.VDI2067)
     k_PV_RMI_ = ParDat(name="k_PV_RMI_", data=0.02, doc=Descs.RMI.en, src=SRC.ISE_2018)
     k_TES_RMI_ = ParDat(name="k_TES_RMI_", data=0.001, doc=Descs.RMI.en, src=SRC.FFE_2016)
     ol_BES_ = ParDat(name="ol_BES_", data=20, doc=f"Operation life", src=SRC.Juelch_2016, unit="a")
     ol_CHP_ = ParDat(name="ol_CHP_", data=15, doc=f"Operation life", src=SRC.VDI2067, unit="a")
+    ol_HOB_ = ParDat(name="ol_HOB_", data=30, doc=f"Operation life", unit="a")  # TODO find src
     ol_HP_ = ParDat(name="ol_HP_", data=18, doc=f"Operation life", src=SRC.VDI2067, unit="a")
+    ol_P2H_ = ParDat(name="ol_P2H_", data=30, doc=f"Operation life", unit="a")  # TODO find src
     ol_PV_ = ParDat(name="ol_PV_", data=25, doc=f"Operation life", src=SRC.ISE_2018, unit="a")
     ol_TES_ = ParDat(name="ol_TES_", data=30, doc=f"Operation life", src=SRC.BRACCO_2016, unit="a")
     # SORTING_END

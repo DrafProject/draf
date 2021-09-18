@@ -25,12 +25,12 @@ addopts = [
     "--cov=draf",
     # "--cov-report=term:skip-covered",
     # "--cov-report=html",
-    "--durations=4",
+    "--durations=3",
     # "-m=not slow",
     "--disable-pytest-warnings",
 ]
 markers = [
-  "slow: marks slow tests > 1sec"
+  "slow: marks slow tests > 1sec and not an important model test"
 ]
 python_files = "test_*.py"
 python_functions = "test_*"

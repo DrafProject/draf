@@ -28,7 +28,7 @@ class TimeSeriesPrepper:
         """For serialization with pickle."""
         return None
 
-    def k__comp_(self, name: str = "k__comp_") -> float:
+    def k__PartYearComp_(self, name: str = "k__PartYearComp_") -> float:
         """Add cost weighting factor to compensate part year analysis."""
         sc = self.sc
         return self.sc.param(
@@ -70,7 +70,7 @@ class TimeSeriesPrepper:
             doc=f"Day-ahead-market-prices {sc.year}, {sc.freq}, {sc.country}",
             data=sc.trim_to_datetimeindex(
                 get_prices(year=sc.year, freq=sc.freq, method=method, country=sc.country, **kwargs)
-                / 1000
+                / 1e3
             ),
         )
 

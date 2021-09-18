@@ -15,7 +15,7 @@ def params_func(sc: Scenario):
     sc.dim("T", infer=True)
 
     # General
-    sc.prep.k__comp_()
+    sc.prep.k__PartYearComp_()
     sc.prep.k__dT_()
 
     # Total
@@ -78,21 +78,21 @@ def model_func(sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
     m.addConstr(
         v.C_TOT_op_
         == v.P_EG_buyPeak_ * p.c_EG_buyPeak_ / 1e3
-        + p.k__comp_
+        + p.k__PartYearComp_
         * p.k__dT_
-        / 1e3
         * (
             quicksum(v.P_EG_buy_T[t] * (p.c_EG_T[t] + p.c_EG_addon_T[t]) for t in d.T)
             - quicksum(v.P_EG_sell_T[t] * p.c_EG_T[t] for t in d.T)
             + v.P_PV_OC_T.sum() * p.c_OC_
-        ),
+        )
+        / 1e3,
         "DEF_C_TOT_op_",
     )
 
     # CE
     m.addConstr(
         v.CE_TOT_
-        == p.k__comp_
+        == p.k__PartYearComp_
         * p.k__dT_
         * quicksum((v.P_EG_buy_T[t] - v.P_EG_sell_T[t]) * p.ce_EG_T[t] for t in d.T),
         "DEF_CE_",

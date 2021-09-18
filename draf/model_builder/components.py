@@ -5,7 +5,7 @@ import pandas as pd
 from gurobipy import GRB, Model, quicksum
 
 from draf import Dimensions, Params, Results, Scenario, Vars
-from draf.helper import set_component_order_by_dependency
+from draf.helper import conv, set_component_order_by_dependency
 from draf.model_builder import collectors
 from draf.model_builder.abstract_component import Component
 from draf.prep import DataBase as db
@@ -15,10 +15,11 @@ logger.setLevel(level=logging.WARN)
 
 
 @dataclass
-class PRE(Component):
-    """The base component including T, General"""
+class Main(Component):
+    """Objective functions and general balances. This must be the last model_func to be executed."""
 
     def param_func(self, sc: Scenario):
+        # Balances
         sc.balance("P_EL_source_T", doc="Power sources", unit="kW_el")
         sc.balance("P_EL_sink_T", doc="Power sinks", unit="kW_el")
         sc.balance("P_EG_sell_T", doc="Sold electricity power", unit="kW_el")
@@ -28,27 +29,12 @@ class PRE(Component):
         sc.balance("C_TOT_op_", doc="Total operating costs", unit="k€/a")
         sc.balance("CE_TOT_", doc="Total carbon emissions", unit="kgCO2eq/a")
         sc.balance("Penalty_", doc="Penalty term for objective function", unit="")
-
-        # General
-        sc.dim("T", infer=True)
-        sc.prep.k__comp_()
-        sc.prep.k__dT_()
-
-    def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
-        pass
-
-
-@dataclass
-class POST(Component):
-    """The base component including T, General, Total, Pareto"""
-
-    def param_func(self, sc: Scenario):
         # Total
         sc.var("C_TOT_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
         sc.var("C_TOT_op_", doc="Total operating costs", unit="k€/a", lb=-GRB.INFINITY)
         sc.var("CE_TOT_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)
         if sc.consider_invest:
-            sc.param("k__AF_", 0.1, doc="Annuity factor (it pays off in 1/k__AF_ years)")
+            sc.param("k__r_", data=0.06, doc="Calculatory interest rate")
             sc.var("C_TOT_inv_", doc="Total investment costs", unit="k€")
             sc.var("C_TOT_RMI_", doc="Total annual maintainance cost", unit="k€")
         sc.var("Penalty_", "Penalty term for objective function")
@@ -74,15 +60,22 @@ class POST(Component):
         sc.balances.C_TOT_["op"] = v.C_TOT_op_
 
         if sc.consider_invest:
-            m.addConstr((v.C_TOT_inv_ == collectors.C_TOT_inv_(p, v) / 1e3))
-            m.addConstr((v.C_TOT_RMI_ == collectors.C_TOT_RMI_(p, v) / 1e3), "DEF_C_TOT_RMI_")
+            m.addConstr(
+                (v.C_TOT_inv_ == collectors.C_invAnnual_(p, v, r=p.k__r_) * conv("€", "k€", 1e-3))
+            )
+            m.addConstr(
+                (v.C_TOT_RMI_ == collectors.C_TOT_RMI_(p, v) * conv("€", "k€", 1e-3)),
+                "DEF_C_TOT_RMI_",
+            )
             sc.balances.C_TOT_["RMI"] = v.C_TOT_RMI_
-            sc.balances.C_TOT_["inv"] = p.k__AF_ * v.C_TOT_inv_
+            sc.balances.C_TOT_["inv"] = v.C_TOT_inv_
 
         m.addConstr(v.C_TOT_ == quicksum(sc.balances.C_TOT_.values()), "DEF_C_TOT_")
 
         # CE
-        m.addConstr(v.CE_TOT_ == quicksum(sc.balances.CE_TOT_.values()), "DEF_CE_TOT_")
+        m.addConstr(
+            v.CE_TOT_ == p.k__PartYearComp_ * quicksum(sc.balances.CE_TOT_.values()), "DEF_CE_TOT_"
+        )
 
         # Penalty
         m.addConstr(v.Penalty_ == quicksum(sc.balances.Penalty_.values()), "DEF_Penalty_")
@@ -204,20 +197,18 @@ class EG(Component):
 
         sc.balances.P_EL_source_T["EL"] = lambda t: v.P_EG_buy_T[t]
         sc.balances.P_EL_sink_T["EL"] = lambda t: v.P_EG_sell_T[t]
-        sc.balances.C_TOT_op_["EG_peak"] = v.P_EG_buyPeak_ * p.c_EG_buyPeak_ / 1e3
+        sc.balances.C_TOT_op_["EG_peak"] = v.P_EG_buyPeak_ * p.c_EG_buyPeak_ * conv("€", "k€", 1e-3)
         sc.balances.C_TOT_op_["EG"] = (
-            p.k__comp_
-            * p.k__dT_
-            / 1e3
+            p.k__dT_
+            * p.k__PartYearComp_
             * quicksum(
                 v.P_EG_buy_T[t] * (p.c_EG_T[t] + p.c_EG_addon_T[t]) - v.P_EG_sell_T[t] * p.c_EG_T[t]
                 for t in d.T
             )
+            * conv("€", "k€", 1e-3)
         )
-        sc.balances.CE_TOT_["EG"] = (
-            p.k__comp_
-            * p.k__dT_
-            * quicksum(p.ce_EG_T[t] * (v.P_EG_buy_T[t] - v.P_EG_sell_T[t]) for t in d.T)
+        sc.balances.CE_TOT_["EG"] = p.k__dT_ * quicksum(
+            p.ce_EG_T[t] * (v.P_EG_buy_T[t] - v.P_EG_sell_T[t]) for t in d.T
         )
 
     def postprocess_func(self, r: Results):
@@ -238,6 +229,7 @@ class Fuel(Component):
         sc.param(from_db=db.ce_Fuel_F)
         sc.var("C_Fuel_ceTax_", doc="Carbon tax on fuel", unit="€/a")
         sc.var("CE_Fuel_", doc="Total carbon emissions for fuel", unit="kgCO2eq/a")
+        sc.var("C_Fuel_", doc="Total cost for fuel", unit="k€/a")
         sc.var("F_fuel_F", doc="Total fuel consumption", unit="kW")
 
     def model_func(self, sc, m, d, p, v):
@@ -245,16 +237,16 @@ class Fuel(Component):
             (v.F_fuel_F[f] == quicksum(x(f) for x in sc.balances.F_fuel_F.values()) for f in d.F),
             "DEF_F_fuel_F",
         )
+        m.addConstr(v.CE_Fuel_ == p.k__dT_ * quicksum(v.F_fuel_F[f] * p.ce_Fuel_F[f] for f in d.F))
         m.addConstr(
-            v.CE_Fuel_
-            == p.k__comp_ * p.k__dT_ * quicksum(v.F_fuel_F[f] * p.ce_Fuel_F[f] for f in d.F)
+            v.C_Fuel_
+            == p.k__dT_
+            * quicksum(v.F_fuel_F[f] * p.c_Fuel_F[f] * conv("€", "k€", 1e-3) for f in d.F)
         )
-        m.addConstr(v.C_Fuel_ceTax_ == p.c_Fuel_ceTax_ * v.CE_Fuel_)
+        m.addConstr(v.C_Fuel_ceTax_ == p.c_Fuel_ceTax_ * conv("/t", "(/kg", 1e-3) * v.CE_Fuel_ * conv("€", "k€", 1e-3))
         sc.balances.CE_TOT_["Fuel"] = v.CE_Fuel_
-        sc.balances.C_TOT_op_["Fuel"] = (
-            p.k__comp_ * p.k__dT_ * quicksum(v.F_fuel_F[f] * p.c_Fuel_F[f] / 1e3 for f in d.F)
-            + v.C_Fuel_ceTax_
-        )
+        sc.balances.C_TOT_op_["Fuel"] = p.k__PartYearComp_ * v.C_Fuel_
+        sc.balances.C_TOT_op_["FuelCeTax"] = p.k__PartYearComp_ * v.C_Fuel_ceTax_
 
 
 @dataclass
@@ -277,6 +269,7 @@ class BES(Component):
 
         if sc.consider_invest:
             sc.param(from_db=db.k_BES_RMI_)
+            sc.param(from_db=db.ol_BES_)
             sc.param("z_BES_", data=int(self.allow_new), doc="If new capacity is allowed")
             sc.param(from_db=db.funcs.c_BES_inv_(estimated_size=100, which="mean"))
             sc.var("E_BES_CAPn_", doc="New capacity", unit="kWh_el")
@@ -343,6 +336,7 @@ class PV(Component):
             sc.param("z_PV_", data=int(self.allow_new), doc="If new capacity is allowed")
             sc.param(from_db=db.funcs.c_PV_inv_())
             sc.param(from_db=db.k_PV_RMI_)
+            sc.param(from_db=db.ol_PV_)
             sc.var("P_PV_CAPn_", doc="New capacity", unit="kW_peak", ub=1e20 * sc.params.z_PV_)
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
@@ -356,7 +350,7 @@ class PV(Component):
         sc.balances.P_EL_source_T["PV"] = lambda t: v.P_PV_OC_T[t]
         sc.balances.P_EG_sell_T["PV"] = lambda t: v.P_PV_FI_T[t]
         sc.balances.C_TOT_op_["PV_OC"] = (
-            p.k__comp_ * p.k__dT_ * p.c_PV_OC_ / 1e3 * v.P_PV_OC_T.sum()
+            p.k__dT_ * p.k__PartYearComp_ * p.c_PV_OC_ * v.P_PV_OC_T.sum() * conv("€", "k€", 1e-3)
         )
 
 
@@ -414,6 +408,7 @@ class HP(Component):
         if sc.consider_invest:
             sc.param("z_HP_", data=int(self.allow_new), doc="If new capacity is allowed")
             sc.param(from_db=db.k_HP_RMI_)
+            sc.param(from_db=db.ol_HP_)
             sc.param(from_db=db.funcs.c_HP_inv_())
             sc.var("dQ_HP_CAPn_", doc="New heating capacity", unit="kW_th", ub=1e6 * p.z_HP_)
 
@@ -464,6 +459,7 @@ class P2H(Component):
     def param_func(self, sc: Scenario):
         sc.param("dQ_P2H_CAPx_", data=self.dQ_CAPx, doc="Existing capacity", unit="kW_th")
         sc.param(from_db=db.eta_P2H_)
+        sc.param(from_db=db.ol_P2H_)
         sc.var("P_P2H_T", doc="Consuming power", unit="kW_el")
         sc.var("dQ_P2H_T", doc="Producing heat flow", unit="kW_th")
         if sc.consider_invest:
@@ -515,6 +511,7 @@ class CHP(Component):
             sc.param("z_CHP_", data=0, doc="If new capacity is allowed")
             sc.param(from_db=db.funcs.c_CHP_inv_(estimated_size=400, fuel_type="ng"))
             sc.param(from_db=db.k_CHP_RMI_)
+            sc.param(from_db=db.ol_CHP_)
             sc.var("P_CHP_CAPn_", doc="New capacity", unit="kW_el", ub=1e6 * sc.params.z_CHP_)
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
@@ -545,7 +542,7 @@ class CHP(Component):
         sc.balances.P_EG_sell_T["CHP"] = lambda t: v.P_CHP_FI_T[t]
         sc.balances.F_fuel_F["CHP"] = lambda f: v.F_CHP_TF.sum("*", f)
         sc.balances.C_TOT_op_["CHP_OC"] = (
-            p.k__comp_ * p.k__dT_ * p.c_CHP_OC_ / 1e3 * v.P_CHP_OC_T.sum()
+            p.k__PartYearComp_ * p.k__dT_ * p.c_CHP_OC_ * conv("€", "k€", 1e-3) * v.P_CHP_OC_T.sum()
         )
 
 
@@ -565,6 +562,7 @@ class HOB(Component):
         if sc.consider_invest:
             sc.param(from_db=db.funcs.c_HOB_inv_())
             sc.param(from_db=db.k_HOB_RMI_)
+            sc.param(from_db=db.ol_HOB_)
             sc.var("dQ_HOB_CAPn_", doc="New capacity", unit="kW_th")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
@@ -602,6 +600,7 @@ class TES(Component):
             sc.param("z_TES_L", fill=0, doc="If new capacity is allowed")
             sc.param(from_db=db.funcs.c_TES_inv_(estimated_size=100, temp_spread=40))
             sc.param(from_db=db.k_TES_RMI_)
+            sc.param(from_db=db.ol_TES_)
             sc.var("Q_TES_CAPn_L", doc="New capacity", unit="kWh_th", ub=1e7 * sc.params.z_TES_L)
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
@@ -775,22 +774,21 @@ class BEV(Component):
 
 
 dependencies = [
-    ("PRE", {}),
-    ("cDem", {"PRE"}),
-    ("hDem", {"PRE"}),
-    ("eDem", {"PRE"}),
-    ("EG", {"PRE", "PV", "CHP"}),
-    ("Fuel", {"PRE"}),
-    ("BES", {"PRE"}),
-    ("BEV", {"PRE"}),
-    ("PV", {"PRE"}),
-    ("P2H", {"PRE"}),
-    ("CHP", {"PRE"}),
-    ("HOB", {"PRE"}),
-    ("H2H1", {"PRE"}),
-    ("HP", {"PRE", "cDem", "hDem"}),
-    ("TES", {"PRE", "cDem", "hDem"}),
+    ("cDem", {}),
+    ("hDem", {}),
+    ("eDem", {}),
+    ("EG", {"PV", "CHP"}),
+    ("Fuel", {}),
+    ("BES", {}),
+    ("BEV", {}),
+    ("PV", {}),
+    ("P2H", {}),
+    ("CHP", {}),
+    ("HOB", {}),
+    ("H2H1", {}),
+    ("HP", {"cDem", "hDem"}),
+    ("TES", {"cDem", "hDem"}),
 ]
-dependencies.append(("POST", [x[0] for x in dependencies]))
+dependencies.append(("Main", [x[0] for x in dependencies]))
 
 set_component_order_by_dependency(dependencies=dependencies, classes=globals())

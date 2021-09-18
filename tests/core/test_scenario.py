@@ -23,14 +23,12 @@ def sc(cs) -> Scenario:
     return sc
 
 
-@pytest.mark.parametrize("what, expected", [["params", ""], ["res", "Scenario has no res_dic."]])
-def test_get_var_par_dic(what: str, expected: str, empty_sc):
-    if what is "params":
-        assert empty_sc.get_var_par_dic(what=what) == dict(expected)
-    else:
-        with pytest.raises(RuntimeError) as exc_info:
-            empty_sc.get_var_par_dic(what=what)
-            assert exc_info == expected
+def test_get_var_par_dic_with_param(empty_sc):
+    assert isinstance(empty_sc.get_var_par_dic(what="params"), dict)
+
+    with pytest.raises(RuntimeError) as e:
+        empty_sc.get_var_par_dic(what="res")
+        assert e == "Scenario has no res_dic."
 
 
 def test__activate_vars(sc):

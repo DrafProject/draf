@@ -84,6 +84,10 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             self._t2 = t2
             self.freq = freq
 
+        self.dim("T", infer=True)
+        self.prep.k__PartYearComp_()
+        self.prep.k__dT_()
+
         if components is not None:
             for i, comp in enumerate(components):
                 if inspect.isclass(comp):

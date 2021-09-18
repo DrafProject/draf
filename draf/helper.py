@@ -100,6 +100,15 @@ def sizeof_fmt(num: float, suffix: str = "B") -> str:
     return f"{num:>5.1f} Y{suffix}"
 
 
+def conv(
+    source_unit: str,
+    target_unit: str,
+    conversion_factor: float,
+):
+    """Documents unit conversion. It does nothing but to return the conversion factor."""
+    return conversion_factor
+
+
 def auto_fmt(
     num: Union[float, int, pd.Series], unit: str, target_unit: Optional[str] = None
 ) -> Tuple[Union[float, int, pd.Series], str]:
