@@ -25,8 +25,10 @@ class Main(Component):
         sc.balance("P_EL_source_T", doc="Power sources", unit="kW_el")
         sc.balance("P_EL_sink_T", doc="Power sinks", unit="kW_el")
         sc.balance("P_EG_sell_T", doc="Sold electricity power", unit="kW_el")
-        sc.balance("dQ_source_TL", doc="Thermal energy flow sources", unit="kW_th")
-        sc.balance("dQ_sink_TL", doc="Thermal energy flow sinks", unit="kW_th")
+        sc.balance("dQ_cooling_source_TN", doc="Cooling energy flow sources", unit="kW_th")
+        sc.balance("dQ_cooling_sink_TN", doc="Cooling energy flow sinks", unit="kW_th")
+        sc.balance("dQ_heating_source_TH", doc="Heating energy flow sources", unit="kW_th")
+        sc.balance("dQ_heating_sink_TH", doc="Heating energy flow sinks", unit="kW_th")
         sc.balance("C_TOT_", doc="Total costs", unit="k€/a")
         sc.balance("C_TOT_op_", doc="Total operating costs", unit="k€/a")
         sc.balance("CE_TOT_", doc="Total carbon emissions", unit="kgCO2eq/a")
@@ -93,16 +95,28 @@ class Main(Component):
             "BAL_el",
         )
 
-        # Thermal energy
-        if sc.has_thermal_entities:
+        # Cooling
+        if hasattr(d, "N"):
             m.addConstrs(
                 (
-                    quicksum(x(t, l) for x in sc.balances.dQ_source_TL.values())
-                    == quicksum(x(t, l) for x in sc.balances.dQ_sink_TL.values())
+                    quicksum(x(t, n) for x in sc.balances.dQ_cooling_source_TN.values())
+                    == quicksum(x(t, n) for x in sc.balances.dQ_cooling_sink_TN.values())
                     for t in d.T
-                    for l in d.L
+                    for n in d.N
                 ),
-                "BAL_th",
+                "BAL_cool",
+            )
+
+        # Heating
+        if hasattr(d, "H"):
+            m.addConstrs(
+                (
+                    quicksum(x(t, h) for x in sc.balances.dQ_heating_source_TH.values())
+                    == quicksum(x(t, h) for x in sc.balances.dQ_heating_sink_TH.values())
+                    for t in d.T
+                    for h in d.H
+                ),
+                "BAL_heat",
             )
 
 
@@ -111,15 +125,15 @@ class cDem(Component):
     """Cooling demand"""
 
     def param_func(self, sc: Scenario):
-        sc.dim("N", ["7/12", "30/35"], doc="Cooling temperature levels (inlet / outlet) in °C")
+        sc.dim("N", data=[1, 2], doc="Cooling temperature levels (inlet / outlet) in °C")
 
-        sc.prep.dQ_cDem_TN()
-        sc.params.dQ_cDem_TN.loc[:, "7/12"] = sc.prep.dQ_cDem_T(annual_energy=1.7e3).values
+        sc.param(name="dQ_cDem_TN", fill=0, doc="Cooling demand", unit="kW_th")
+        sc.params.dQ_cDem_TN.loc[:, 1] = sc.prep.dQ_cDem_T(annual_energy=1.7e3).values
         sc.param("T_cDem_in_N", data=[7, 30], doc="Cooling inlet temperature", unit="°C")
         sc.param("T_cDem_out_N", data=[12, 35], doc="Cooling outlet temperature", unit="°C")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
-        sc.balances.dQ_source_TL["cDem"] = lambda t, l: p.dQ_cDem_TN[t, l] if l in d.N else 0
+        sc.balances.dQ_cooling_source_TN["cDem"] = lambda t, n: p.dQ_cDem_TN[t, n]
 
 
 @dataclass
@@ -127,15 +141,15 @@ class hDem(Component):
     """Heating demand"""
 
     def param_func(self, sc: Scenario):
-        sc.dim("H", ["60/40", "90/70"], doc="Heating temperature levels (inlet / outlet) in °C")
+        sc.dim("H", [1, 2], doc="Heating temperature levels (inlet / outlet) in °C")
 
-        sc.prep.dQ_hDem_TH()
-        sc.params.dQ_hDem_TH.loc[:, "60/40"] = sc.prep.dQ_hDem_T(annual_energy=1.7e6).values
-        sc.param("T_hDem_out_H", data=[40, 70], doc="Heating outlet temperature", unit="°C")
+        sc.param(name="dQ_hDem_TH", fill=0, doc="Heating demand", unit="kW_th")
+        sc.params.dQ_hDem_TH.loc[:, 1] = sc.prep.dQ_hDem_T(annual_energy=1.7e6).values
         sc.param("T_hDem_in_H", data=[60, 90], doc="Heating inlet temperature", unit="°C")
+        sc.param("T_hDem_out_H", data=[40, 70], doc="Heating outlet temperature", unit="°C")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
-        sc.balances.dQ_sink_TL["hDem"] = lambda t, l: p.dQ_hDem_TH[t, l] if l in d.H else 0
+        sc.balances.dQ_heating_sink_TH["hDem"] = lambda t, h: p.dQ_hDem_TH[t, h]
 
 
 @dataclass
@@ -362,36 +376,55 @@ class HP(Component):
     dQ_CAPx: float = 5000
     allow_new: bool = False
     time_dependent_amb: bool = True
+    n: int = 1
+    heating_levels: Optional[List] = None
+    cooling_levels: Optional[List] = None
+    ambient_as_sink: bool = True
+    ambient_as_source: bool = True
 
     def param_func(self, sc: Scenario):
         p = sc.params
         d = sc.dims
 
-        sc.dim("C", ["C1", "C2"], doc="Condensing temperature levels")
+        def get_E():
+            e = ["E_amb"] if self.ambient_as_source else []
+            e += sc.dims.N if self.cooling_levels is None else self.cooling_levels
+            return e
+
+        def get_C():
+            c = ["C_amb"] if self.ambient_as_sink else []
+            c += sc.dims.H if self.heating_levels is None else self.heating_levels
+            return c
+
+        sc.dim("E", data=get_E(), doc="Evaporation temperature levels")
+        sc.dim("C", data=get_C(), doc="Condensing temperature levels")
 
         if self.time_dependent_amb:
             sc.prep.T__amb_T()
-        else:
-            sc.param("T__amb_", data=25, doc="Approximator for ambient air", unit="°C")
+        sc.param("T__amb_", data=25, doc="Approximator for ambient air", unit="°C")
 
         sc.param(
             "T_HP_Cond_C",
-            data=pd.Series([p.T__amb_ + 5, 65], d.C),
+            data=p.T_hDem_in_H + 5,
             doc="Condensation side temperature",
             unit="°C",
         )
         sc.param(
-            "T_HP_Eva_N", data=p.T_cDem_in_N - 5, doc="Evaporation side temperature", unit="°C"
+            "T_HP_Eva_E",
+            data=p.T_cDem_in_N - 5,
+            doc="Evaporation side temperature",
+            unit="°C",
         )
+        sc.param("n_HP_", data=self.n, doc="Number of existing heat pumps")
         sc.param("eta_HP_", data=0.5, doc="Ratio of reaching the ideal COP (exergy efficiency)")
         sc.param("dQ_HP_CAPx_", data=self.dQ_CAPx, doc="Existing heating capacity", unit="kW_th")
         sc.param(
             "dQ_HP_max_", data=1e5, doc="Big-M number (upper bound for CAPn + CAPx)", unit="kW_th"
         )
-        sc.var("P_HP_TCN", doc="Consuming power", unit="kW_el")
-        sc.var("dQ_HP_Cond_TCN", doc="Heat flow released on condensation side", unit="kW_th")
-        sc.var("dQ_HP_Eva_TCN", doc="Heat flow absorbed on evaporation side", unit="kW_th")
-        sc.var("Y_HP_TCN", doc="If source and sink are connected at time-step", vtype=GRB.BINARY)
+        sc.var("P_HP_TEC", doc="Consuming power", unit="kW_el")
+        sc.var("dQ_HP_Cond_TEC", doc="Heat flow released on condensation side", unit="kW_th")
+        sc.var("dQ_HP_Eva_TEC", doc="Heat flow absorbed on evaporation side", unit="kW_th")
+        sc.var("Y_HP_TEC", doc="If source and sink are connected at time-step", vtype=GRB.BINARY)
 
         if sc.consider_invest:
             sc.param("z_HP_", data=int(self.allow_new), doc="If new capacity is allowed")
@@ -401,54 +434,51 @@ class HP(Component):
             sc.var("dQ_HP_CAPn_", doc="New heating capacity", unit="kW_th", ub=1e6 * p.z_HP_)
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
-        
-        def get_cop(t, c, n):
-            T_amb = p.T__amb_T[t] if self.time_dependent_amb else p.T_amb_
-            T_cond = T_amb + 5 if c == "C1" else p.T_HP_Cond_C[c]
-            T_eva = p.T_HP_Eva_N[n]
+        def get_cop(t, e, c):
+            T_amb = p.T__amb_T[t] if self.time_dependent_amb else p.T__amb_
+            T_cond = T_amb + 5 if c == "C_amb" else p.T_HP_Cond_C[c]
+            T_eva = T_amb - 5 if e == "E_amb" else p.T_HP_Eva_E[e]
             return 100 if T_cond <= T_eva else p.eta_HP_ * (T_cond + 273) / (T_cond - T_eva)
 
         m.addConstrs(
             (
-                v.dQ_HP_Cond_TCN[t, c, n] == v.P_HP_TCN[t, c, n] * get_cop(t, c, n)
+                v.dQ_HP_Cond_TEC[t, e, c] == v.P_HP_TEC[t, e, c] * get_cop(t, e, c)
                 for t in d.T
+                for e in d.E
                 for c in d.C
-                for n in d.N
             ),
             "HP_BAL_1",
         )
         m.addConstrs(
             (
-                v.dQ_HP_Cond_TCN[t, c, n] == v.dQ_HP_Eva_TCN[t, c, n] + v.P_HP_TCN[t, c, n]
+                v.dQ_HP_Cond_TEC[t, e, c] == v.dQ_HP_Eva_TEC[t, e, c] + v.P_HP_TEC[t, e, c]
                 for t in d.T
+                for e in d.E
                 for c in d.C
-                for n in d.N
             ),
             "HP_BAL_2",
         )
         m.addConstrs(
             (
-                v.dQ_HP_Cond_TCN[t, c, n] <= v.Y_HP_TCN[t, c, n] * p.dQ_HP_max_
+                v.dQ_HP_Cond_TEC[t, e, c] <= v.Y_HP_TEC[t, e, c] * p.dQ_HP_max_
                 for t in d.T
+                for e in d.E
                 for c in d.C
-                for n in d.N
             ),
             "HP_BIGM",
         )
         cap = p.dQ_HP_CAPx_ + v.dQ_HP_CAPn_ if sc.consider_invest else p.dQ_HP_CAPx_
         m.addConstrs(
-            (v.dQ_HP_Cond_TCN[t, c, n] <= cap for t in d.T for c in d.C for n in d.N),
+            (v.dQ_HP_Cond_TEC[t, e, c] <= cap for t in d.T for e in d.E for c in d.C),
             "HP_CAP",
         )
-        m.addConstrs((v.Y_HP_TCN.sum(t, "*", "*") <= 1 for t in d.T), "HP_maxOneOperatingMode")
+        m.addConstrs(
+            (v.Y_HP_TEC.sum(t, "*", "*") <= p.n_HP_ for t in d.T), "HP_maxOneOperatingMode"
+        )
 
-        sc.balances.P_EL_sink_T["HP"] = lambda t: v.P_HP_TCN.sum(t, "*", "*")
-        sc.balances.dQ_source_TL["HP"] = (
-            lambda t, l: v.dQ_HP_Cond_TCN.sum(t, l, "*") if l in d.C else 0
-        )
-        sc.balances.dQ_sink_TL["HP"] = (
-            lambda t, l: v.dQ_HP_Eva_TCN.sum(t, "*", l) if l in d.N else 0
-        )
+        sc.balances.P_EL_sink_T["HP"] = lambda t: v.P_HP_TEC.sum(t, "*", "*")
+        sc.balances.dQ_cooling_sink_TN["HP"] = lambda t, n: v.dQ_HP_Eva_TEC.sum(t, n, "*")
+        sc.balances.dQ_heating_source_TH["HP"] = lambda t, h: v.dQ_HP_Cond_TEC.sum(t, "*", h)
 
 
 @dataclass
@@ -474,7 +504,7 @@ class P2H(Component):
         m.addConstrs((v.dQ_P2H_T[t] == p.eta_P2H_ * v.P_P2H_T[t] for t in d.T), "BAL_P2H")
         m.addConstrs((v.dQ_P2H_T[t] <= cap for t in d.T), "CAP_P2H")
 
-        sc.balances.dQ_source_TL["P2H"] = lambda t, l: v.dQ_P2H_T[t] if l == "90/70" else 0
+        sc.balances.dQ_heating_source_TH["P2H"] = lambda t, h: v.dQ_P2H_T[t] if h == 2 else 0
         sc.balances.P_EL_sink_T["P2H"] = lambda t: v.P_P2H_T[t]
 
 
@@ -540,7 +570,7 @@ class CHP(Component):
             )
 
         sc.balances.P_EL_source_T["CHP"] = lambda t: v.P_CHP_T[t]
-        sc.balances.dQ_source_TL["CHP"] = lambda t, l: v.dQ_CHP_T[t] if l == "90/70" else 0
+        sc.balances.dQ_heating_source_TH["CHP"] = lambda t, h: v.dQ_CHP_T[t] if h == 2 else 0
         sc.balances.P_EG_sell_T["CHP"] = lambda t: v.P_CHP_FI_T[t]
         sc.balances.F_fuel_F["CHP"] = lambda f: v.F_CHP_TF.sum("*", f)
         sc.balances.C_TOT_op_["CHP_OC"] = (
@@ -571,7 +601,7 @@ class HOB(Component):
         m.addConstrs((v.dQ_HOB_T[t] == v.F_HOB_TF.sum(t, "*") * p.eta_HOB_ for t in d.T), "BAL_HOB")
         m.addConstrs((v.dQ_HOB_T[t] <= cap for t in d.T), "CAP_HOB")
 
-        sc.balances.dQ_source_TL["HOB"] = lambda t, l: v.dQ_HOB_T[t] if l == "90/70" else 0
+        sc.balances.dQ_heating_source_TH["HOB"] = lambda t, h: v.dQ_HOB_T[t] if h == 2 else 0
         sc.balances.F_fuel_F["HOB"] = lambda f: v.F_HOB_TF.sum("*", f)
 
 
@@ -586,10 +616,10 @@ class TES(Component):
         if sc.has_thermal_entities:
             L = []
             if hasattr(d, "N"):
-                L += d.N
+                L += [f"N{n}" for n in d.N]
             if hasattr(d, "H"):
-                L += d.H
-            sc.dim("L", L, doc="Thermal demand temperature levels (inlet / outlet) in °C")
+                L += [f"H{h}" for h in d.H]
+            sc.dim("L", data=L, doc="Thermal demand temperature levels (inlet / outlet) in °C")
 
         sc.param("Q_TES_CAPx_L", fill=0, doc="Existing capacity", unit="kWh_th")
         sc.param("eta_TES_time_", data=0.995, doc="Storing efficiency")
@@ -642,8 +672,10 @@ class TES(Component):
             "INI_TES",
         )
 
-        # only sink here, since dQ_sink_TL is also defined for negative values:
-        sc.balances.dQ_sink_TL["TES"] = lambda t, l: v.dQ_TES_in_TL[t, l]
+        # only sink here, since dQ_TES_in_TL is also defined for negative
+        # values to reduce number of variables:
+        sc.balances.dQ_cooling_sink_TN["TES"] = lambda t, n: v.dQ_TES_in_TL[t, f"N{n}"]
+        sc.balances.dQ_heating_sink_TH["TES"] = lambda t, h: v.dQ_TES_in_TL[t, f"H{h}"]
 
 
 @dataclass
@@ -654,8 +686,8 @@ class H2H1(Component):
         sc.var("dQ_H2H1_T", doc="Heat down-grading", unit="kW_th")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
-        sc.balances.dQ_sink_TL["H2H1"] = lambda t, l: v.dQ_H2H1_T[t] if l == "90/70" else 0
-        sc.balances.dQ_source_TL["H2H1"] = lambda t, l: v.dQ_H2H1_T[t] if l == "60/40" else 0
+        sc.balances.dQ_heating_sink_TH["H2H1"] = lambda t, h: v.dQ_H2H1_T[t] if h == 2 else 0
+        sc.balances.dQ_heating_source_TH["H2H1"] = lambda t, h: v.dQ_H2H1_T[t] if h == 1 else 0
 
 
 @dataclass

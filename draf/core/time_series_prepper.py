@@ -198,14 +198,6 @@ class TimeSeriesPrepper:
             ),
         )
 
-    def dQ_hDem_TH(self) -> pd.Series:
-        data = pd.Series(0, pd.MultiIndex.from_product([self.sc.dims.T, self.sc.dims.H]))
-        return self.sc.param(name="dQ_hDem_TH", data=data, doc="Heating demand", unit="kW_th")
-
-    def dQ_cDem_TN(self) -> pd.Series:
-        data = pd.Series(0, pd.MultiIndex.from_product([self.sc.dims.T, self.sc.dims.N]))
-        return self.sc.param(name="dQ_cDem_TN", data=data, doc="Cooling demand", unit="kW_th")
-
     @hp.copy_doc(prep.get_heating_demand)
     def dQ_hDem_T(
         self,
