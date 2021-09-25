@@ -606,7 +606,7 @@ class CsPlotter(BasePlotter):
     def describe(self, **kwargs) -> None:
         """Prints a description of all Parameters and Results for all scenarios."""
         for sc in self.cs.scens_list:
-            sc.plot.describe()
+            sc.plot.describe(**kwargs)
 
     def describe_interact(self):
         cs = self.cs

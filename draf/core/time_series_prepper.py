@@ -214,7 +214,8 @@ class TimeSeriesPrepper:
         target_temp: float = 22.0,
         threshold_temp: float = 15.0,
     ) -> pd.Series:
-        """Add a heat demand based on the `target_temp`, `threshold_temp`, `annual_energy`."""
+        """Create and add a heating demand time series using weather data nearby."""
+
         sc = self.sc
 
         ser_amb_temp = prep.get_air_temp(coords=sc.coords, year=sc.year)
@@ -225,6 +226,8 @@ class TimeSeriesPrepper:
             doc=f"Heating demand derived from ambient temperature near {sc.coords}.",
             data=sc.trim_to_datetimeindex(
                 prep.get_heating_demand(
+                    year=sc.year,
+                    freq=sc.freq,
                     ser_amb_temp=ser_amb_temp,
                     annual_energy=annual_energy,
                     target_temp=target_temp,
@@ -241,10 +244,8 @@ class TimeSeriesPrepper:
         target_temp: float = 22.0,
         threshold_temp: float = 22.0,
     ) -> pd.Series:
-        """Add a heat demand based on the `target_temp`, `threshold_temp`, `annual_energy`."""
+        """Create and add a cooling demand time series using weather data nearby."""
         sc = self.sc
-
-        ser_amb_temp = prep.get_air_temp(coords=sc.coords, year=sc.year)
 
         return sc.param(
             name=name,
@@ -252,7 +253,9 @@ class TimeSeriesPrepper:
             doc=f"Cooling demand derived from ambient temperature near {sc.coords}.",
             data=sc.trim_to_datetimeindex(
                 prep.get_cooling_demand(
-                    ser_amb_temp=ser_amb_temp,
+                    year=sc.year,
+                    freq=sc.freq,
+                    coords=sc.coords,
                     annual_energy=annual_energy,
                     target_temp=target_temp,
                     threshold_temp=threshold_temp,
@@ -286,18 +289,16 @@ class TimeSeriesPrepper:
             if calendar.isleap(self.sc.year):
                 ser = pd.Series(np.concatenate([ser.values, ser[-24:].values]))
 
-        ser = hp.resample(ser, year=sc.year, start_freq=hp.estimate_freq(ser), target_freq=sc.freq)
-
         return sc.param(
             name=name,
             unit="kW_el/kW_peak",
             doc=f"Produced PV-power for 1 kW_peak",
-            data=sc.trim_to_datetimeindex(ser),
+            data=sc.trim_to_datetimeindex(sc.resample(ser)),
         )
 
-    def c_EG_addon_T(
+    def c_EG_addon_(
         self,
-        name: str = "c_EG_addon_T",
+        name: str = "c_EG_addon_",
         AbLa_surcharge=0.00006,
         Concession_fee=0.0011,
         EEG_surcharge=0.0688,
@@ -329,6 +330,18 @@ class TimeSeriesPrepper:
         return self.sc.param(
             name=name,
             unit="€/kWh_el",
-            doc="Add-on electricity price component",
-            data=pd.Series(sum(price_components), self.sc.dims.T),
+            doc="Electricity taxes and levies",
+            data=sum(price_components),
+        )
+
+    def T__amb_T(self, name: str = "T__amb_T") -> pd.Series:
+        """Uses coordinates to prepare ambient air temperature time series in °C."""
+        sc = self.sc
+        assert isinstance(sc.coords, tuple)
+        ser = prep.get_air_temp(coords=sc.coords, year=sc.year, with_dt=False)
+        return sc.param(
+            name=name,
+            unit="°C",
+            doc=f"Ambient temperature",
+            data=sc.trim_to_datetimeindex(sc.resample(ser)),
         )

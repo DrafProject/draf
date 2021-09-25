@@ -36,7 +36,7 @@ def params_func(sc: Scenario):
     sc.param("c_EG_T", data=sc.prep.c_EG_RTP_T(), doc="Chosen electricity tariff", unit="€/kWh_el")
     sc.prep.c_EG_TOU_T()
     sc.prep.c_EG_FLAT_T()
-    sc.prep.c_EG_addon_T()
+    sc.prep.c_EG_addon_()
     sc.prep.ce_EG_T()
     sc.var("P_EG_buy_T", doc="Purchased electrical power", unit="kW_el")
     sc.var("P_EG_sell_T", doc="Selling electrical power", unit="kW_el")
@@ -81,7 +81,7 @@ def model_func(sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
         + p.k__PartYearComp_
         * p.k__dT_
         * (
-            quicksum(v.P_EG_buy_T[t] * (p.c_EG_T[t] + p.c_EG_addon_T[t]) for t in d.T)
+            quicksum(v.P_EG_buy_T[t] * (p.c_EG_T[t] + p.c_EG_addon_) for t in d.T)
             - quicksum(v.P_EG_sell_T[t] * p.c_EG_T[t] for t in d.T)
             + v.P_PV_OC_T.sum() * p.c_OC_
         )

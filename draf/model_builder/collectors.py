@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 from draf import Params, Vars
 from draf import helper as hp
@@ -17,7 +17,7 @@ def _agg_cap(capEntName: str, v: Vars) -> float:
         return v.get(capEntName).sum()
 
 
-def _capas(v: Vars) -> List[Tuple[str, str]]:
+def _capas(v: Vars) -> Dict[str, float]:
     """Return new capacities per component type."""
     return {hp.get_component(key): _agg_cap(key, v) for key in v.filtered(desc="CAPn")}
 
@@ -40,7 +40,7 @@ def C_invAnnual_(p: Params, v: Vars, r: float):
     """
     return sum(
         [
-            cap * p.get(f"c_{c}_inv_") * get_annuity_factor(r=r, N=p.get(f"ol_{c}_"))
+            cap * p.get(f"c_{c}_inv_") * get_annuity_factor(r=r, N=p.get(f"N_{c}_"))
             for c, cap in _capas(v).items()
         ]
     )

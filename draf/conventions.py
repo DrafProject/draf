@@ -1,34 +1,34 @@
 from dataclasses import dataclass
-from typing import Tuple
+from typing import List, Optional
 
 
 @dataclass
 class Alias:
     en: str
     de: str
-    units: Tuple[str] = ()
+    units: Optional[List] = None
 
 
 # fmt: off
 class Etypes:
     # SORTING_START
     A = Alias(en="Area", de="Fläche")
-    C = Alias(en="Costs", de="Kosten", units=("k€/a"))
-    CE = Alias(en="Carbon emissions", de="Kohlenstoff-vergleichs-Emissionen", units=("kgCO2eq/a"))
-    E = Alias(en="Electrical energy", de="Elektrische Energie", units=("kWh_el"))
-    F = Alias(en="Fuel", de="Brennstoff", units=("kW", "kWh"))
-    P = Alias(en="Electrical power", de="Elektrische Leistung", units=("kW_el", "kW_peak", "kW_el/kW_peak"))
-    Q = Alias(en="Thermal Energy", de="Thermische Energie", units=("kWh_th"))
-    T = Alias(en="Temperature", de="Temperatur", units=("K"))
-    c = Alias(en="Specific costs", de="Spezifische Kosten", units=("€/kW", "€/kWh","€/kW_th", "€/kWh_el","€/kW_el","€/kW_peak", "€/tCO2eq"))
-    ce = Alias(en="Specific carbon emissions", de="Spezifische Kohlenstoff-Emissionen", units=("kgCO2eq/kWh_el", "kgCO2eq/kWh"))
+    C = Alias(en="Costs", de="Kosten", units=["k€", "k€/a"])
+    CE = Alias(en="Carbon emissions", de="Kohlenstoff-vergleichs-Emissionen", units=["kgCO2eq/a"])
+    E = Alias(en="Electrical energy", de="Elektrische Energie", units=["kWh_el"])
+    F = Alias(en="Fuel", de="Brennstoff", units=["kW", "kWh"])
+    N = Alias(en="Operation life", de="Betriebsdauer")
+    P = Alias(en="Electrical power", de="Elektrische Leistung", units=["kW_el", "kW_peak", "kW_el/kW_peak"])
+    Q = Alias(en="Thermal Energy", de="Thermische Energie", units=["kWh_th"])
+    T = Alias(en="Temperature", de="Temperatur", units=["°C"])
+    c = Alias(en="Specific costs", de="Spezifische Kosten", units=["€/kW", "€/kWh","€/kW_th", "€/kWh_el","€/kW_el","€/kW_peak", "€/tCO2eq"])
+    ce = Alias(en="Specific carbon emissions", de="Spezifische Kohlenstoff-Emissionen", units=["kgCO2eq/kWh_el", "kgCO2eq/kWh"])
     cop = Alias(en="Coefficient of performance", de="Leistungszahl")
-    dQ = Alias(en="Heat flow", de="Wärmestrom", units=("kW_th", "kW"))
-    eta = Alias(en="Efficiency", de="Effizienz", units=("", "kW_th/kW", "kW_el/kW", "kWh_th/kWh"))
-    k = Alias(en="a ratio", de="ein Verhältnis", units=("", "h"))
+    dQ = Alias(en="Heat flow", de="Wärmestrom", units=["kW_th", "kW"])
+    eta = Alias(en="Efficiency", de="Effizienz", units=["", "kW_th/kW", "kW_el/kW", "kWh_th/kWh"])
+    k = Alias(en="a ratio", de="ein Verhältnis", units=["", "h"])
     n = Alias(en="A natural number", de="Eine natürliche Zahl")
-    ol = Alias(en="Operation life", de="Betriebsdauer")
-    t = Alias(en="Time", de="Zeit", units=("seconds"))
+    t = Alias(en="Time", de="Zeit", units=["seconds"])
     y = Alias(en="Binary indicator", de="Binärindikator")
     z = Alias(en="Binary allowance indicator", de="Binärindikator")
     # SORTING_END
@@ -45,6 +45,7 @@ class Descs:
     RTP = Alias(en="Real-time-prices", de="Dynamische Strompreise")
     TOU = Alias(en="Time-of-use", de="Zeitabhängige Strompreise")
     XEF = Alias(en="Average Electricity Mix Emission Factors", de="Durchschnittliche CO2-Emissionsfaktoren des Stromsystems")
+    inv = Alias(en="Investment", de="Investitionen")
     # SORTING_END
 
 

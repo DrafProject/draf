@@ -699,7 +699,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def update_params(self, **kwargs) -> Scenario:
         """Update multiple existing parameters.
-        e.g. sc.update_params(P_EG_dem_T=2000, c_EG_addon_T=0, c_EG_peak_=0)
+        e.g. sc.update_params(P_EG_dem_T=2000, c_EG_addon_=0, c_EG_peak_=0)
         """
         for ent_name, data in kwargs.items():
 
@@ -748,9 +748,12 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         """
         if from_db is not None:
+            d = from_db.__dict__.copy()
             if name is not None:
-                from_db.name = name
-            return self.param(**from_db.__dict__)
+                d.update(name=name)
+            if doc != "":
+                d.update(doc=doc)
+            return self.param(**d)
 
         assert name is not None
 
@@ -797,7 +800,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         except AttributeError:
             pass
         else:
-            if expected_units == ():
+            if expected_units is None:
                 return
             adder = "one of " if len(expected_units) > 1 else ""
             if expected_units == ():

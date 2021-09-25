@@ -75,7 +75,7 @@ def get_data_for_gsee(stations_id_air: int, stations_id_solar: int, year: int):
 
 
 def get_air_temp(coords: Tuple[float, float], year: int, with_dt=False) -> pd.Series:
-    """Returns air temperature for German locations."""
+    """Returns hourly air temperature for German locations."""
     data_type = "air_temperature"
     stations_id = get_nearest_station(coords=coords, data_type=data_type, year=year)["Stations_id"]
     df = get_df_from_DWD(data_type=data_type, stations_id=stations_id)

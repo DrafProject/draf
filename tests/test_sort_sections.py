@@ -16,12 +16,12 @@ c:
 """
 
 b = """\
-    c_EEG_ = ParDat(name="c_EEG_", data=0.065)
+    aa_EEG_ = ParDat(name="c_EG_EEG_", data=0.065)
 """
 
 
 c = """\
-    ol_PV_ = ParDat(name="ol_PV_", data=25)
+    zz_PV_ = ParDat(name="ol_PV_", data=25)
 """
 
 d = """\

@@ -47,6 +47,11 @@ class DateTimeHandler(ABC):
     ) -> Union[pd.DataFrame, pd.Series]:
         return data[self._t1 : self._t2 + 1]
 
+    def resample(self, data: Union[pd.DataFrame, pd.Series]) -> Union[pd.DataFrame, pd.Series]:
+        return hp.resample(
+            data, year=self.year, start_freq=hp.estimate_freq(data), target_freq=self.freq
+        )
+
     def _set_dtindex(self, year: int, freq: str) -> None:
         assert year in range(1980, 2100)
         self.year = year

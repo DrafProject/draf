@@ -7,6 +7,13 @@ from draf import helper as hp
 
 
 @dataclass
+class Source:
+    url: str
+    doc: str = ""
+    bib: str = ""
+
+
+@dataclass
 class ParDat:
     name: str
     data: Union[float, pd.Series]

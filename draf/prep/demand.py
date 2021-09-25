@@ -149,11 +149,12 @@ def get_el_SLP(
 
 
 def get_heating_demand(
+    year: int,
+    freq: str = "60min",
     ser_amb_temp: Optional[pd.Series] = None,
     annual_energy: float = 1e6,
     target_temp: float = 22.0,
     threshold_temp: float = 15.0,
-    year: Optional[int] = None,
     coords: Optional[Tuple[float, float]] = None,
 ) -> pd.Series:
     """Returns a heating demand profile based on the air temperature."""
@@ -171,15 +172,17 @@ def get_heating_demand(
         f"Heating demand created with annual energy={annual_energy}, target_temp={target_temp}"
         f", threshold_temp={threshold_temp}."
     )
+    ser = hp.resample(ser, year=year, start_freq="60min", target_freq=freq)
     return ser
 
 
 def get_cooling_demand(
+    year: int,
+    freq: str = "60min",
     ser_amb_temp: Optional[pd.Series] = None,
     annual_energy: float = 1e6,
     target_temp: float = 22.0,
     threshold_temp: float = 22.0,
-    year: Optional[int] = None,
     coords: Optional[Tuple[float, float]] = None,
 ) -> pd.Series:
     """Returns a cooling demand profile based on the ambient air temperature."""
@@ -197,4 +200,5 @@ def get_cooling_demand(
         f"Cooling demand created with annual energy={annual_energy}, target_temp={target_temp}"
         f", threshold_temp={threshold_temp}."
     )
+    ser = hp.resample(ser, year=year, start_freq="60min", target_freq=freq)
     return ser

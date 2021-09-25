@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import pandas as pd
 from gurobipy import GRB, Model, quicksum
@@ -8,6 +9,7 @@ from draf import Dimensions, Params, Results, Scenario, Vars
 from draf.helper import conv, set_component_order_by_dependency
 from draf.model_builder import collectors
 from draf.model_builder.abstract_component import Component
+from draf.prep import SRC
 from draf.prep import DataBase as db
 
 logger = logging.getLogger(__name__)
@@ -29,6 +31,7 @@ class Main(Component):
         sc.balance("C_TOT_op_", doc="Total operating costs", unit="k€/a")
         sc.balance("CE_TOT_", doc="Total carbon emissions", unit="kgCO2eq/a")
         sc.balance("Penalty_", doc="Penalty term for objective function", unit="")
+
         # Total
         sc.var("C_TOT_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
         sc.var("C_TOT_op_", doc="Total operating costs", unit="k€/a", lb=-GRB.INFINITY)
@@ -112,18 +115,8 @@ class cDem(Component):
 
         sc.prep.dQ_cDem_TN()
         sc.params.dQ_cDem_TN.loc[:, "7/12"] = sc.prep.dQ_cDem_T(annual_energy=1.7e3).values
-        sc.param(
-            "T_cDem_in_N",
-            data=273 + pd.Series([7, 30], sc.dims.N),
-            doc="Cooling inlet temp.",
-            unit="K",
-        )
-        sc.param(
-            "T_cDem_out_N",
-            data=273 + pd.Series([12, 35], sc.dims.N),
-            doc="Cooling outlet temp.",
-            unit="K",
-        )
+        sc.param("T_cDem_in_N", data=[7, 30], doc="Cooling inlet temperature", unit="°C")
+        sc.param("T_cDem_out_N", data=[12, 35], doc="Cooling outlet temperature", unit="°C")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
         sc.balances.dQ_source_TL["cDem"] = lambda t, l: p.dQ_cDem_TN[t, l] if l in d.N else 0
@@ -138,18 +131,8 @@ class hDem(Component):
 
         sc.prep.dQ_hDem_TH()
         sc.params.dQ_hDem_TH.loc[:, "60/40"] = sc.prep.dQ_hDem_T(annual_energy=1.7e6).values
-        sc.param(
-            "T_hDem_out_H",
-            data=273 + pd.Series([40, 70], sc.dims.H),
-            doc="Heating outlet temp.",
-            unit="K",
-        )
-        sc.param(
-            "T_hDem_in_H",
-            data=273 + pd.Series([60, 90], sc.dims.H),
-            doc="Heating inlet temp.",
-            unit="K",
-        )
+        sc.param("T_hDem_out_H", data=[40, 70], doc="Heating outlet temperature", unit="°C")
+        sc.param("T_hDem_in_H", data=[60, 90], doc="Heating inlet temperature", unit="°C")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
         sc.balances.dQ_sink_TL["hDem"] = lambda t, l: p.dQ_hDem_TH[t, l] if l in d.H else 0
@@ -159,11 +142,15 @@ class hDem(Component):
 class eDem(Component):
     """Electricity demand"""
 
+    p_el: Optional[pd.Series] = None
     profile: str = "G3"
     annual_energy: float = 5e6
 
     def param_func(self, sc: Scenario):
-        sc.prep.P_eDem_T(profile=self.profile, annual_energy=self.annual_energy)
+        if self.p_el is None:
+            sc.prep.P_eDem_T(profile=self.profile, annual_energy=self.annual_energy)
+        else:
+            sc.param("P_eDem_T", data=self.p_el, doc="Electricity demand", unit="kW_el")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
         sc.balances.P_EL_sink_T["eDem"] = lambda t: p.P_eDem_T[t]
@@ -174,15 +161,25 @@ class EG(Component):
     """Electricity grid"""
 
     c_buyPeak: float = 50.0
+    prepared_tariffs: Tuple = ("FLAT", "TOU", "RTP")
+    selected_tariff: str = "RTP"
 
     def param_func(self, sc: Scenario):
         sc.param("c_EG_buyPeak_", data=self.c_buyPeak, doc="Peak price", unit="€/kW_el")
+
+        if "RTP" in self.prepared_tariffs:
+            sc.prep.c_EG_RTP_T()
+        if "TOU" in self.prepared_tariffs:
+            sc.prep.c_EG_TOU_T()
+        if "FLAT" in self.prepared_tariffs:
+            sc.prep.c_EG_FLAT_T()
         sc.param(
-            "c_EG_T", data=sc.prep.c_EG_RTP_T(), doc="Chosen electricity tariff", unit="€/kWh_el"
+            "c_EG_T",
+            data=getattr(sc.params, f"c_EG_{self.selected_tariff}_T"),
+            doc="Chosen electricity tariff",
+            unit="€/kWh_el",
         )
-        sc.prep.c_EG_TOU_T()
-        sc.prep.c_EG_FLAT_T()
-        sc.prep.c_EG_addon_T()
+        sc.prep.c_EG_addon_()
         sc.prep.ce_EG_T()
         sc.var("P_EG_buy_T", doc="Purchased electrical power", unit="kW_el")
         sc.var("P_EG_sell_T", doc="Selling electrical power", unit="kW_el")
@@ -202,7 +199,7 @@ class EG(Component):
             p.k__dT_
             * p.k__PartYearComp_
             * quicksum(
-                v.P_EG_buy_T[t] * (p.c_EG_T[t] + p.c_EG_addon_T[t]) - v.P_EG_sell_T[t] * p.c_EG_T[t]
+                v.P_EG_buy_T[t] * (p.c_EG_T[t] + p.c_EG_addon_) - v.P_EG_sell_T[t] * p.c_EG_T[t]
                 for t in d.T
             )
             * conv("€", "k€", 1e-3)
@@ -227,7 +224,7 @@ class Fuel(Component):
         sc.param(from_db=db.c_Fuel_F)
         sc.param("c_Fuel_ceTax_", data=self.c_ceTax, doc="Carbon tax on fuel", unit="€/tCO2eq")
         sc.param(from_db=db.ce_Fuel_F)
-        sc.var("C_Fuel_ceTax_", doc="Carbon tax on fuel", unit="€/a")
+        sc.var("C_Fuel_ceTax_", doc="Carbon tax on fuel", unit="k€/a")
         sc.var("CE_Fuel_", doc="Total carbon emissions for fuel", unit="kgCO2eq/a")
         sc.var("C_Fuel_", doc="Total cost for fuel", unit="k€/a")
         sc.var("F_fuel_F", doc="Total fuel consumption", unit="kW")
@@ -243,7 +240,10 @@ class Fuel(Component):
             == p.k__dT_
             * quicksum(v.F_fuel_F[f] * p.c_Fuel_F[f] * conv("€", "k€", 1e-3) for f in d.F)
         )
-        m.addConstr(v.C_Fuel_ceTax_ == p.c_Fuel_ceTax_ * conv("/t", "(/kg", 1e-3) * v.CE_Fuel_ * conv("€", "k€", 1e-3))
+        m.addConstr(
+            v.C_Fuel_ceTax_
+            == p.c_Fuel_ceTax_ * conv("/t", "(/kg", 1e-3) * v.CE_Fuel_ * conv("€", "k€", 1e-3)
+        )
         sc.balances.CE_TOT_["Fuel"] = v.CE_Fuel_
         sc.balances.C_TOT_op_["Fuel"] = p.k__PartYearComp_ * v.C_Fuel_
         sc.balances.C_TOT_op_["FuelCeTax"] = p.k__PartYearComp_ * v.C_Fuel_ceTax_
@@ -269,7 +269,7 @@ class BES(Component):
 
         if sc.consider_invest:
             sc.param(from_db=db.k_BES_RMI_)
-            sc.param(from_db=db.ol_BES_)
+            sc.param(from_db=db.N_BES_)
             sc.param("z_BES_", data=int(self.allow_new), doc="If new capacity is allowed")
             sc.param(from_db=db.funcs.c_BES_inv_(estimated_size=100, which="mean"))
             sc.var("E_BES_CAPn_", doc="New capacity", unit="kWh_el")
@@ -330,13 +330,14 @@ class PV(Component):
             data=0.4 * 0.0688,
             doc="Renewable Energy Law (EEG) levy on own consumption",
             unit="€/kWh_el",
+            src="@BMWI_2020",
         )
 
         if sc.consider_invest:
             sc.param("z_PV_", data=int(self.allow_new), doc="If new capacity is allowed")
             sc.param(from_db=db.funcs.c_PV_inv_())
             sc.param(from_db=db.k_PV_RMI_)
-            sc.param(from_db=db.ol_PV_)
+            sc.param(from_db=db.N_PV_)
             sc.var("P_PV_CAPn_", doc="New capacity", unit="kW_peak", ub=1e20 * sc.params.z_PV_)
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
@@ -360,42 +361,29 @@ class HP(Component):
 
     dQ_CAPx: float = 5000
     allow_new: bool = False
+    time_dependent_amb: bool = True
 
     def param_func(self, sc: Scenario):
         p = sc.params
         d = sc.dims
 
-        sc.dim("C", ["30", "65"], doc="Condensing temperature levels")
+        sc.dim("C", ["C1", "C2"], doc="Condensing temperature levels")
 
-        sc.param("T__amb_", data=273 + 25)
+        if self.time_dependent_amb:
+            sc.prep.T__amb_T()
+        else:
+            sc.param("T__amb_", data=25, doc="Approximator for ambient air", unit="°C")
+
         sc.param(
-            "T_HP_C_C",
-            data=pd.Series([p.T__amb_ + 5, 273 + 65], d.C),
-            doc="Condensation side temp.",
-            unit="K",
+            "T_HP_Cond_C",
+            data=pd.Series([p.T__amb_ + 5, 65], d.C),
+            doc="Condensation side temperature",
+            unit="°C",
         )
-        sc.param("T_HP_E_N", data=p.T_cDem_in_N - 5, doc="Evaporation side temp.", unit="K")
+        sc.param(
+            "T_HP_Eva_N", data=p.T_cDem_in_N - 5, doc="Evaporation side temperature", unit="°C"
+        )
         sc.param("eta_HP_", data=0.5, doc="Ratio of reaching the ideal COP (exergy efficiency)")
-        sc.param(
-            "cop_HP_carnot_CN",
-            data=pd.Series(
-                {(c, n): p.T_HP_C_C[c] / (p.T_HP_C_C[c] - p.T_HP_E_N[n]) for c in d.C for n in d.N}
-            ),
-            doc="Ideal Carnot heating coefficient of performance (COP)",
-        )
-        sc.param(
-            "cop_HP_CN",
-            data=pd.Series(
-                {
-                    (c, n): 100
-                    if p.T_HP_C_C[c] <= p.T_HP_E_N[n]
-                    else p.cop_HP_carnot_CN[c, n] * p.eta_HP_
-                    for c in d.C
-                    for n in d.N
-                }
-            ),
-            doc="Real heating COP",
-        )
         sc.param("dQ_HP_CAPx_", data=self.dQ_CAPx, doc="Existing heating capacity", unit="kW_th")
         sc.param(
             "dQ_HP_max_", data=1e5, doc="Big-M number (upper bound for CAPn + CAPx)", unit="kW_th"
@@ -408,14 +396,21 @@ class HP(Component):
         if sc.consider_invest:
             sc.param("z_HP_", data=int(self.allow_new), doc="If new capacity is allowed")
             sc.param(from_db=db.k_HP_RMI_)
-            sc.param(from_db=db.ol_HP_)
+            sc.param(from_db=db.N_HP_)
             sc.param(from_db=db.funcs.c_HP_inv_())
             sc.var("dQ_HP_CAPn_", doc="New heating capacity", unit="kW_th", ub=1e6 * p.z_HP_)
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
+        
+        def get_cop(t, c, n):
+            T_amb = p.T__amb_T[t] if self.time_dependent_amb else p.T_amb_
+            T_cond = T_amb + 5 if c == "C1" else p.T_HP_Cond_C[c]
+            T_eva = p.T_HP_Eva_N[n]
+            return 100 if T_cond <= T_eva else p.eta_HP_ * (T_cond + 273) / (T_cond - T_eva)
+
         m.addConstrs(
             (
-                v.dQ_HP_Cond_TCN[t, c, n] == v.P_HP_TCN[t, c, n] * p.cop_HP_CN[c, n]
+                v.dQ_HP_Cond_TCN[t, c, n] == v.P_HP_TCN[t, c, n] * get_cop(t, c, n)
                 for t in d.T
                 for c in d.C
                 for n in d.N
@@ -448,6 +443,12 @@ class HP(Component):
         m.addConstrs((v.Y_HP_TCN.sum(t, "*", "*") <= 1 for t in d.T), "HP_maxOneOperatingMode")
 
         sc.balances.P_EL_sink_T["HP"] = lambda t: v.P_HP_TCN.sum(t, "*", "*")
+        sc.balances.dQ_source_TL["HP"] = (
+            lambda t, l: v.dQ_HP_Cond_TCN.sum(t, l, "*") if l in d.C else 0
+        )
+        sc.balances.dQ_sink_TL["HP"] = (
+            lambda t, l: v.dQ_HP_Eva_TCN.sum(t, "*", l) if l in d.N else 0
+        )
 
 
 @dataclass
@@ -459,7 +460,7 @@ class P2H(Component):
     def param_func(self, sc: Scenario):
         sc.param("dQ_P2H_CAPx_", data=self.dQ_CAPx, doc="Existing capacity", unit="kW_th")
         sc.param(from_db=db.eta_P2H_)
-        sc.param(from_db=db.ol_P2H_)
+        sc.param(from_db=db.N_P2H_)
         sc.var("P_P2H_T", doc="Consuming power", unit="kW_el")
         sc.var("dQ_P2H_T", doc="Producing heat flow", unit="kW_th")
         if sc.consider_invest:
@@ -496,6 +497,7 @@ class CHP(Component):
             data=0.4 * 0.0688,
             doc="Renewable Energy Law (EEG) levy on own consumption",
             unit="€/kWh_el",
+            src="@BMWI_2020",
         )
         sc.var("dQ_CHP_T", doc="Producing heat flow", unit="kW_th")
         sc.var("F_CHP_TF", doc="Consumed fuel flow", unit="kW")
@@ -511,7 +513,7 @@ class CHP(Component):
             sc.param("z_CHP_", data=0, doc="If new capacity is allowed")
             sc.param(from_db=db.funcs.c_CHP_inv_(estimated_size=400, fuel_type="ng"))
             sc.param(from_db=db.k_CHP_RMI_)
-            sc.param(from_db=db.ol_CHP_)
+            sc.param(from_db=db.N_CHP_)
             sc.var("P_CHP_CAPn_", doc="New capacity", unit="kW_el", ub=1e6 * sc.params.z_CHP_)
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
@@ -551,18 +553,17 @@ class HOB(Component):
     """Heat-only boiler"""
 
     dQ_CAPx: float = 5000
-    eta: float = 0.9
 
     def param_func(self, sc: Scenario):
         sc.param("dQ_HOB_CAPx_", data=self.dQ_CAPx, doc="Existing capacity", unit="kW_th")
-        sc.param("eta_HOB_", data=self.eta, doc="Thermal efficiency", unit="kWh_th/kWh")
+        sc.param("eta_HOB_", from_db=db.eta_HOB_)
         sc.var("dQ_HOB_T", doc="Ouput heat flow", unit="kW_th")
         sc.var("F_HOB_TF", doc="Input fuel flow", unit="kW")
 
         if sc.consider_invest:
             sc.param(from_db=db.funcs.c_HOB_inv_())
             sc.param(from_db=db.k_HOB_RMI_)
-            sc.param(from_db=db.ol_HOB_)
+            sc.param(from_db=db.N_HOB_)
             sc.var("dQ_HOB_CAPn_", doc="New capacity", unit="kW_th")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
@@ -577,6 +578,8 @@ class HOB(Component):
 @dataclass
 class TES(Component):
     """Thermal energy storage"""
+
+    allow_new = True
 
     def param_func(self, sc: Scenario):
         d = sc.dims
@@ -597,10 +600,10 @@ class TES(Component):
         sc.var("Q_TES_TL", doc="Stored heat", unit="kWh_th")
 
         if sc.consider_invest:
-            sc.param("z_TES_L", fill=0, doc="If new capacity is allowed")
+            sc.param("z_TES_L", fill=int(self.allow_new), doc="If new capacity is allowed")
             sc.param(from_db=db.funcs.c_TES_inv_(estimated_size=100, temp_spread=40))
             sc.param(from_db=db.k_TES_RMI_)
-            sc.param(from_db=db.ol_TES_)
+            sc.param(from_db=db.N_TES_)
             sc.var("Q_TES_CAPn_L", doc="New capacity", unit="kWh_th", ub=1e7 * sc.params.z_TES_L)
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
@@ -639,7 +642,8 @@ class TES(Component):
             "INI_TES",
         )
 
-        sc.balances.dQ_sink_TL["TES"] = lambda t, l: v.dQ_TES_in_TL[t, l] if l == "90/70" else 0
+        # only sink here, since dQ_sink_TL is also defined for negative values:
+        sc.balances.dQ_sink_TL["TES"] = lambda t, l: v.dQ_TES_in_TL[t, l]
 
 
 @dataclass
@@ -659,8 +663,8 @@ class BEV(Component):
     """Battery electric Vehicle"""
 
     E_CAPx: float = 100
-    z_V2X: bool = False
-    z_smart: bool = False
+    allow_V2X: bool = False
+    allow_smart: bool = False
 
     def param_func(self, sc: Scenario):
         p = sc.params
@@ -679,19 +683,29 @@ class BEV(Component):
             data=1.0,
             doc="Storing efficiency. Must be 1.0 for the uncontrolled charging in REF",
         )
-        sc.param("eta_BEV_cycle_", data=0.9, doc="Cycle efficiency")
+        sc.param("eta_BEV_cycle_", from_db=db.eta_BES_cycle_)
         sc.param("P_BEV_drive_TB", fill=0, doc="Power use", unit="kW_el")
         sc.param(
             "y_BEV_avail_TB",
             fill=1,
             doc="If BEV is available for charging at time step",
         )
-        sc.param("k_BEV_inPerCap_B", fill=0.4, doc="Maximum charging power per capacity")
-        sc.param("k_BEV_v2xPerCap_B", fill=0.4, doc="Maximum v2x discharging power per capacity")
-        sc.param("k_BEV_empty_B", fill=0.05, doc="Definition of empty")
-        sc.param("k_BEV_full_B", fill=0.95, doc="Definition of full")
-        sc.param("z_BEV_smart_", data=int(self.z_smart), doc="If smart charging is allowed")
-        sc.param("z_BEV_V2X_", data=int(self.z_V2X), doc="If vehicle-to-X is allowed")
+        sc.param(
+            "k_BEV_inPerCap_B",
+            fill=0.7,
+            doc="Maximum charging power per capacity",
+            src=SRC.Figgener_2021,
+        )
+        sc.param(
+            "k_BEV_v2xPerCap_B",
+            fill=0.7,
+            doc="Maximum v2x discharging power per capacity",
+            src=SRC.Figgener_2021,
+        )
+        sc.param("k_BEV_empty_B", fill=0.05, doc="Minimum state of charge")
+        sc.param("k_BEV_full_B", fill=0.95, doc="Maximum state of charge")
+        sc.param("z_BEV_smart_", data=int(self.allow_smart), doc="If smart charging is allowed")
+        sc.param("z_BEV_V2X_", data=int(self.allow_V2X), doc="If vehicle-to-X is allowed")
         sc.param("k_BEV_ini_B", fill=0.7, doc="Initial and final state of charge")
         sc.var("E_BEV_TB", doc="Electricity stored in BEV battery", unit="kWh_el")
         sc.var("P_BEV_in_TB", doc="Charging power", unit="kW_el")
