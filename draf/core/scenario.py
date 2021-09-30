@@ -99,22 +99,46 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 components = sorted(components, key=lambda k: k.order)
             self.add_components(components)
 
+    def __getstate__(self) -> Dict:
+        """Remove objects with dependencies for serialization with pickle."""
+        d = self.__dict__.copy()
+        d.pop("mdl", None)
+        d.pop("components", None)
+        d.pop("balances", None)
+        return d
+
     def __repr__(self):
+        return self._make_repr(
+            excluded=[
+                "dims",
+                "params",
+                "vars",
+                "dtindex",
+                "dtindex_custom",
+                "balances",
+                "components",
+                "res",
+            ]
+        )
+
+    @property
+    def size(self):
+        return hp.human_readable_size(hp.get_size(self))
+
+    def info(self):
+        print(self._make_repr())
+
+    def _make_repr(self, excluded: Optional[Iterable] = None):
         """Get overview of attributes of the scenario object."""
+        if excluded is None:
+            excluded = []
         preface = "<{} object>".format(self.__class__.__name__)
         attribute_list = []
-        excluded = ["dims", "params", "vars", "dtindex", "dtindex_custom", "res"]
         for k, v in self.get_all().items():
             if k in excluded:
                 v = "[...]"
             attribute_list.append(f"• {k}: {v}")
         return "{}\n{}".format(preface, "\n".join(attribute_list))
-
-    def __getstate__(self) -> Dict:
-        """Remove objects with dependencies for serialization with pickle."""
-        d = self.__dict__.copy()
-        d.pop("mdl", None)
-        return d
 
     def _set_time_trace(self):
         self._time = time.perf_counter()
@@ -455,6 +479,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         elif self.mdl_language == "pyo":
             self._optimize_pyomo(**kwargs, which_solver=which_solver)
 
+        self._cache_balance_values()
         return self
 
     def _optimize_gurobipy(
@@ -660,7 +685,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             raise AttributeError(f"No infer options available for {name}")
         return doc, unit, data
 
-    def _get_idx(self, ent_name: str):
+    def _get_idx(self, ent_name: str) -> Union[List, pd.MultiIndex]:
         dims = hp.get_dims(ent_name)
         coords = self.get_coords(dims)
         if len(dims) == 1:
@@ -688,14 +713,13 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             sc.res._meta[<entity-name>] (dict with metas {"doc":..., "unit":...})
         """
         return_value = None
-        for attr in ["params", "res", "dims"]:
+        for attr in ["params", "res", "dims", "balances"]:
             obj = getattr(self, attr, None)
             if obj is not None:
                 metas = obj._meta.get(ent_name, "")
                 if metas is not "":
-                    return_value = metas.get(meta_type, "")
-                    break
-        return return_value
+                    return metas.get(meta_type, "")
+        return None
 
     def update_params(self, **kwargs) -> Scenario:
         """Update multiple existing parameters.
@@ -767,6 +791,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 f"So it indicates a scalar entity but is a {type(data)}-type."
             )
         else:
+            assert (
+                dims == dims.upper()
+            ), f"Parameter `{name}` has invalid lower characters in dims string"
             if fill is not None:
                 assert dims != "", f"Don't use `fill` argument with scalar entity {name}."
                 data = pd.Series(data=fill, name=name, index=self._get_idx(name))
@@ -781,7 +808,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         if not update:
             self._warn_if_unexpected_unit(name, unit)
-
             self.params._meta[name] = dict(
                 doc=doc, unit=unit, src=src, etype=etype, comp=comp, dims=dims
             )
@@ -897,6 +923,50 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                     v = v.sum()
                 d[hp.get_component(n)] = v
         return d
+
+    def get_all_balance_values(self, cache: bool = True) -> Dict[str, Dict[str, float]]:
+        if not cache or not hasattr(self, "balance_values"):
+            self._cache_balance_values()
+        return getattr(self, "balance_values")
+
+    def _cache_balance_values(self) -> None:
+        d = {k: self.get_balanceValues(bal_name=k) for k in self.balances.get_all()}
+        setattr(self, "balance_values", d)
+
+    def get_balanceValues(self, bal_name: str) -> Dict[str, float]:
+        balance = getattr(self.balances, bal_name)
+        return {comp: self._get_BalTermValues(bal_name, term) for comp, term in balance.items()}
+
+    def _get_BalTermValues(self, bal_name: str, term: Any) -> float:
+        if hp.is_a_lambda(term):
+            idx = self._get_idx(bal_name)
+            if isinstance(idx, pd.MultiIndex):
+                return sum(hp.get_value_from_varOrPar(term(*i)) for i in idx)
+            else:
+                return sum(hp.get_value_from_varOrPar(term(i)) for i in idx)
+        else:
+            return hp.get_value_from_varOrPar(term)
+
+    def make_sankey_string_from_balances(self):
+        templates = {
+            "P_EL_source_T": "E {k} el_hub {v}",
+            "P_EL_sink_T": "E el_hub {k} {v}",
+            "dQ_cooling_source_TN": "Q {k} cool_hub {v}",
+            "dQ_cooling_sink_TN": "Q cool_hub {k} {v}",
+            "dQ_heating_source_TH": "Q {k} heat_hub {v}",
+            "dQ_heating_sink_TH": "Q heat_hub {k} {v}",
+            "F_fuel_F": "F FUEL {k} {v}",
+            "dQ_amb_source_": "Q {k} ambient {v}",
+            "dQ_amb_sink_": "Q ambient {k} {v}",
+        }
+        header = ["type source target value"]
+        rows = [
+            templates[name].format(k=k, v=v)
+            for name, balance in self.get_all_balance_values().items()
+            for k, v in balance.items()
+            if name in templates
+        ]
+        return "\n".join(header + rows)
 
 
 def data_contains_nan(data: Optional[Union[int, float, list, np.ndarray, pd.Series]]) -> bool:

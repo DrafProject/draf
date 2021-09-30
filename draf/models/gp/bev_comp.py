@@ -6,7 +6,7 @@ from draf.model_builder.components import *
 
 
 def main():
-    cs = draf.CaseStudy("DER_HUT", year=2019, freq="60min", coords=(49.01, 8.39))
+    cs = draf.CaseStudy("bev", year=2019, freq="60min", coords=(49.01, 8.39))
     cs.set_time_horizon(start="Apr-01 00:00", steps=24 * 30)
     sc = cs.add_REF_scen(components=[eDem, EG, PV, BEV, Main])  # fmt: skip
     p_drive = sc.params.P_BEV_drive_TB.where(

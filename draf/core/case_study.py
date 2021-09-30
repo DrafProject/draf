@@ -97,9 +97,20 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         self.obj_vars = obj_vars
 
     def __repr__(self):
+        return self._make_repr(excluded=["scens", "dtindex", "dtindex_custom", "scen_df"])
+
+    def info(self):
+        print(self._make_repr())
+
+    @property
+    def size(self):
+        return hp.human_readable_size(hp.get_size(self))
+
+    def _make_repr(self, excluded: Optional[Iterable] = None):
+        if excluded is None:
+            excluded = []
         preface = "<{} object>".format(self.__class__.__name__)
         l = []
-        excluded = ["scens", "dtindex", "dtindex_custom", "scen_df"]
         for k, v in self.get_all().items():
             if k in excluded:
                 v = "[...]"
@@ -354,7 +365,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             logger.error(f"{e}: Solution: Please deactivate Ipython's autoreload to pickle.")
             return None
 
-        size = hp.sizeof_fmt(fp.stat().st_size)
+        size = hp.human_readable_size(fp.stat().st_size)
         print(f"CaseStudy saved to {fp.as_posix()} ({size})")
 
     def set_time_horizon(

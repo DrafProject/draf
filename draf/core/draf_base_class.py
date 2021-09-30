@@ -11,7 +11,7 @@ class DrafBaseClass:
 
         self_mapping = {k: k.capitalize() for k in which_metadata}
         header = layout.format(bullet="    ", name="Name", **self_mapping)
-        header += f"{'='*79}\n"
+        header += f"{'='*100}\n"
         this_list = []
 
         if hasattr(self, "_meta"):
@@ -34,7 +34,7 @@ class DrafBaseClass:
 
         if this_list:
             data = "".join(this_list)
-            return f"{preface}\n{header}{data}"
+            return f"{preface} preview:\n{header}{data}"
         else:
             return f"{preface} (empty)"
 

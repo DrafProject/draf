@@ -45,8 +45,11 @@ def test_auto_fmt():
     num, unit = hp.auto_fmt(num=2e4, unit="kW")
     assert (num, unit) == (20.0, "MW")
 
-    num, unit = hp.auto_fmt(num=2e4, unit="€")
-    assert (num, unit) == (20.0, "k€")
+    num, unit = hp.auto_fmt(num=2e6, unit="€")
+    assert (num, unit) == (2.0, "M€")
+
+    num, unit = hp.auto_fmt(num=2e6, unit="€", target_unit="k€")
+    assert (num, unit) == (2000.0, "k€")
 
     num, unit = hp.auto_fmt(num=2e4, unit="gCO2eq")
     assert (num, unit) == (20.0, "kgCO2eq")
@@ -66,5 +69,5 @@ def test_ser_to_df_for_latex_table():
     assert result.__repr__() == "  index  0 index  0\n0     a  3     b  2"
 
 
-def test_sizeof_fmt():
-    assert hp.sizeof_fmt(num=1400, suffix="B") == "  1.4 KB"
+def test_human_readable_size():
+    assert hp.human_readable_size(size=1400, decimal_places=2) == "1.40 KB"

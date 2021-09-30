@@ -1,7 +1,9 @@
 import logging
+import textwrap
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import pandas as pd
+from tabulate import tabulate
 
 from draf import helper as hp
 from draf.core.draf_base_class import DrafBaseClass
@@ -17,8 +19,20 @@ class Balances(DrafBaseClass):
         self._meta: Dict[str, Dict] = dict()
 
     def __repr__(self):
-        layout = "{bullet}{name:<13} {unit:>10} | {doc}\n"
-        return self._build_repr(layout, which_metadata=["doc", "unit"])
+        bals = self.get_all()
+        meta = self._meta
+        l = [
+            ("Name", list(bals.keys())),
+            ("N", list(map(len, bals.values()))),
+            ("Content", [textwrap.shorten(", ".join(v.keys()), 50) for v in bals.values()]),
+            ("Unit", [meta[name]["unit"] for name in bals.keys()]),
+            ("Doc", [meta[name]["doc"] for name in bals.keys()]),
+        ]
+        headers, col_data = zip(*l)
+        rows = list(zip(*col_data))
+        return "<Balances object> preview:\n" + textwrap.indent(
+            text=tabulate(rows, headers=headers), prefix="  "
+        )
 
 
 class Scenarios(DrafBaseClass):

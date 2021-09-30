@@ -1,3 +1,4 @@
+import datetime
 import logging
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
@@ -6,8 +7,9 @@ import pandas as pd
 from gurobipy import GRB, Model, quicksum
 
 from draf import Dimensions, Params, Results, Scenario, Vars
-from draf.helper import conv, set_component_order_by_dependency
-from draf.model_builder import collectors
+from draf.helper import conv, get_annuity_factor, set_component_order_by_dependency
+
+# from draf.model_builder import collectors
 from draf.model_builder.abstract_component import Component
 from draf.prep import SRC
 from draf.prep import DataBase as db
@@ -32,7 +34,13 @@ class Main(Component):
         sc.balance("C_TOT_", doc="Total costs", unit="k€/a")
         sc.balance("C_TOT_op_", doc="Total operating costs", unit="k€/a")
         sc.balance("CE_TOT_", doc="Total carbon emissions", unit="kgCO2eq/a")
-        sc.balance("Penalty_", doc="Penalty term for objective function", unit="")
+        sc.balance("Penalty_", doc="Penalty term for objective function", unit="Any")
+        sc.balance("dQ_amb_sink_", doc="Thermal energy flow to ambient", unit="kW_th")
+        sc.balance("dQ_amb_source_", doc="Thermal energy flow from ambient", unit="kW_th")
+        if sc.consider_invest:
+            sc.balance("C_TOT_RMI_", doc="Total annual maintainance cost", unit="k€/a")
+            sc.balance("C_TOT_inv_", doc="Total investment costs", unit="k€")
+            sc.balance("C_TOT_invAnn_", doc="Total annualized investment costs", unit="k€")
 
         # Total
         sc.var("C_TOT_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
@@ -41,6 +49,7 @@ class Main(Component):
         if sc.consider_invest:
             sc.param("k__r_", data=0.06, doc="Calculatory interest rate")
             sc.var("C_TOT_inv_", doc="Total investment costs", unit="k€")
+            sc.var("C_TOT_invAnn_", doc="Total annualized investment costs", unit="k€")
             sc.var("C_TOT_RMI_", doc="Total annual maintainance cost", unit="k€")
         sc.var("Penalty_", "Penalty term for objective function")
 
@@ -65,15 +74,16 @@ class Main(Component):
         sc.balances.C_TOT_["op"] = v.C_TOT_op_
 
         if sc.consider_invest:
+            # m.addConstr( (v.C_TOT_inv_ == collectors.C_inv_(p, v, r=p.k__r_) * conv("€", "k€", 1e-3)) )
+            # m.addConstr( (v.C_TOT_invAnn_ == collectors.C_inv_Annual_(p, v, r=p.k__r_) * conv("€", "k€", 1e-3)) )
+            # m.addConstr( (v.C_TOT_RMI_ == collectors.C_TOT_RMI_(p, v) * conv("€", "k€", 1e-3)), "DEF_C_TOT_RMI_", )
+            m.addConstr(v.C_TOT_inv_ == quicksum(sc.balances.C_TOT_inv_.values()), "DEF_C_TOT_inv_")
+            m.addConstr(v.C_TOT_RMI_ == quicksum(sc.balances.C_TOT_RMI_.values()), "DEF_C_TOT_RMI_")
             m.addConstr(
-                (v.C_TOT_inv_ == collectors.C_invAnnual_(p, v, r=p.k__r_) * conv("€", "k€", 1e-3))
-            )
-            m.addConstr(
-                (v.C_TOT_RMI_ == collectors.C_TOT_RMI_(p, v) * conv("€", "k€", 1e-3)),
-                "DEF_C_TOT_RMI_",
+                v.C_TOT_invAnn_ == quicksum(sc.balances.C_TOT_invAnn_.values()), "DEF_C_TOT_invAnn_"
             )
             sc.balances.C_TOT_["RMI"] = v.C_TOT_RMI_
-            sc.balances.C_TOT_["inv"] = v.C_TOT_inv_
+            sc.balances.C_TOT_["inv"] = v.C_TOT_invAnn_
 
         m.addConstr(v.C_TOT_ == quicksum(sc.balances.C_TOT_.values()), "DEF_C_TOT_")
 
@@ -206,8 +216,8 @@ class EG(Component):
         )
         m.addConstrs((v.P_EG_buy_T[t] <= v.P_EG_buyPeak_ for t in d.T), "DEF_peakPrice")
 
-        sc.balances.P_EL_source_T["EL"] = lambda t: v.P_EG_buy_T[t]
-        sc.balances.P_EL_sink_T["EL"] = lambda t: v.P_EG_sell_T[t]
+        sc.balances.P_EL_source_T["EG"] = lambda t: v.P_EG_buy_T[t]
+        sc.balances.P_EL_sink_T["EG"] = lambda t: v.P_EG_sell_T[t]
         sc.balances.C_TOT_op_["EG_peak"] = v.P_EG_buyPeak_ * p.c_EG_buyPeak_ * conv("€", "k€", 1e-3)
         sc.balances.C_TOT_op_["EG"] = (
             p.k__dT_
@@ -234,7 +244,7 @@ class Fuel(Component):
 
     def param_func(self, sc: Scenario):
         sc.dim("F", ["ng", "bio"], doc="Types of fuel")
-        sc.balance("F_fuel_F", doc="Fuel power", unit="kW")
+        sc.balance("F_fuel_F", doc="Fuel power", unit="kWh")
         sc.param(from_db=db.c_Fuel_F)
         sc.param("c_Fuel_ceTax_", data=self.c_ceTax, doc="Carbon tax on fuel", unit="€/tCO2eq")
         sc.param(from_db=db.ce_Fuel_F)
@@ -289,7 +299,7 @@ class BES(Component):
             sc.var("E_BES_CAPn_", doc="New capacity", unit="kWh_el")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
-        cap = p.E_BES_CAPx_ + v.E_BES_CAPn_ if sc.consider_invest else p.E_BES_CAPx_
+        cap = p.E_BES_CAPx_ + p.z_BES_ * v.E_BES_CAPn_ if sc.consider_invest else p.E_BES_CAPx_
         m.addConstrs(
             (v.P_BES_in_T[t] <= p.k_BES_inPerCap_ * cap for t in d.T),
             "MAX_BES_IN",
@@ -316,6 +326,11 @@ class BES(Component):
 
         sc.balances.P_EL_source_T["BES"] = lambda t: v.P_BES_out_T[t]
         sc.balances.P_EL_sink_T["BES"] = lambda t: v.P_BES_in_T[t]
+        if sc.consider_invest:
+            C_inv_ = v.E_BES_CAPn_ * p.c_BES_inv_ * conv("€", "k€", 1e-3)
+            sc.balances.C_TOT_inv_["BES"] = C_inv_
+            sc.balances.C_TOT_invAnn_["BES"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_BES_)
+            sc.balances.C_TOT_RMI_["BES"] = C_inv_ * p.k_BES_RMI_
 
 
 @dataclass
@@ -352,10 +367,10 @@ class PV(Component):
             sc.param(from_db=db.funcs.c_PV_inv_())
             sc.param(from_db=db.k_PV_RMI_)
             sc.param(from_db=db.N_PV_)
-            sc.var("P_PV_CAPn_", doc="New capacity", unit="kW_peak", ub=1e20 * sc.params.z_PV_)
+            sc.var("P_PV_CAPn_", doc="New capacity", unit="kW_peak", ub=1e20)
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
-        cap = p.P_PV_CAPx_ + v.P_PV_CAPn_ if sc.consider_invest else p.P_PV_CAPx_
+        cap = p.P_PV_CAPx_ + p.z_PV_ * v.P_PV_CAPn_ if sc.consider_invest else p.P_PV_CAPx_
         m.addConstrs(
             (cap * p.P_PV_profile_T[t] == v.P_PV_FI_T[t] + v.P_PV_OC_T[t] for t in d.T),
             "PV1",
@@ -367,6 +382,11 @@ class PV(Component):
         sc.balances.C_TOT_op_["PV_OC"] = (
             p.k__dT_ * p.k__PartYearComp_ * p.c_PV_OC_ * v.P_PV_OC_T.sum() * conv("€", "k€", 1e-3)
         )
+        if sc.consider_invest:
+            C_inv_ = v.P_PV_CAPn_ * p.c_PV_inv_ * conv("€", "k€", 1e-3)
+            sc.balances.C_TOT_inv_["PV"] = C_inv_
+            sc.balances.C_TOT_invAnn_["PV"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_PV_)
+            sc.balances.C_TOT_RMI_["PV"] = C_inv_ * p.k_PV_RMI_
 
 
 @dataclass
@@ -479,6 +499,13 @@ class HP(Component):
         sc.balances.P_EL_sink_T["HP"] = lambda t: v.P_HP_TEC.sum(t, "*", "*")
         sc.balances.dQ_cooling_sink_TN["HP"] = lambda t, n: v.dQ_HP_Eva_TEC.sum(t, n, "*")
         sc.balances.dQ_heating_source_TH["HP"] = lambda t, h: v.dQ_HP_Cond_TEC.sum(t, "*", h)
+        sc.balances.dQ_amb_source_["HP"] = v.dQ_HP_Eva_TEC.sum("*", "E_amb", "*") * p.k__dT_
+        sc.balances.dQ_amb_source_["HP"] = v.dQ_HP_Eva_TEC.sum("*", "*", "C_amb") * p.k__dT_
+        if sc.consider_invest:
+            C_inv_ = v.dQ_HP_CAPn_ * p.c_HP_inv_ * conv("€", "k€", 1e-3)
+            sc.balances.C_TOT_inv_["HP"] = C_inv_
+            sc.balances.C_TOT_invAnn_["HP"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_HP_)
+            sc.balances.C_TOT_RMI_["HP"] = C_inv_ * p.k_HP_RMI_
 
 
 @dataclass
@@ -490,10 +517,10 @@ class P2H(Component):
     def param_func(self, sc: Scenario):
         sc.param("dQ_P2H_CAPx_", data=self.dQ_CAPx, doc="Existing capacity", unit="kW_th")
         sc.param(from_db=db.eta_P2H_)
-        sc.param(from_db=db.N_P2H_)
         sc.var("P_P2H_T", doc="Consuming power", unit="kW_el")
         sc.var("dQ_P2H_T", doc="Producing heat flow", unit="kW_th")
         if sc.consider_invest:
+            sc.param(from_db=db.N_P2H_)
             sc.param("z_P2H_", data=0, doc="If new capacity is allowed")
             sc.param(from_db=db.c_P2H_inv_)
             sc.param("k_P2H_RMI_", data=0)
@@ -506,6 +533,11 @@ class P2H(Component):
 
         sc.balances.dQ_heating_source_TH["P2H"] = lambda t, h: v.dQ_P2H_T[t] if h == 2 else 0
         sc.balances.P_EL_sink_T["P2H"] = lambda t: v.P_P2H_T[t]
+        if sc.consider_invest:
+            C_inv_ = v.dQ_P2H_CAPn_ * p.c_P2H_inv_ * conv("€", "k€", 1e-3)
+            sc.balances.C_TOT_inv_["P2H"] = C_inv_
+            sc.balances.C_TOT_invAnn_["P2H"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_P2H_)
+            sc.balances.C_TOT_RMI_["P2H"] = C_inv_ * p.k_P2H_RMI_
 
 
 @dataclass
@@ -572,10 +604,15 @@ class CHP(Component):
         sc.balances.P_EL_source_T["CHP"] = lambda t: v.P_CHP_T[t]
         sc.balances.dQ_heating_source_TH["CHP"] = lambda t, h: v.dQ_CHP_T[t] if h == 2 else 0
         sc.balances.P_EG_sell_T["CHP"] = lambda t: v.P_CHP_FI_T[t]
-        sc.balances.F_fuel_F["CHP"] = lambda f: v.F_CHP_TF.sum("*", f)
+        sc.balances.F_fuel_F["CHP"] = lambda f: v.F_CHP_TF.sum("*", f) * p.k__dT_
         sc.balances.C_TOT_op_["CHP_OC"] = (
             p.k__PartYearComp_ * p.k__dT_ * p.c_CHP_OC_ * conv("€", "k€", 1e-3) * v.P_CHP_OC_T.sum()
         )
+        if sc.consider_invest:
+            C_inv_ = v.P_CHP_CAPn_ * p.c_CHP_inv_ * conv("€", "k€", 1e-3)
+            sc.balances.C_TOT_inv_["CHP"] = C_inv_
+            sc.balances.C_TOT_invAnn_["CHP"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_CHP_)
+            sc.balances.C_TOT_RMI_["CHP"] = C_inv_ * p.k_CHP_RMI_
 
 
 @dataclass
@@ -583,6 +620,7 @@ class HOB(Component):
     """Heat-only boiler"""
 
     dQ_CAPx: float = 5000
+    allow_new = True
 
     def param_func(self, sc: Scenario):
         sc.param("dQ_HOB_CAPx_", data=self.dQ_CAPx, doc="Existing capacity", unit="kW_th")
@@ -594,15 +632,21 @@ class HOB(Component):
             sc.param(from_db=db.funcs.c_HOB_inv_())
             sc.param(from_db=db.k_HOB_RMI_)
             sc.param(from_db=db.N_HOB_)
+            sc.param("z_HOB_", data=int(self.allow_new), doc="If new capacity is allowed")
             sc.var("dQ_HOB_CAPn_", doc="New capacity", unit="kW_th")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
-        cap = v.dQ_HOB_CAPn_ + p.dQ_HOB_CAPx_ if sc.consider_invest else p.dQ_HOB_CAPx_
+        cap = p.dQ_HOB_CAPx_ + p.z_HOB_ * v.dQ_HOB_CAPn_ if sc.consider_invest else p.dQ_HOB_CAPx_
         m.addConstrs((v.dQ_HOB_T[t] == v.F_HOB_TF.sum(t, "*") * p.eta_HOB_ for t in d.T), "BAL_HOB")
         m.addConstrs((v.dQ_HOB_T[t] <= cap for t in d.T), "CAP_HOB")
 
         sc.balances.dQ_heating_source_TH["HOB"] = lambda t, h: v.dQ_HOB_T[t] if h == 2 else 0
         sc.balances.F_fuel_F["HOB"] = lambda f: v.F_HOB_TF.sum("*", f)
+        if sc.consider_invest:
+            C_inv_ = v.dQ_HOB_CAPn_ * p.c_HOB_inv_ * conv("€", "k€", 1e-3)
+            sc.balances.C_TOT_inv_["HOB"] = C_inv_
+            sc.balances.C_TOT_invAnn_["HOB"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_HOB_)
+            sc.balances.C_TOT_RMI_["HOB"] = C_inv_ * p.k_HOB_RMI_
 
 
 @dataclass
@@ -634,11 +678,11 @@ class TES(Component):
             sc.param(from_db=db.funcs.c_TES_inv_(estimated_size=100, temp_spread=40))
             sc.param(from_db=db.k_TES_RMI_)
             sc.param(from_db=db.N_TES_)
-            sc.var("Q_TES_CAPn_L", doc="New capacity", unit="kWh_th", ub=1e7 * sc.params.z_TES_L)
+            sc.var("Q_TES_CAPn_L", doc="New capacity", unit="kWh_th", ub=1e7)
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
         cap = (
-            lambda l: p.Q_TES_CAPx_L[l] + v.Q_TES_CAPn_L[l]
+            lambda l: p.Q_TES_CAPx_L[l] + p.z_TES_L[l] * v.Q_TES_CAPn_L[l]
             if sc.consider_invest
             else p.Q_TES_CAPx_L[l]
         )
@@ -676,6 +720,11 @@ class TES(Component):
         # values to reduce number of variables:
         sc.balances.dQ_cooling_sink_TN["TES"] = lambda t, n: v.dQ_TES_in_TL[t, f"N{n}"]
         sc.balances.dQ_heating_sink_TH["TES"] = lambda t, h: v.dQ_TES_in_TL[t, f"H{h}"]
+        if sc.consider_invest:
+            C_inv_ = v.Q_TES_CAPn_L.sum() * p.c_TES_inv_ * conv("€", "k€", 1e-3)
+            sc.balances.C_TOT_inv_["TES"] = C_inv_
+            sc.balances.C_TOT_invAnn_["TES"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_TES_)
+            sc.balances.C_TOT_RMI_["TES"] = C_inv_ * p.k_TES_RMI_
 
 
 @dataclass
@@ -745,8 +794,7 @@ class BEV(Component):
         sc.var("x_BEV_penalty_", doc="Penalty to ensure uncontrolled charging in REF")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
-        T = d.T
-        B = d.B
+        T, B = d.T, d.B
 
         if sc.params.P_BEV_drive_TB.sum() == 0:
             logger.warning("P_BEV_drive_TB is all zero. Please set data")
@@ -819,6 +867,153 @@ class BEV(Component):
         sc.balances.Penalty_["BEV"] = v.x_BEV_penalty_
 
 
+@dataclass
+class PROD(Component):
+    """Production containing production process (PP) and product storage (PS)."""
+
+    allow_new: bool = False
+
+    def param_func(self, sc: Scenario):
+        sc.dim("S", data=[1], doc="Production sorts")
+        sc.dim("M", data=[1], doc="Production machines")
+
+        # Production process (PP)
+        sc.param("c_PP_SU_", data=0.1, doc="Costs per start up", unit="€/SU")
+        sc.param("y_PP_revision_TM", fill=0, doc="If in revision").loc[:, 1] = [
+            1 if datetime.date(sc.year, 3, 15) <= x.date() <= datetime.date(sc.year, 3, 16) else 0
+            for x in sc.dtindex_custom
+        ]
+        sc.param("dG_PP_Dem_TS", fill=10, doc="Product demand", unit="t/h")
+        sc.param("P_PP_CAPx_M", fill=2500, doc="", unit="kW_el")
+        sc.param(
+            "eta_PP_M", fill=35, doc="Production-process-specific power demand", unit="kW_el/t"
+        )
+        sc.param("k_PP_minPL_M", fill=0.5, doc="Minimum part load")
+        sc.var("dG_PP_TSM", doc="Production of machine", unit="t/h")
+        sc.var("P_PP_TSM", doc="Nominal power consumption of machine", unit="kW_el")
+        sc.var("C_PP_SU_", doc="Total cost of start up", unit="k€", lb=-GRB.INFINITY)
+        sc.var("Y_PP_op_TSM", doc="If machine is in operation", vtype=GRB.BINARY)
+        sc.var("Y_PP_SU_TM", doc="If machine just started up", vtype=GRB.BINARY)
+        if sc.consider_invest:
+            sc.param("z_PP_M", fill=int(self.allow_new), doc="If new machine capacity is allowed")
+            sc.param("c_PP_inv_", data=1000, doc="Investment cost", unit="€/kW_el")  # TODO
+            sc.param("N_PP_", data=20, doc="Operation life", unit="a")
+            sc.param("k_PP_RMI_", data=0)
+            sc.var("P_PP_CAPn_M", doc="New capacity", unit="kW_el")
+
+        # Product storage (PS)
+        sc.param("G_PS_CAPx_S", fill=5000, doc="Existing storage capacity of product", unit="t")
+        sc.param("k_PS_min_S", fill=0.1, doc="Share of minimal required storage filling level")
+        sc.param("k_PS_init_S", fill=0.5, doc="Initial storage filling level")
+        sc.param("y_PS_compat_SM", fill=1, doc="If machine and sort is compatible")
+        sc.var("G_PS_TS", doc="Storage filling level", unit="t")
+        sc.var(
+            "G_PS_delta_S", doc="Final time step deviation from init", unit="t", lb=-GRB.INFINITY
+        )
+        sc.var("E_PS_deltaTot_", doc="Energy equivalent", unit="kWh_el")
+        if sc.consider_invest:
+            sc.param("z_PS_S", fill=int(self.allow_new), doc="If new storage capacity is allowed")
+            sc.param("c_PS_inv_", data=1000, doc="Investment cost", unit="€/t")  # TODO
+            sc.param("N_PS_", data=50, doc="Operation life", unit="a")
+            sc.param("k_PS_RMI_", data=0)
+            sc.var("G_PS_CAPn_S", doc="New capacity", unit="t")
+
+    def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
+        T, S, M = d.T, d.S, d.M
+
+        # Production process (PP)
+        def cap_PP_M(m):
+            capx = p.P_PP_CAPx_M[m]
+            return capx + p.z_PP_M[m] * v.P_PP_CAPn_M[m] if sc.consider_invest else capx
+
+        m.addConstrs(
+            (
+                v.dG_PP_TSM[t, s, m] * p.eta_PP_M[m]
+                == v.P_PP_TSM[t, s, m] * p.y_PS_compat_SM[s, m] * (1 - p.y_PP_revision_TM[t, m])
+                for t in T
+                for s in S
+                for m in M
+            ),
+            "DEF_dG_PP_TSM",
+        )
+        m.addConstrs(
+            (
+                v.P_PP_TSM[t, s, m] <= v.Y_PP_op_TSM[t, s, m] * cap_PP_M(m)
+                for t in T
+                for s in S
+                for m in M
+            ),
+            "CAP_PP",
+        )
+        m.addConstrs(
+            (
+                v.P_PP_TSM[t, s, m] >= v.Y_PP_op_TSM[t, s, m] * p.k_PP_minPL_M[m] * cap_PP_M(m)
+                for t in T
+                for s in S
+                for m in M
+            ),
+            "PP_minPL",
+        )
+        m.addConstr((v.C_PP_SU_ == v.Y_PP_SU_TM.sum() * p.c_PP_SU_), "DEF_C_PP_SU_")
+        m.addConstrs(
+            (v.dG_PP_TSM[t, s, m] <= v.Y_PP_op_TSM[t, s, m] * 1e8 for t in T for s in S for m in M),
+            "BIGM_Y_PP_op_TSM",
+        )
+        m.addConstrs((v.Y_PP_op_TSM.sum(t, "*", m) <= 1 for t in T for m in M), "RES_only_one_s")
+        m.addConstrs(
+            (
+                v.Y_PP_SU_TM[t, m]
+                >= v.Y_PP_op_TSM.sum(t, "*", m) - v.Y_PP_op_TSM.sum(t - 1, "*", m)
+                for t in T[1:]
+                for m in M
+            ),
+            "DEF_SU",
+        )
+        sc.balances.P_EL_sink_T["PP"] = lambda t: v.P_PP_TSM.sum(t, "*", "*")
+        sc.balances.C_TOT_op_["PP_SU"] = v.C_PP_SU_
+        if sc.consider_invest:
+            C_inv_ = v.P_PP_CAPn_M.sum() * p.c_PP_inv_ * conv("€", "k€", 1e-3)
+            sc.balances.C_TOT_inv_["PP"] = C_inv_
+            sc.balances.C_TOT_invAnn_["PP"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_PP_)
+            sc.balances.C_TOT_RMI_["PP"] = C_inv_ * p.k_PP_RMI_
+
+        # Product storage (PS)
+        def cap_PS_S(s):
+            capx = p.G_PS_CAPx_S[s]
+            return capx + p.z_PS_S[s] * v.G_PS_CAPn_S[s] if sc.consider_invest else capx
+
+        m.addConstrs(
+            (
+                v.G_PS_TS[t, s]
+                == v.G_PS_TS[t - 1, s]
+                + p.k__dT_ * v.dG_PP_TSM.sum(t, s, "*")
+                - p.k__dT_ * p.dG_PP_Dem_TS[t, s]
+                for t in T[1:]
+                for s in S
+            ),
+            "BAL_PS",
+        )
+        m.addConstrs((v.G_PS_TS[t, s] <= cap_PS_S(s) for t in T for s in S), "RES_PS")
+        m.addConstrs(
+            (v.G_PS_TS[t, s] >= p.k_PS_min_S[s] * cap_PS_S(s) for t in T for s in S), "MIN_PS"
+        )
+        m.addConstrs((v.G_PS_TS[min(T), s] == p.k_PS_init_S[s] * cap_PS_S(s) for s in S), "INI_PS")
+        m.addConstrs(
+            (v.G_PS_TS[max(T), s] == p.k_PS_init_S[s] * cap_PS_S(s) + v.G_PS_delta_S[s] for s in S),
+            "END_PS",
+        )
+        m.addConstr(
+            v.E_PS_deltaTot_ == v.G_PS_delta_S.sum() * sc.params.eta_PP_M.max(),
+            "DEF_E_PS_deltaTot_",
+        )
+        sc.balances.Penalty_["PS"] = v.E_PS_deltaTot_ * sc.params.c_EG_T.mean()
+        if sc.consider_invest:
+            C_inv_ = v.G_PS_CAPn_S.sum() * p.c_PS_inv_ * conv("€", "k€", 1e-3)
+            sc.balances.C_TOT_inv_["PS"] = C_inv_
+            sc.balances.C_TOT_invAnn_["PS"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_PS_)
+            sc.balances.C_TOT_RMI_["PS"] = C_inv_ * p.k_PS_RMI_
+
+
 dependencies = [
     ("cDem", {}),
     ("hDem", {}),
@@ -834,6 +1029,7 @@ dependencies = [
     ("H2H1", {}),
     ("HP", {"cDem", "hDem"}),
     ("TES", {"cDem", "hDem"}),
+    ("PROD", {"EG"}),
 ]
 dependencies.append(("Main", [x[0] for x in dependencies]))
 

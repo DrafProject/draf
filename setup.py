@@ -28,6 +28,7 @@ setup(
         "pandas",
         "pyomo>=5.7",
         "seaborn",
+        "tabulate",
         "tqdm",
     ],
     extras_require={

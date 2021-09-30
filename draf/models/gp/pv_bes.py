@@ -157,7 +157,7 @@ def sankey_func(sc: Scenario):
 
 
 def main():
-    cs = draf.CaseStudy("pv_bes", year=2019, freq="60min", coords=(49.01, 8.39))
+    cs = draf.CaseStudy("pv_bes_old", year=2019, freq="60min", coords=(49.01, 8.39))
     cs.set_time_horizon(start="Aug-01 00:00", steps=24)
     cs.add_REF_scen().set_params(params_func).update_params(E_BES_CAPx_=100, P_PV_CAPx_=1e3)
     cs.add_scens([("c_EG_T", "t", ["c_EG_TOU_T", "c_EG_FLAT_T"])])

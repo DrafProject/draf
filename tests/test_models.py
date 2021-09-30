@@ -1,6 +1,15 @@
 import pytest
 
-from draf.models.gp import bev_comp, der_hut_comp, minimal, minimal_comp, pv, pv_bes, pv_bes_comp
+from draf.models.gp import (
+    bev_comp,
+    der_hut_comp,
+    minimal,
+    minimal_comp,
+    prod_comp,
+    pv,
+    pv_bes,
+    pv_bes_comp,
+)
 from draf.models.pyo import pv as pyo_pv
 
 
@@ -15,7 +24,7 @@ def test_comp():
     )
 
 
-@pytest.mark.parametrize("mdl", [minimal, minimal_comp, der_hut_comp, bev_comp])
+@pytest.mark.parametrize("mdl", [minimal, minimal_comp, der_hut_comp, bev_comp, prod_comp])
 def test_models(mdl):
     c = mdl.main().REF_scen.res.C_TOT_
     assert isinstance(c, float)

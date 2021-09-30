@@ -62,6 +62,61 @@ class ScenPlotter(BasePlotter):
             with pd.option_context("display.max_rows", max_rows):
                 display(data)
 
+    def balances(
+        self,
+        auto_convert: bool = True,
+        filter: Optional[str] = None,
+        agg: bool = True,
+        use_plt: bool = False,
+    ):
+        sc = self.sc
+        df = pd.DataFrame(sc.get_all_balance_values())
+
+        units = {name: sc.get_unit(name) for name in df}
+
+        if agg:
+            df, units = hp.consider_timestepdelta(df, units, time_step_width=sc.step_width)
+
+        if auto_convert:
+            df, units = hp.auto_convert_units_colwise(df, units)
+
+        df = (
+            df.T.stack()
+            .reset_index()
+            .rename(columns={"level_0": "balance", "level_1": "comp", 0: "value"})
+        )
+        if filter is not None:
+            df = df[df["balance"].apply(lambda s: s.split("_")[0] == filter)]
+
+        df["doc"] = df["balance"].apply(sc.get_doc)
+        df["unit"] = df["balance"].replace(units)
+        df["desc"] = df["doc"] + " (" + df["unit"] + ")"
+
+        if use_plt:
+            self._plt_balance_plot(df)
+        else:
+            return self._plotly_balance_plot(df)
+
+    def _plt_balance_plot(self, df):
+        fig, ax = plt.subplots(figsize=(12, 6))
+        fig.tight_layout()
+        df = df.pivot(index="doc", columns="comp", values="value")
+        df.plot.barh(stacked=True, ax=ax)
+        ax.legend(loc="center left", bbox_to_anchor=(1.0, 0.5))
+        ax.set_ylabel("")
+        sns.despine()
+
+    def _plotly_balance_plot(self, df):
+        return px.bar(
+            df,
+            y="desc",
+            x="value",
+            color="comp",
+            orientation="h",
+            color_discrete_sequence=px.colors.qualitative.Alphabet,
+            category_orders={"desc": sorted(df.desc.unique())},
+        ).update_yaxes(title="")
+
     def heatmap_py(
         self,
         timeseries: Union[np.ndarray, pd.Series] = None,
@@ -241,7 +296,7 @@ class ScenPlotter(BasePlotter):
 
         return fig, ax
 
-    def sankey(self, string_builder_func, title="") -> go.Figure:
+    def sankey(self, string_builder_func: Optional[Callable] = None, title: str = "") -> go.Figure:
         """Returns a Plotly sankey plot.
 
         Args:
@@ -252,7 +307,7 @@ class ScenPlotter(BasePlotter):
         """
         fig = self.get_sankey_fig(string_builder_func=string_builder_func, title=title)
 
-        self._plot_plotly_fig(fig, filename=self.sc._res_fp / f"{title}.html")
+        # self._plot_plotly_fig(fig, filename=self.sc._res_fp / f"{title}.html")
         return fig
 
     def line(
@@ -342,7 +397,7 @@ class ScenPlotter(BasePlotter):
 
         Example:
             ```
-            sc.plot.plot(which_ents={'T': ['E_BES_T'], 'TS': ['G_STO_TS']}, linestyle='steps')
+            sc.plot.plot(which_ents={'T': ['E_BES_T'], 'TS': ['G_PS_TS']}, linestyle='steps')
             ```
         """
         sc = self.sc
@@ -412,14 +467,19 @@ class ScenPlotter(BasePlotter):
     def _get_all_plottable_entities_from(self, dims_dic) -> Dict[str, str]:
         return {dims: list(dims_dic[dims].columns) for dims in dims_dic if dims != ""}
 
-    def _get_sankey_df(self, string_builder_func: Callable) -> pd.DataFrame:
-        assert callable(string_builder_func)
-        string = textwrap.dedent(string_builder_func(self.sc))
-        df = pd.read_csv(StringIO(string), sep=" ")
+    def _get_sankey_df(self, string_builder_func: Optional[Callable] = None) -> pd.DataFrame:
+        s = (
+            self.sc.make_sankey_string_from_balances()
+            if string_builder_func is None
+            else string_builder_func(self.sc)
+        )
+        df = pd.read_csv(StringIO(textwrap.dedent(s)), sep=" ")
         df["value"] /= 1e3
         return df
 
-    def get_sankey_fig(self, string_builder_func: Callable, title: str = "") -> go.Figure:
+    def get_sankey_fig(
+        self, string_builder_func: Optional[Callable] = None, title: str = ""
+    ) -> go.Figure:
         """Returns Plotly Sankey figure.
 
         Args:
@@ -429,7 +489,6 @@ class ScenPlotter(BasePlotter):
                 E CHP EG 450
             title: Title of the Sankey figure.
         """
-
         df = self._get_sankey_df(string_builder_func)
         source_s, target_s, value = (list(df[s]) for s in ["source", "target", "value"])
 

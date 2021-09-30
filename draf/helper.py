@@ -1,5 +1,6 @@
 import logging
 import re
+import sys
 import textwrap
 from datetime import datetime
 from pathlib import Path
@@ -88,16 +89,37 @@ def make_quarterhourly_file_hourly(fp: Path, year: str = "2017", aggfunc: str = 
     write(sh, fp=filepath_new)
 
 
-def sizeof_fmt(num: float, suffix: str = "B") -> str:
-    """Returns the short version of the storage size of e.g. digital information.
-
-    Idea from https://stackoverflow.com/q/1094841
+def get_size(obj, seen=None):
+    """Recursively finds size of objects
+    from https://gist.github.com/jonathan-kosgei/90aac0b64fb345962ce3ee989fcb4075 (MIT License)
     """
-    for unit in ["", "K", "M", "G", "T", "P", "E", "Z"]:
-        if abs(num) < 1000.0:
-            return f"{num:>5.1f} {unit}{suffix}"
-        num /= 1000.0
-    return f"{num:>5.1f} Y{suffix}"
+    size = sys.getsizeof(obj)
+    if seen is None:
+        seen = set()
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    # Important mark as seen *before* entering recursion to gracefully handle
+    # self-referential objects
+    seen.add(obj_id)
+    if isinstance(obj, dict):
+        size += sum([get_size(v, seen) for v in obj.values()])
+        size += sum([get_size(k, seen) for k in obj.keys()])
+    elif hasattr(obj, "__dict__"):
+        size += get_size(obj.__dict__, seen)
+    elif hasattr(obj, "__iter__") and not isinstance(obj, (str, bytes, bytearray)):
+        size += sum([get_size(i, seen) for i in obj])
+    return size
+
+
+def human_readable_size(size: float, decimal_places: int = 2):
+    """based on https://stackoverflow.com/a/43690506"""
+
+    for unit in ["B", "KB", "MB", "GB", "TB", "PB"]:
+        if size < 1e3 or unit == "PB":
+            break
+        size /= 1e3
+    return f"{size:.{decimal_places}f} {unit}"
 
 
 def conv(
@@ -109,34 +131,72 @@ def conv(
     return conversion_factor
 
 
+def convert(
+    num: Union[float, int, pd.Series], unit: str, list: List, target_unit: str = None
+) -> Tuple[Union[float, int, pd.Series], str]:
+    """Idea from https://stackoverflow.com/a/43690506"""
+    second_part = unit[len(list[0]) :]
+    for pre in list[:-1]:
+        if target_unit is None:
+            v = num.iloc[0] if isinstance(num, pd.Series) else num
+            if abs(v) < 1e3:
+                return num, pre + second_part
+        else:
+            if (pre + second_part) == target_unit:
+                return num, pre + second_part
+
+        num /= 1e3
+    return num, list[-1] + second_part
+
+
+CONV = {
+    "€": [""] + list("kMGT"),
+    "k€": list("kMGT"),
+    "M€": list("MGT"),
+    "kW": list("kMGT"),
+    "MW": list("MGT"),
+    "gCO2eq": ["g", "kg", "t", "kt"],
+    "kgCO2eq": ["kg", "t", "kt", "Mt", "Gt"],
+    "tCO2eq": ["t", "kt", "Mt", "Gt"],
+}
+
+
 def auto_fmt(
     num: Union[float, int, pd.Series], unit: str, target_unit: Optional[str] = None
 ) -> Tuple[Union[float, int, pd.Series], str]:
     """Converts data into a naturally unit if its unit starts with €, kW, or gCO2eq.
-
-    `target_unit` is not considered if the corresponding `num` would be < 1."""
-
-    def convert(num, unit, list, target_unit):
-        for pre in list[:-1]:
-            v = num.iloc[0] if isinstance(num, pd.Series) else num
-            if abs(v) < 1e3 or (pre + unit) == target_unit:
-                return num, pre + unit
-            num /= 1e3
-        return num, list[-1] + unit
-
-    if unit.startswith("€"):
-        return convert(num, unit, ["", "k", "M"], target_unit)
-
-    elif unit.startswith("kW"):
-        unit = unit[1:]
-        return convert(num, unit, ["k", "M", "G", "T"], target_unit)
-
-    elif unit.startswith("gCO2eq"):
-        unit = unit[1:]
-        return convert(num, unit, ["g", "kg", "t", "kt"], target_unit)
-
+    WARNING: Only specific units available.
+    `target_unit` is not considered if the corresponding `num` would be < 1.
+    """
+    first = unit.split("/")[0].split("_")[0]
+    if first in CONV:
+        return convert(num, unit, CONV[first], target_unit)
     else:
         return num, unit
+
+
+def auto_convert_units_colwise(df, units: Dict):
+    for name, unit in units.items():
+        df[name], units[name] = auto_fmt(
+            num=df[name], unit=unit, target_unit=auto_fmt(df[name].sum(), unit)[1]
+        )
+    return df, units
+
+
+def consider_timestepdelta(df, units: Dict, time_step_width: float):
+    for name, unit in units.items():
+        if "T" in get_dims(name):
+            df[name] = df[name] * time_step_width
+            units[name] = aggregate_unit(unit)
+    return df, units
+
+
+def aggregate_unit(unit: str) -> str:
+    parts = unit.split("_")
+    first = parts[0]
+    if first in ["kW", "MW", "GW", "TW"]:
+        first = first.replace("W", "Wh")
+    return "_".join([first] + parts[1:])
 
 
 def optimize_plotly_layout_for_reveal_slides(
@@ -208,7 +268,7 @@ def add_thousands_formatter(ax, x: bool = True, y: bool = True):
 
 
 def replace_urls_with_link(urlstr: str) -> str:
-    # credits: https://stackoverflow.com/q/1112012
+    """credits: https://stackoverflow.com/a/1112670"""
 
     pat1str = r"(^|[\n ])(([\w]+?://[\w\#$%&~.\-;:=,?@\[\]+]*)(/[\w\#$%&~/.\-;:=,?@\[\]+]*)?)"
     pat2str = r"#(^|[\n ])(((www|ftp)\.[\w\#$%&~.\-;:=,?@\[\]+]*)(/[\w\#$%&~/.\-;:=,?@\[\]+]*)?)"
@@ -224,7 +284,7 @@ def replace_urls_with_link(urlstr: str) -> str:
 
 def topological_sort(source):
     """perform topo sort on elements.
-    credits: https://stackoverflow.com/q/11557241
+    credits: https://stackoverflow.com/a/11564769
 
     :arg source: list of ``(name, [list of dependancies])`` pairs
     :returns: list of names, with dependancies listed first
@@ -274,3 +334,28 @@ def make_symlink_to_cache():
     cache_dir = paths.CACHE_DIR
     link_dir.symlink_to(target=cache_dir, target_is_directory=True)
     print(f"Symbolic link created: {link_dir} --> {cache_dir}")
+
+
+def is_a_lambda(v):
+    # https://stackoverflow.com/a/3655857
+    LAMBDA = lambda: 0
+    return isinstance(v, type(LAMBDA)) and v.__name__ == LAMBDA.__name__
+
+
+def get_value_from_varOrPar(term):
+    try:
+        return term.x  # gurobipy.Var
+    except AttributeError:
+        try:
+            return term.getValue()  # gurobipy.LinExpr
+        except AttributeError:
+            try:
+                return term.value  # pyomo.environ.Var
+            except AttributeError:
+                assert isinstance(term, (float, int)), f"type: {type(term)}"
+                return term  # float, int
+
+
+def get_annuity_factor(r: float = 0.06, N: float = 20):
+    """Returns the annuity factor of a given return rate r and an expected lifetime N"""
+    return (r * (1 + r) ** N) / ((1 + r) ** N - 1)
