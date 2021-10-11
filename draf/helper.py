@@ -313,14 +313,16 @@ def topological_sort(source):
         emitted = next_emitted
 
 
-def set_component_order_by_dependency(dependencies: List[Tuple[str, str]], classes: Dict) -> None:
-    """Sets a order variable to classes according to its dependencies.
+def set_component_order_by_order_restrictions(
+    order_restrictions: List[Tuple[str, str]], classes: Dict
+) -> None:
+    """Sets a order variable to classes according to its order_restrictions.
 
     Args
-        deps: list of ``(name, [list of dependencies])`` pairs
+        deps: list of ``(name, [list of order_restrictions])`` pairs
         classes: A dictionary containing classes where the order argument is set to.
     """
-    ordered_components_list = list(topological_sort(dependencies))
+    ordered_components_list = list(topological_sort(order_restrictions))
     for i, classname in enumerate(ordered_components_list):
         classes[classname].order = i
 

@@ -7,7 +7,7 @@ import pandas as pd
 from gurobipy import GRB, Model, quicksum
 
 from draf import Dimensions, Params, Results, Scenario, Vars
-from draf.helper import conv, get_annuity_factor, set_component_order_by_dependency
+from draf.helper import conv, get_annuity_factor, set_component_order_by_order_restrictions
 
 # from draf.model_builder import collectors
 from draf.model_builder.abstract_component import Component
@@ -248,7 +248,7 @@ class Fuel(Component):
         sc.param(from_db=db.c_Fuel_F)
         sc.param("c_Fuel_ceTax_", data=self.c_ceTax, doc="Carbon tax on fuel", unit="€/tCO2eq")
         sc.param(from_db=db.ce_Fuel_F)
-        sc.var("C_Fuel_ceTax_", doc="Carbon tax on fuel", unit="k€/a")
+        sc.var("C_Fuel_ceTax_", doc="Total carbon tax on fuel", unit="k€/a")
         sc.var("CE_Fuel_", doc="Total carbon emissions for fuel", unit="kgCO2eq/a")
         sc.var("C_Fuel_", doc="Total cost for fuel", unit="k€/a")
         sc.var("F_fuel_F", doc="Total fuel consumption", unit="kW")
@@ -639,7 +639,7 @@ class HOB(Component):
         m.addConstrs((v.dQ_HOB_T[t] <= cap for t in d.T), "CAP_HOB")
 
         sc.balances.dQ_heating_source_TH["HOB"] = lambda t, h: v.dQ_HOB_T[t] if h == 2 else 0
-        sc.balances.F_fuel_F["HOB"] = lambda f: v.F_HOB_TF.sum("*", f)
+        sc.balances.F_fuel_F["HOB"] = lambda f: v.F_HOB_TF.sum("*", f) * p.k__dT_
         if sc.consider_invest:
             C_inv_ = v.dQ_HOB_CAPn_ * p.c_HOB_inv_ * conv("€", "k€", 1e-3)
             sc.balances.C_TOT_inv_["HOB"] = C_inv_
@@ -1015,12 +1015,13 @@ class PROD(Component):
             sc.balances.C_TOT_RMI_["PS"] = C_inv_ * p.k_PS_RMI_
 
 
-dependencies = [
+# Note: Here, dependency only means, that if the component is used it must be build before.
+order_restrictions = [
     ("cDem", {}),
     ("hDem", {}),
     ("eDem", {}),
-    ("EG", {"PV", "CHP"}),
-    ("Fuel", {}),
+    ("EG", {"PV", "CHP"}),  # EG collects balances.P_EG_sell_T
+    ("Fuel", {"HOB", "CHP"}),  # Fuel collects balances.F_fuel_F
     ("BES", {}),
     ("BEV", {}),
     ("PV", {}),
@@ -1028,10 +1029,10 @@ dependencies = [
     ("CHP", {}),
     ("HOB", {}),
     ("H2H1", {}),
-    ("HP", {"cDem", "hDem"}),
-    ("TES", {"cDem", "hDem"}),
-    ("PROD", {"EG"}),
+    ("HP", {"cDem", "hDem"}),  # HP calculates COP dependent on thermal demand temperatures
+    ("TES", {"cDem", "hDem"}),  # There is a TES for every thermal demand temperature level
+    ("PROD", {}),
 ]
-dependencies.append(("Main", [x[0] for x in dependencies]))
+order_restrictions.append(("Main", [x[0] for x in order_restrictions]))
 
-set_component_order_by_dependency(dependencies=dependencies, classes=globals())
+set_component_order_by_order_restrictions(order_restrictions=order_restrictions, classes=globals())
