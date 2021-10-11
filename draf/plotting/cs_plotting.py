@@ -320,7 +320,7 @@ class CsPlotter(BasePlotter):
         what: str = "p",
         dim: str = "T",
         select: Tuple[Union[int, str]] = None,
-        cmap: str = None,
+        cmap: str = "OrRd",
         show_info: bool = True,
     ) -> go.Figure:
         """Returns an interactive heatmap widget that enables browsing through time series.
@@ -381,7 +381,7 @@ class CsPlotter(BasePlotter):
 
         return fig
 
-    def sankey_interact(self, string_builder_func: Callable) -> go.Figure:
+    def sankey_interact(self, string_builder_func: Optional[Callable] = None) -> go.Figure:
         """Returns an interactive Sankey plot widget to browse scenarios.
 
         Args:

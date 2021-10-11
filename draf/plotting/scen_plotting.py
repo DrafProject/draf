@@ -17,6 +17,7 @@ from matplotlib.colors import Colormap, LinearSegmentedColormap, TwoSlopeNorm
 from plotly.subplots import make_subplots
 
 from draf import helper as hp
+from draf.conventions import Etypes
 from draf.plotting.base_plotter import BasePlotter
 
 logger = logging.getLogger(__name__)
@@ -54,7 +55,7 @@ class ScenPlotter(BasePlotter):
         Args:
             what: 'v' for Variables, 'p' for Parameters.
         """
-        dims_dic = self.sc._get_entity_store(what=what)._to_dims_dic(unstack_to_first_dim=1)
+        dims_dic = self.sc._get_entity_store(what=what)._to_dims_dic(unstack_to_first_dim=True)
         for dim, data in dims_dic.items():
             if dim == "":
                 data = pd.Series(data).to_frame(name="Scalar value")
@@ -64,9 +65,9 @@ class ScenPlotter(BasePlotter):
 
     def balances(
         self,
-        auto_convert: bool = True,
-        filter: Optional[str] = None,
-        agg: bool = True,
+        filter_etype: Optional[str] = None,
+        auto_convert_units: bool = True,
+        consider_stepwidth: bool = True,
         use_plt: bool = False,
     ):
         sc = self.sc
@@ -74,10 +75,10 @@ class ScenPlotter(BasePlotter):
 
         units = {name: sc.get_unit(name) for name in df}
 
-        if agg:
+        if consider_stepwidth:
             df, units = hp.consider_timestepdelta(df, units, time_step_width=sc.step_width)
 
-        if auto_convert:
+        if auto_convert_units:
             df, units = hp.auto_convert_units_colwise(df, units)
 
         df = (
@@ -85,8 +86,8 @@ class ScenPlotter(BasePlotter):
             .reset_index()
             .rename(columns={"level_0": "balance", "level_1": "comp", 0: "value"})
         )
-        if filter is not None:
-            df = df[df["balance"].apply(lambda s: s.split("_")[0] == filter)]
+        if filter_etype is not None:
+            df = df[df["balance"].apply(lambda s: s.split("_")[0] == filter_etype)]
 
         df["doc"] = df["balance"].apply(sc.get_doc)
         df["unit"] = df["balance"].replace(units)
@@ -107,15 +108,20 @@ class ScenPlotter(BasePlotter):
         sns.despine()
 
     def _plotly_balance_plot(self, df):
-        return px.bar(
-            df,
-            y="desc",
-            x="value",
-            color="comp",
-            orientation="h",
-            color_discrete_sequence=px.colors.qualitative.Alphabet,
-            category_orders={"desc": sorted(df.desc.unique())},
-        ).update_yaxes(title="")
+        return (
+            px.bar(
+                df,
+                y="desc",
+                x="value",
+                color="comp",
+                pattern_shape="comp",
+                orientation="h",
+                color_discrete_sequence=px.colors.qualitative.Alphabet,
+                category_orders={"desc": sorted(df.desc.unique())},
+            )
+            .update_yaxes(title="")
+            .update_xaxes(title="")
+        )
 
     def heatmap_py(
         self,
@@ -343,7 +349,41 @@ class ScenPlotter(BasePlotter):
 
         return go.Figure(data=plotly_data)
 
-    def line_T(self, what: str = "v", dated: bool = True, df=None) -> go.Figure:
+    def violin_T(self, etypes: Tuple = ("P", "dQ"), unit: str = "kW", show_zero: bool = False):
+        df = self.sc.get_flat_T_df(lambda n: hp.get_etype(n) in etypes)
+
+        if not show_zero:
+            df = df.loc[:, (df != 0).any(axis=0)]
+
+        df = df.sort_index(1)
+        y_scaler = 0.24 * len(df.columns)
+        fig, ax = plt.subplots(1, figsize=(12, 0.4 + y_scaler))
+        sns.violinplot(
+            data=df,
+            orient="h",
+            scale="width",
+            color="lightblue",
+            ax=ax,
+            cut=0,
+            linewidth=1,
+            width=0.95,
+        )
+        ax.margins(x=0)
+        ax.set_xlabel(unit)
+        hp.add_thousands_formatter(ax, y=False)
+        sns.despine()
+
+    def line_T(
+        self,
+        flatten_to_T: bool = True,
+        etypes: Tuple = ("P", "dQ"),
+        what: str = "v",
+        steps: bool = True,
+        tickformat: Optional[str] = "%a, %d.\n %b %Y",
+        show_zero: bool = False,
+        df=None,
+        dated: bool = True,
+    ) -> go.Figure:
         """Returns a Plotly line plot of all entities with the dimension T using Plotly express.
 
         Attention: the figure might be very big.
@@ -353,24 +393,60 @@ class ScenPlotter(BasePlotter):
             dated: If index has datetimes.
         """
         if df is None:
-            df = self.sc.get_var_par_dic(what)["T"]
+            if flatten_to_T:
+                df = self.sc.get_flat_T_df(lambda n: hp.get_etype(n) in etypes)
+            else:
+                df = self.sc.get_var_par_dic(what)["T"]
 
         if dated:
             df = self.sc.dated(df)
 
+        if not show_zero:
+            df.loc[:, (df != 0).any(axis=0)]
+
         ser = df.stack()
         ser.index = ser.index.rename(["T", "ent"])
         df = ser.rename("values").reset_index()
-        df["flow_type"] = df.ent.apply(lambda x: hp.get_etype(x)).astype("category")
+
+        def get_etype_desc(ent_name: str):
+            etype = hp.get_etype(ent_name)
+            try:
+                etype_obj = getattr(Etypes, etype, None)
+                desc = getattr(etype_obj, "en", None)
+                unit = getattr(etype_obj, "units", " ")[0]
+                if desc is not None:
+                    return f"{desc} [{unit}]"
+            except AttributeError:
+                return ""
+
+        df["etype"] = df.ent.apply(lambda n: f"{hp.get_etype(n)}<br>{get_etype_desc(n)}").astype(
+            "category"
+        )
+        df["desc"] = df.ent.apply(get_etype_desc).astype("category")
+        df["doc"] = df.ent.apply(lambda n: self.sc.get_doc(n.split("[")[0])).astype("category")
+        # df["weekday"] = df["T"].apply(lambda date: date.weekday_name).astype("category")
         # df["comp"] = df.ent.apply(lambda x: hp.get_component(x)).astype("category")
         df["ent"] = df["ent"].astype("category")
 
-        y_scaler = len(df.flow_type.unique())
-        fig = px.area(
-            df, x="T", y="values", color="ent", facet_row="flow_type", height=200 * y_scaler
+        y_scaler = len(df.ent.unique())
+        fig = px.line(
+            df,
+            x="T",
+            y="values",
+            color="ent",
+            facet_row="etype",
+            # color_discrete_sequence=px.colors.qualitative.Light24,
+            height=max(300, 27 * y_scaler),
+            hover_data=["desc", "doc"],
         )
-        fig.update_traces(line=dict(width=0, shape="hv"))  # shape=hv makes step function
-
+        if steps:
+            fig.update_traces(line=dict(width=1.5, shape="hv"))  # shape=hv makes step function
+        fig.update_traces(line_width=1.5)
+        fig.update_yaxes(title="", matches=None)
+        if tickformat is not None:
+            fig.update_xaxes(
+                tickformat=tickformat, dtick=24 * 60 * 60 * 1000
+            )  # dtick in milliseconds
         return fig
 
     def plot(
@@ -383,7 +459,7 @@ class ScenPlotter(BasePlotter):
         what: str = "v",
         **pltargs,
     ) -> None:
-        """EXPERIMENTAL and buggy.
+        """EXPERIMENTAL.
 
         Returns Plotly line plots of all desired entities with Matplotlib.
 
@@ -497,7 +573,6 @@ class ScenPlotter(BasePlotter):
         target = [label.index(x) for x in target_s]
 
         link_color = [COLORS[x] for x in df["type"].values.tolist()] if COLORS is not None else None
-
         data = dict(
             type="sankey",
             arrangement="snap",
@@ -507,7 +582,7 @@ class ScenPlotter(BasePlotter):
             node=dict(
                 pad=10,
                 thickness=10,
-                line=dict(color="white", width=0),
+                line=dict(width=0),
                 label=label,
                 color="hsla(0, 0%, 0%, 0.5)",
             ),
