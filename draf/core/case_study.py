@@ -37,12 +37,7 @@ def _load_pickle_object(fp) -> Any:
 
 
 def open_casestudy(fp) -> CaseStudy:
-    cs = CaseStudy()
-    cs.__dict__ = _load_pickle_object(fp).__dict__
-    cs.plot = CsPlotter(cs=cs)
-    for sc in cs.scens.get_all().values():
-        sc.plot = ScenPlotter(sc=sc)
-        sc.prep = TimeSeriesPrepper(sc=sc)
+    cs = _load_pickle_object(fp)
 
     logger.info(f"opened CaseStudy from {fp}")
 
@@ -98,6 +93,15 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
 
     def __repr__(self):
         return self._make_repr(excluded=["scens", "dtindex", "dtindex_custom", "scen_df"])
+
+    def __getstate__(self) -> Dict:
+        state = self.__dict__.copy()
+        state.pop("plot", None)
+        return state
+
+    def __setstate__(self, state) -> None:
+        self.__dict__.update(state)
+        self.plot = CsPlotter(cs=self)
 
     def info(self):
         print(self._make_repr())
@@ -334,11 +338,6 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
 
         return self
 
-    def _load_cs_from_file(self, fp: str) -> Dict:
-        with open(fp, "rb") as f:
-            cs = pickle.load(f)
-        return cs
-
     def save(self, name: str = "", fp: Any = None):
         """Saves the CaseStudy object to a pickle-file. The current timestamp is used for a
         unique file-name.
@@ -352,10 +351,17 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         """
         date_time = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
 
-        if fp is None:
-            fp = self._res_fp / f"{date_time}_{name}.p"
-        else:
-            fp = Path(fp)
+        fp = self._res_fp / f"{date_time}_{name}.p" if fp is None else Path(fp)
+
+        for sc in self.scens_list:
+            for x in ["components", "balances"]:
+                # Note: components and balances contain lambda function and therefore cannot be
+                # pickled. We could use dill (https://stackoverflow.com/a/25353243, but dill has
+                # other problems (https://github.com/uqfoundation/dill/issues/354). However they can
+                # be deepcopied, so they are removed here rather than in __getstate__:
+
+                if hasattr(sc, x):
+                    delattr(sc, x)
 
         try:
             with open(fp, "wb") as f:

@@ -101,11 +101,16 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def __getstate__(self) -> Dict:
         """Remove objects with dependencies for serialization with pickle."""
-        d = self.__dict__.copy()
-        d.pop("mdl", None)
-        d.pop("components", None)
-        d.pop("balances", None)
-        return d
+        state = self.__dict__.copy()
+        state.pop("mdl", None)
+        state.pop("plot", None)
+        state.pop("prep", None)
+        return state
+
+    def __setstate__(self, state) -> None:
+        self.__dict__.update(state)
+        self.plot = ScenPlotter(sc=self)
+        self.prep = TimeSeriesPrepper(sc=self)
 
     def __repr__(self):
         return self._make_repr(
