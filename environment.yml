@@ -11,7 +11,7 @@ dependencies:  # NOTE: here '=' (single)
   - numpy=1.19
   - pandas=0.24
   - pip
-  - plotly=4.3
+  - plotly=5.3
   - pyomo=5.7
   - python=3.7
   - seaborn=0.11

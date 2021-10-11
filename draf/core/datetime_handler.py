@@ -42,9 +42,11 @@ class DateTimeHandler(ABC):
         elif self.freq == "60min":
             return "h"
 
-    def trim_to_datetimeindex(
-        self, data: Union[pd.DataFrame, pd.Series]
+    def match_dtindex(
+        self, data: Union[pd.DataFrame, pd.Series], resample: bool = False
     ) -> Union[pd.DataFrame, pd.Series]:
+        if resample:
+            data = self.resample(data)
         return data[self._t1 : self._t2 + 1]
 
     def resample(self, data: Union[pd.DataFrame, pd.Series]) -> Union[pd.DataFrame, pd.Series]:
@@ -104,6 +106,9 @@ class DateTimeHandler(ABC):
 
         """
         if activated:
+            assert isinstance(
+                data, (pd.Series, pd.DataFrame)
+            ), f"No data given, but type {type(data)}"
             data = data.copy()
             dtindex_to_use = self.dtindex[data.index.min() : data.index.max() + 1]
             data.index = dtindex_to_use

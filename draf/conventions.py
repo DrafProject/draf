@@ -13,12 +13,12 @@ class Alias:
 class Etypes:
     # SORTING_START
     A = Alias(en="Area", de="Fläche")
-    C = Alias(en="Costs", de="Kosten", units=["k€", "k€/a"])
+    C = Alias(en="Costs", de="Kosten", units=["k€/a", "k€"])
     CE = Alias(en="Carbon emissions", de="Kohlenstoff-vergleichs-Emissionen", units=["kgCO2eq/a"])
     E = Alias(en="Electrical energy", de="Elektrische Energie", units=["kWh_el"])
     F = Alias(en="Fuel", de="Brennstoff", units=["kW", "kWh"])
     G = Alias(en="Product", de="Produkt", units=["t"])
-    N = Alias(en="Operation life", de="Betriebsdauer")
+    N = Alias(en="Operation life", de="Betriebsdauer", units=["a"])
     P = Alias(en="Electrical power", de="Elektrische Leistung", units=["kW_el", "kW_peak", "kW_el/kW_peak"])
     Q = Alias(en="Thermal Energy", de="Thermische Energie", units=["kWh_th"])
     T = Alias(en="Temperature", de="Temperatur", units=["°C"])

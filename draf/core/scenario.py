@@ -250,6 +250,16 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         else:
             raise RuntimeError(f"`what` must be either 'p' or 'v' not {what}.")
 
+    def yield_all_ents(self):
+        """A generator that yields Name, Data tuples of all entities."""
+        if hasattr(self, "res"):
+            for k, v in self.res.get_all().items():
+                yield k, v
+
+        if hasattr(self, "params"):
+            for k, v in self.params.get_all().items():
+                yield k, v
+
     def get_entity(
         self, ent: str, include_params: bool = True, include_res: bool = True
     ) -> Union[float, pd.Series]:
@@ -484,7 +494,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         elif self.mdl_language == "pyo":
             self._optimize_pyomo(**kwargs, which_solver=which_solver)
 
-        self._cache_balance_values()
+        if hasattr(self, "balances"):
+            self._cache_balance_values()
         return self
 
     def _optimize_gurobipy(
@@ -910,7 +921,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         ent_type = self._get_entity_type(ent_name)
         return f"{ent_type}.{string}"
 
-    def get_CAP(self, which="CAPn", agg: bool = True) -> Dict[str, Union[float, pd.Series]]:
+    def get_CAP(self, which="CAPn", agg: bool = False) -> Dict[str, Union[float, pd.Series]]:
         """Returns a dictionary with the new or existing capacities.
 
         Args:
@@ -972,6 +983,43 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             if name in templates
         ]
         return "\n".join(header + rows)
+
+    def _get_flat_col_names(self, name: str, df: pd.DataFrame) -> List:
+        l = []
+        for x in df.columns.to_flat_index():
+            if isinstance(x, tuple):
+                x = ", ".join(map(str, x))
+
+            x = f"[{x}]"
+            l.append(f"{name}{x}")
+        return l
+
+    def _get_flat_df_of_one_entity(self, ent_name: str, data: pd.Series) -> pd.DataFrame:
+        dim = hp.get_dims(ent_name)
+        if len(dim) == 1:
+            df = data.to_frame()
+        else:
+            df = data.unstack(level=list(range(1, len(dim))))
+            df.columns = self._get_flat_col_names(ent_name, df)
+        return df
+
+    def get_flat_T_df(self, name_cond: Optional[Callable] = None) -> pd.DataFrame:
+        """Get a Dataframe with all time-dependent entities. Additional dimensions are flattened.
+        Args:
+            name_cond: A function that takes the entity name and returns a True if the
+                entity should be kept.
+        """
+
+        def cond(n):
+            c = "T" in hp.get_dims(n)
+
+            if name_cond is not None:
+                c = c and name_cond(n)
+
+            return c
+
+        l = [self._get_flat_df_of_one_entity(n, ser) for n, ser in self.yield_all_ents() if cond(n)]
+        return pd.concat(l, 1)
 
 
 def data_contains_nan(data: Optional[Union[int, float, list, np.ndarray, pd.Series]]) -> bool:

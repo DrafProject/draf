@@ -49,7 +49,7 @@ class TimeSeriesPrepper:
             name=name,
             unit="kgCO2eq/kWh_el",
             doc=f"{method} for {sc.year}, {sc.freq}, {sc.country}",
-            data=sc.trim_to_datetimeindex(
+            data=sc.match_dtindex(
                 get_emissions(
                     year=sc.year,
                     freq=sc.freq,
@@ -68,7 +68,7 @@ class TimeSeriesPrepper:
             name=name,
             unit="€/kWh_el",
             doc=f"Day-ahead-market-prices {sc.year}, {sc.freq}, {sc.country}",
-            data=sc.trim_to_datetimeindex(
+            data=sc.match_dtindex(
                 get_prices(year=sc.year, freq=sc.freq, method=method, country=sc.country, **kwargs)
                 / 1e3
             ),
@@ -81,7 +81,7 @@ class TimeSeriesPrepper:
             name=name,
             unit="€/kWh_el",
             doc=f"Marginal Costs {sc.year}, {sc.freq}, {sc.country}",
-            data=sc.trim_to_datetimeindex(
+            data=sc.match_dtindex(
                 get_prices(year=sc.year, freq=sc.freq, country=sc.country, method=method)
             ),
         )
@@ -93,7 +93,7 @@ class TimeSeriesPrepper:
             name=name,
             unit="€/kWh_el",
             doc=f"Marginal Costs {sc.year}, {sc.freq}, {sc.country}",
-            data=sc.trim_to_datetimeindex(
+            data=sc.match_dtindex(
                 get_prices(year=sc.year, freq=sc.freq, country=sc.country, method=method, **kwargs)
             ),
         )
@@ -184,7 +184,7 @@ class TimeSeriesPrepper:
             name=name,
             unit="kW_el",
             doc=f"Electricity demand from standard load profile {profile}: {SLP_PROFILES[profile]}",
-            data=sc.trim_to_datetimeindex(
+            data=sc.match_dtindex(
                 prep.get_el_SLP(
                     year=sc.year,
                     freq=sc.freq,
@@ -216,7 +216,7 @@ class TimeSeriesPrepper:
             name=name,
             unit="kW_th",
             doc=f"Heating demand derived from ambient temperature near {sc.coords}.",
-            data=sc.trim_to_datetimeindex(
+            data=sc.match_dtindex(
                 prep.get_heating_demand(
                     year=sc.year,
                     freq=sc.freq,
@@ -243,7 +243,7 @@ class TimeSeriesPrepper:
             name=name,
             unit="kW_th",
             doc=f"Cooling demand derived from ambient temperature near {sc.coords}.",
-            data=sc.trim_to_datetimeindex(
+            data=sc.match_dtindex(
                 prep.get_cooling_demand(
                     year=sc.year,
                     freq=sc.freq,
@@ -285,7 +285,7 @@ class TimeSeriesPrepper:
             name=name,
             unit="kW_el/kW_peak",
             doc=f"Produced PV-power for 1 kW_peak",
-            data=sc.trim_to_datetimeindex(sc.resample(ser)),
+            data=sc.match_dtindex(ser, resample=True),
         )
 
     def c_EG_addon_(
@@ -335,5 +335,5 @@ class TimeSeriesPrepper:
             name=name,
             unit="°C",
             doc=f"Ambient temperature",
-            data=sc.trim_to_datetimeindex(sc.resample(ser)),
+            data=sc.match_dtindex(sc.resample(ser)),
         )

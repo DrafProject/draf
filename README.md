@@ -62,7 +62,7 @@ An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showc
 - **Scenario generation tools:** Easily build individual scenarios or sensitivity analyses.
 - **Multi-objective mathematical optimization** with support of different model languages and solvers:
   - [`Pyomo`](https://github.com/Pyomo/pyomo): A free and open-source modeling language in Python that supports multiple solvers.
-  - [`GurobiPy`](https://pypi.org/project/gurobipy/): The Python interface to Gurobi, the fastest MILP solver (see [speed comparison](https://assets.gurobi.com/pdfs/webinars/switching-to-gurobi-webinar-slides.pdf#page=10)).
+  - [`GurobiPy`](https://pypi.org/project/gurobipy/): The Python interface to Gurobi, the fastest MILP solver (see [Mittelmann benchmark](http://plato.asu.edu/ftp/milp.html)).
 - **Plotting tools:** Convenient plots such as heatmaps, tables, pareto plots, etc.
   - support of meta data such as `unit`, `doc`, and `dims`
   - automatic unit conversion

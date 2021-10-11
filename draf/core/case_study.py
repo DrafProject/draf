@@ -62,8 +62,10 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         year: Year
         freq: Default time step. E.g. '60min'.
         country: Country code.
+        consider_invest: If investment decisionts are considered.
         doc: Documentation string of case study.
-
+        coords: The geographic coordinates of the case study location.
+        obj_vars: The names of the objective variables.
     """
 
     def __init__(

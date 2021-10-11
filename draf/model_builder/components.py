@@ -138,7 +138,7 @@ class cDem(Component):
         sc.dim("N", data=[1, 2], doc="Cooling temperature levels (inlet / outlet) in °C")
 
         sc.param(name="dQ_cDem_TN", fill=0, doc="Cooling demand", unit="kW_th")
-        sc.params.dQ_cDem_TN.loc[:, 1] = sc.prep.dQ_cDem_T(annual_energy=1.7e3).values
+        sc.params.dQ_cDem_TN.loc[:, 1] = sc.prep.dQ_cDem_T(annual_energy=1e4).values
         sc.param("T_cDem_in_N", data=[7, 30], doc="Cooling inlet temperature", unit="°C")
         sc.param("T_cDem_out_N", data=[12, 35], doc="Cooling outlet temperature", unit="°C")
 
@@ -154,7 +154,7 @@ class hDem(Component):
         sc.dim("H", [1, 2], doc="Heating temperature levels (inlet / outlet) in °C")
 
         sc.param(name="dQ_hDem_TH", fill=0, doc="Heating demand", unit="kW_th")
-        sc.params.dQ_hDem_TH.loc[:, 1] = sc.prep.dQ_hDem_T(annual_energy=1.7e6).values
+        sc.params.dQ_hDem_TH.loc[:, 1] = sc.prep.dQ_hDem_T(annual_energy=1e6).values
         sc.param("T_hDem_in_H", data=[60, 90], doc="Heating inlet temperature", unit="°C")
         sc.param("T_hDem_out_H", data=[40, 70], doc="Heating outlet temperature", unit="°C")
 
@@ -277,8 +277,8 @@ class Fuel(Component):
 class BES(Component):
     """Battery Energy Storage"""
 
-    E_CAPx: float = 100
-    allow_new: bool = False
+    E_CAPx: float = 0
+    allow_new: bool = True
 
     def param_func(self, sc: Scenario):
         sc.param("E_BES_CAPx_", data=self.E_CAPx, doc="Existing capacity", unit="kWh_el")
@@ -337,9 +337,9 @@ class BES(Component):
 class PV(Component):
     """Photovoltaic System"""
 
-    P_CAPx: float = 100
+    P_CAPx: float = 0
     A_avail_: float = 100
-    allow_new: bool = False
+    allow_new: bool = True
 
     def param_func(self, sc: Scenario):
         sc.param("P_PV_CAPx_", data=self.P_CAPx, doc="Existing capacity", unit="kW_peak")
@@ -393,8 +393,8 @@ class PV(Component):
 class HP(Component):
     """Electric heat pump"""
 
-    dQ_CAPx: float = 5000
-    allow_new: bool = False
+    dQ_CAPx: float = 0
+    allow_new: bool = True
     time_dependent_amb: bool = True
     n: int = 1
     heating_levels: Optional[List] = None
@@ -492,9 +492,7 @@ class HP(Component):
             (v.dQ_HP_Cond_TEC[t, e, c] <= cap for t in d.T for e in d.E for c in d.C),
             "HP_CAP",
         )
-        m.addConstrs(
-            (v.Y_HP_TEC.sum(t, "*", "*") <= p.n_HP_ for t in d.T), "HP_maxOneOperatingMode"
-        )
+        m.addConstrs((v.Y_HP_TEC.sum(t, "*", "*") <= p.n_HP_ for t in d.T), "HP_maxOperatingMode")
 
         sc.balances.P_EL_sink_T["HP"] = lambda t: v.P_HP_TEC.sum(t, "*", "*")
         sc.balances.dQ_cooling_sink_TN["HP"] = lambda t, n: v.dQ_HP_Eva_TEC.sum(t, n, "*")
@@ -512,7 +510,7 @@ class HP(Component):
 class P2H(Component):
     """Power to heat"""
 
-    dQ_CAPx: float = 10000
+    dQ_CAPx: float = 0
 
     def param_func(self, sc: Scenario):
         sc.param("dQ_P2H_CAPx_", data=self.dQ_CAPx, doc="Existing capacity", unit="kW_th")
@@ -619,7 +617,7 @@ class CHP(Component):
 class HOB(Component):
     """Heat-only boiler"""
 
-    dQ_CAPx: float = 5000
+    dQ_CAPx: float = 0
     allow_new = True
 
     def param_func(self, sc: Scenario):
@@ -669,7 +667,7 @@ class TES(Component):
         sc.param("eta_TES_time_", data=0.995, doc="Storing efficiency")
         sc.param("k_TES_inPerCap_", data=0.5, doc="Ratio loading power / capacity")
         sc.param("k_TES_outPerCap_", data=0.5, doc="Ratio loading power / capacity")
-        sc.param("k_TES_ini_L", fill=0, doc="Initial and final energy level share")
+        sc.param("k_TES_ini_L", fill=0.5, doc="Initial and final energy level share")
         sc.var("dQ_TES_in_TL", doc="Storage input heat flow", unit="kW_th", lb=-GRB.INFINITY)
         sc.var("Q_TES_TL", doc="Stored heat", unit="kWh_th")
 
@@ -726,6 +724,9 @@ class TES(Component):
             sc.balances.C_TOT_invAnn_["TES"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_TES_)
             sc.balances.C_TOT_RMI_["TES"] = C_inv_ * p.k_TES_RMI_
 
+    def postprocess_func(self, r: Results):
+        r.make_pos_ent("dQ_TES_in_TL", "dQ_TES_out_TL", "Storage output heat flow")
+
 
 @dataclass
 class H2H1(Component):
@@ -751,7 +752,7 @@ class BEV(Component):
         p = sc.params
         d = sc.dims
         sc.dim("B", data=[1, 2], doc="BEV batteries")
-        sc.param("E_BEV_Cap1Bat_B", fill=100, doc="Capacity of one battery", unit="kWh_el")
+        sc.param("E_BEV_Cap1Bat_B", fill=self.E_CAPx, doc="Capacity of one battery", unit="kWh_el")
         sc.param("n_BEV_nBats_B", fill=10, doc="Number of batteries")
         sc.param(
             "E_BEV_CAPx_B",

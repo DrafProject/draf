@@ -36,13 +36,13 @@ def test__activate_vars(sc):
     assert sc._activate_vars().year == 2019
 
 
-def test_trim_to_datetimeindex(cs):
+def test_match_dtindex(cs):
     cs.set_time_horizon(start="Jan-02 00", steps=24 * 2)
     sc = cs.add_REF_scen()
     ser = pd.Series(index=range(8760))
     df = ser.to_frame()
     for input in (ser, df):
-        new = sc.trim_to_datetimeindex(input)
+        new = sc.match_dtindex(input)
         assert new.index[0] == 24
         assert new.index[-1] == 71
 
