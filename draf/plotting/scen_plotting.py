@@ -602,7 +602,7 @@ class ScenPlotter(BasePlotter):
     def describe(
         self,
         filter_str: str = "",
-        sort_values: bool = True,
+        sort_values: bool = False,
         include_pars: bool = True,
         include_vars: bool = True,
         natural_units: bool = False,

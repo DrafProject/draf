@@ -54,18 +54,21 @@ class CsPlotter(BasePlotter):
 
         df = pd.DataFrame(
             {
-                ("_____Absolute_____", "Costs"): cs.pareto["C_TOT_"],
-                ("_____Absolute_____", "Emissions"): cs.pareto["CE_TOT_"] / 1e3,
-                ("_Abolute savings_", "Costs"): savings["C_TOT_"],
-                ("_Abolute savings_", "Emissions"): savings["CE_TOT_"] / 1e3,
-                ("_Relative savings_", "Costs"): rel_savings["C_TOT_"],
-                ("_Relative savings_", "Emissions"): rel_savings["CE_TOT_"],
+                ("Absolute", "Costs"): cs.pareto["C_TOT_"],
+                ("Absolute", "Emissions"): cs.pareto["CE_TOT_"] / 1e3,
+                ("Abolute savings", "Costs"): savings["C_TOT_"],
+                ("Abolute savings", "Emissions"): savings["CE_TOT_"] / 1e3,
+                ("Relative savings", "Costs"): rel_savings["C_TOT_"],
+                ("Relative savings", "Emissions"): rel_savings["CE_TOT_"],
+                ("Annual costs", "C_invAnn"): pd.Series(cs.get_ent("C_TOT_invAnn_")),
+                ("Annual costs", "C_op"): pd.Series(cs.get_ent("C_TOT_op_")),
                 ("", "Emission avoidance costs"): avoid_cost,
-                ("", "CAPEX"): pd.Series(cs.get_ent("C_TOT_inv_")),
-                ("", "OPEX"): pd.Series(cs.get_ent("C_TOT_op_")),
+                ("", "C_inv"): pd.Series(cs.get_ent("C_TOT_inv_")),
             }
         )
-        df[("", "Payback time")] = df[("", "CAPEX")] / (df[("", "OPEX")].iloc[0] - df[("", "OPEX")])
+        df[("", "Payback time")] = df[("", "C_inv")] / (
+            df[("Annual costs", "C_op")].iloc[0] - df[("Annual costs", "C_op")]
+        )
 
         def color_negative_red(val):
             color = "red" if val < 0 else "black"
@@ -75,9 +78,10 @@ class CsPlotter(BasePlotter):
 
         if gradient:
             styled_df = (
-                df.style.background_gradient(subset=["_____Absolute_____"], cmap="Greens")
-                .background_gradient(subset=["_Abolute savings_"], cmap="Reds")
-                .background_gradient(subset=["_Relative savings_"], cmap="Blues")
+                df.style.background_gradient(subset=["Absolute"], cmap="Greens")
+                .background_gradient(subset=["Abolute savings"], cmap="Reds")
+                .background_gradient(subset=["Relative savings"], cmap="Blues")
+                .background_gradient(subset=["Annual costs"], cmap="Purples")
                 .background_gradient(subset=[""], cmap="Greys_r")
             )
 
@@ -86,18 +90,19 @@ class CsPlotter(BasePlotter):
 
         styled_df = styled_df.format(
             {
-                ("_____Absolute_____", "Costs"): "{:,.0f} k€",
-                ("_____Absolute_____", "Emissions"): "{:,.0f} t",
-                ("_Abolute savings_", "Costs"): "{:,.0f} k€",
-                ("_Abolute savings_", "Emissions"): "{:,.0f} t",
-                ("_Relative savings_", "Costs"): "{:,.2%}",
-                ("_Relative savings_", "Emissions"): "{:,.2%}",
+                ("Absolute", "Costs"): "{:,.0f} k€",
+                ("Absolute", "Emissions"): "{:,.0f} t",
+                ("Abolute savings", "Costs"): "{:,.0f} k€",
+                ("Abolute savings", "Emissions"): "{:,.0f} t",
+                ("Relative savings", "Costs"): "{:,.2%}",
+                ("Relative savings", "Emissions"): "{:,.2%}",
                 ("", "Emission avoidance costs"): "{:,.0f} €/t",
-                ("", "CAPEX"): "{:,.0f} k€",
-                ("", "OPEX"): "{:,.0f} k€",
+                ("", "C_inv"): "{:,.0f} k€",
+                ("Annual costs", "C_invAnn"): "{:,.0f} k€/a",
+                ("Annual costs", "C_op"): "{:,.0f} k€/a",
                 ("", "Payback time"): "{:,.1f} a",
             }
-        )
+        ).set_table_styles(get_styles_for_multi_col_headers(df))
 
         return styled_df
 
@@ -554,6 +559,7 @@ class CsPlotter(BasePlotter):
         show_comp: bool = False,
         show_desc: bool = False,
         show_dims: bool = False,
+        filter_func: Optional[Callable] = None,
     ) -> pdStyler:
         """Creates a table with all scalars.
 
@@ -569,6 +575,10 @@ class CsPlotter(BasePlotter):
         ]
 
         df = pd.concat(tmp_list, axis=1)
+
+        if filter_func is not None:
+            df = df.loc[df.index.map(filter_func)]
+
         if show_unit:
             df["Unit"] = [cs.any_scen.get_unit(ent_name) for ent_name in df.index]
         if show_etype:
@@ -608,13 +618,13 @@ class CsPlotter(BasePlotter):
         for sc in self.cs.scens_list:
             sc.plot.describe(**kwargs)
 
-    def describe_interact(self):
+    def describe_interact(self, **kwargs):
         cs = self.cs
 
-        def f(sc):
-            cs.scens.get(sc).plot.describe()
+        def f(sc_name):
+            cs.scens_dic[sc_name].plot.describe(**kwargs)
 
-        interact(f, sc=cs.scens_ids)
+        interact(f, sc_name=cs.scens_ids)
 
     def times(self, yscale: str = "linear", stacked: bool = True) -> None:
         """Barplot of the calculation times (Params, Vars, Model, Solve).
@@ -645,9 +655,54 @@ class CsPlotter(BasePlotter):
         ax.legend(handles[::-1], labels[::-1], loc="upper left", frameon=False)
         sns.despine()
 
-    def invest(self, include_capx: bool = True) -> go.Figure:
-        """Annotated heatmap of existing and new capacities and a barchart of according CAPEX
-         and OPEX.
+    def invest_table(self):
+        cs = self.cs
+        l = dict(
+            C_TOT_inv_="Investment costs [k€]",
+            C_TOT_invAnn_="Annualized investment costs [k€/a]",
+        )
+        df = pd.DataFrame(
+            {
+                desc: pd.DataFrame(
+                    {n: sc.balance_values[which] for n, sc in cs.scens_dic.items()}
+                ).stack()
+                for which, desc in l.items()
+            }
+        ).unstack(0)
+
+        rows = {
+            "selector": "th.row_heading",
+            "props": [("text-align", "left"), ("background-color", "white")],
+        }
+      
+        return (
+            df.style.format("{:,.0f}")
+            .background_gradient(cmap="OrRd")
+            .set_table_styles([rows] + get_styles_for_multi_col_headers(df))
+        )
+
+    def invest(self, annualized: bool = True) -> go.Figure:
+        cs = self.cs
+        if annualized:
+            ent_name = "C_TOT_invAnn_"
+            title = "Annualized Investment cost [k€]"
+        else:
+            ent_name = "C_TOT_inv_"
+            title = "Investment cost [k€]"
+
+        df = pd.DataFrame({n: sc.balance_values[ent_name] for n, sc in cs.scens_dic.items()}).T
+
+        fig = _get_capa_heatmap(df)
+        fig.update_layout(
+            margin=dict(t=80, l=5, r=5, b=5),
+            xaxis=dict(title=dict(text="Component", standoff=0)),
+            title=dict(text=title),
+        )
+        return fig
+
+    def capas(self, include_capx: bool = True) -> go.Figure:
+        """Annotated heatmap of existing and new capacities and a barchart of according C_inv
+         and C_op.
 
         Args:
             include_capx: If existing capacities are included.
@@ -679,9 +734,9 @@ class CsPlotter(BasePlotter):
         fig.update_layout(
             margin=dict(t=5, l=5, r=5, b=5),
             xaxis=dict(domain=[0, 0.78], title=f"Capacity [kW or kWh] of component{capx_adder}"),
-            xaxis2=dict(domain=[0.80, 0.90], anchor="y2", title=f"CAPEX [{unit}]", side="top"),
+            xaxis2=dict(domain=[0.80, 0.90], anchor="y2", title=f"C_inv [{unit}]", side="top"),
             yaxis2=dict(anchor="x2", showticklabels=False),
-            xaxis3=dict(domain=[0.92, 1], anchor="y3", title=f"OPEX [{unit}]", side="top"),
+            xaxis3=dict(domain=[0.92, 1], anchor="y3", title=f"C_op [{unit}]", side="top"),
             yaxis3=dict(anchor="x3", showticklabels=False),
             showlegend=False,
         )
@@ -720,8 +775,8 @@ def _get_capa_heatmap(df) -> go.Figure:
     fig.update_layout(
         xaxis=dict(showgrid=False, side="top"),
         yaxis=dict(showgrid=False, autorange="reversed", title="Scenario"),
-        width=900,
-        height=400,
+        width=200 + len(df.columns) * 40,
+        height=200 + len(df) * 5,
     )
     set_font_size(fig=fig, size=9)
     make_high_values_white(fig=fig, data=data)
@@ -763,3 +818,22 @@ def float_to_string_with_precision_1(afloat):
 
 def float_to_string_with_precision_2(afloat):
     return f"{afloat:.2f}".replace("nan", NAN_REPRESENTATION)
+
+
+def get_divider_nums(df):
+    ser = pd.Series(df.columns.codes[0]).diff()
+    return ser[ser!=0].index.tolist()[1:]
+
+def get_divider(column_loc):
+    return {
+            "selector": f".col{column_loc}",
+            "props": [
+                ("border-left", "1px solid black"),
+            ],
+        }
+def get_styles_for_multi_col_headers(df):
+    cols = {
+        "selector": "th.col_heading",
+        "props": [("text-align", "center")],
+    }
+    return [cols] + [get_divider(i) for i in get_divider_nums(df)]

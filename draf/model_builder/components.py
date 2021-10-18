@@ -511,6 +511,7 @@ class P2H(Component):
     """Power to heat"""
 
     dQ_CAPx: float = 0
+    allow_new: bool = True
 
     def param_func(self, sc: Scenario):
         sc.param("dQ_P2H_CAPx_", data=self.dQ_CAPx, doc="Existing capacity", unit="kW_th")
@@ -519,7 +520,7 @@ class P2H(Component):
         sc.var("dQ_P2H_T", doc="Producing heat flow", unit="kW_th")
         if sc.consider_invest:
             sc.param(from_db=db.N_P2H_)
-            sc.param("z_P2H_", data=0, doc="If new capacity is allowed")
+            sc.param("z_P2H_", data=int(self.allow_new), doc="If new capacity is allowed")
             sc.param(from_db=db.c_P2H_inv_)
             sc.param("k_P2H_RMI_", data=0)
             sc.var("dQ_P2H_CAPn_", doc="New capacity", unit="kW_th", ub=1e6 * sc.params.z_P2H_)
@@ -543,6 +544,7 @@ class CHP(Component):
     """Combined heat and power"""
 
     P_CAPx: float = 0
+    allow_new: bool = True
 
     def param_func(self, sc: Scenario):
         sc.param("P_CHP_CAPx_", data=self.P_CAPx, doc="Existing capacity", unit="kW_el")
@@ -570,7 +572,7 @@ class CHP(Component):
             sc.var("Y_CHP_T", doc="If in operation", vtype=GRB.BINARY)
 
         if sc.consider_invest:
-            sc.param("z_CHP_", data=0, doc="If new capacity is allowed")
+            sc.param("z_CHP_", data=int(self.allow_new), doc="If new capacity is allowed")
             sc.param(from_db=db.funcs.c_CHP_inv_(estimated_size=400, fuel_type="ng"))
             sc.param(from_db=db.k_CHP_RMI_)
             sc.param(from_db=db.N_CHP_)
