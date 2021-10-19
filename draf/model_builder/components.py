@@ -453,6 +453,31 @@ class HP(Component):
             sc.param(from_db=db.funcs.c_HP_inv_())
             sc.var("dQ_HP_CAPn_", doc="New heating capacity", unit="kW_th", ub=1e6 * p.z_HP_)
 
+    def get_cop_via_hplib(
+        self, t_eva: pd.Series, t_cond: pd.Series, type: str = "air", regulated: bool = True
+    ):
+        """UNUSED: Get the heating COP from the hplib package https://github.com/RE-Lab-Projects/hplib
+
+        TODO: integrate this function in model_func
+
+        Args:
+            t_eva: Evaporation temperature time series
+            t_cond: Condenstaion temperature time series
+            type: on of 'air', 'brine'
+            regulated: If the heat pump is regulated (Otherwise On-Off)
+        """
+
+        import hplib as hpl
+
+        group_id = 1 if type == "air" else 2
+        if not regulated:
+            group_id += 3
+        pars = hpl.get_parameters(model="Generic", group_id=group_id, t_in=-7, t_out=52, p_th=1e4)
+        results = hpl.simulate(
+            t_in_primary=t_eva, t_in_secondary=t_cond, t_amb=t_eva, parameters=pars
+        )
+        return results["COP"]
+
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
         def get_cop(t, e, c):
             T_amb = p.T__amb_T[t] if self.time_dependent_amb else p.T__amb_

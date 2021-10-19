@@ -674,7 +674,6 @@ class CsPlotter(BasePlotter):
             "selector": "th.row_heading",
             "props": [("text-align", "left"), ("background-color", "white")],
         }
-      
         return (
             df.style.format("{:,.0f}")
             .background_gradient(cmap="OrRd")
@@ -822,15 +821,18 @@ def float_to_string_with_precision_2(afloat):
 
 def get_divider_nums(df):
     ser = pd.Series(df.columns.codes[0]).diff()
-    return ser[ser!=0].index.tolist()[1:]
+    return ser[ser != 0].index.tolist()[1:]
+
 
 def get_divider(column_loc):
     return {
-            "selector": f".col{column_loc}",
-            "props": [
-                ("border-left", "1px solid black"),
-            ],
-        }
+        "selector": f".col{column_loc}",
+        "props": [
+            ("border-left", "1px solid black"),
+        ],
+    }
+
+
 def get_styles_for_multi_col_headers(df):
     cols = {
         "selector": "th.col_heading",
