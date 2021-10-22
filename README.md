@@ -7,7 +7,7 @@
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1)](https://pycqa.github.io/isort/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![python](https://img.shields.io/badge/python-3.7-blue?logo=python&logoColor=white)](https://github.com/DrafProject/elmada)
+[![python](https://img.shields.io/badge/python-3.9-blue?logo=python&logoColor=white)](https://github.com/DrafProject/draf)
 
 `draf` is developed by [Markus Fleschutz](https://linktr.ee/m.fl) since 2017 in a cooperative PhD between [MTU](https://www.mtu.ie/), Ireland and the [University of Applied Sciences Karlsruhe](https://www.h-ka.de/en/), Germany.
 An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showcase/).
