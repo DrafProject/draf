@@ -208,30 +208,30 @@ class PeakLoadAnalyzer(DateTimeHandler):
 
         p_el = self.p_el.values
 
-        soc = np.zeros(len(p_el))
+        p_BES_T = np.zeros(len(p_el))
         p_eex_buy = np.zeros(len(p_el))
         load = np.zeros(len(p_el))
         unload = np.zeros(len(p_el))
 
         for t, val in enumerate(p_el):
             if t == 0:
-                soc[t] = 0
+                p_BES_T[t] = 0
                 load[t] = 0
             elif val > switch_point:
-                if soc[t - 1] < (e_bes_capa - (val - switch_point)):
-                    load[t] = min(e_bes_capa - soc[t - 1], val - switch_point, p_bes_max)
+                if p_BES_T[t - 1] < (e_bes_capa - (val - switch_point)):
+                    load[t] = min(e_bes_capa - p_BES_T[t - 1], val - switch_point, p_bes_max)
                 else:
                     load[t] = 0
             elif val < switch_point:
-                unload[t] = min(soc[t - 1], switch_point - val, p_bes_max)
+                unload[t] = min(p_BES_T[t - 1], switch_point - val, p_bes_max)
 
-            soc[t] = soc[t - 1] + load[t] - unload[t]
+            p_BES_T[t] = p_BES_T[t - 1] + load[t] - unload[t]
             p_eex_buy[t] = val - load[t] + unload[t]
 
         # Plot results
         fig, ax = plt.subplots(figsize=(10, 4))
         ax.plot(p_el, label="P_el", c="r")
-        ax.plot(soc, label="SOC")
+        ax.plot(p_BES_T, label="p_BES_T")
         ax.plot(p_eex_buy, label="P_eex_buy", c="g")
         ax.plot(load, label="load")
         ax.plot(unload, label="unload")
