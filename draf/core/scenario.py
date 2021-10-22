@@ -733,7 +733,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             obj = getattr(self, attr, None)
             if obj is not None:
                 metas = obj._meta.get(ent_name, "")
-                if metas is not "":
+                if metas != "":
                     return metas.get(meta_type, "")
         return None
 

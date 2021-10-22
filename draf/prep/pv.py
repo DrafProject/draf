@@ -5,9 +5,9 @@ from typing import Dict, List, Optional, Set, Tuple
 
 import pandas as pd
 from elmada.helper import read
-from gsee import pv as gsee_pv
 
 from draf import paths
+from draf.prep.gsee_module.pv import run_model
 from draf.prep.weather import get_data_for_gsee, get_nearest_stations
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ def get_pv_power(
     """
     warnings.simplefilter(action="ignore", category=FutureWarning)
     df = get_nearestStationData_for_gsee(year=year, coords=coords)
-    return gsee_pv.run_model(
+    return run_model(
         data=df,
         coords=coords,
         tilt=tilt,
