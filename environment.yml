@@ -2,20 +2,21 @@ name: draf
 channels:
   - conda-forge
 dependencies:  # NOTE: here '=' (single)
-  - glpk=4.65
-  - gsee=0.3
-  - ipython=7.22
-  - ipywidgets=7.6
-  - jupyter=1.0
-  - matplotlib=3.3
-  - numpy=1.19
-  - pandas=0.24
+  - glpk
+  - ipython
+  - ipywidgets
+  - jupyter
+  - matplotlib
+  - numpy
+  - pandas
   - pip
-  - plotly=5.3
-  - pyomo=5.7
-  - python=3.7
-  - seaborn=0.11
+  - plotly
+  - pyomo
+  - python
+  - seaborn
+  - pvlib-python >= 0.6.3  # dependency of gsee_module
+  - ephem  # dependency of gsee_module
   - pip:  # NOTE: here '==' (double)
-    - elmada==0.1.*
-    - holidays==0.9.*
+    - elmada
+    - holidays
     - '--editable=.[dev,jupyter]'  # installs a full editable version of draf
