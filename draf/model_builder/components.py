@@ -205,6 +205,7 @@ class EG(Component):
         )
         sc.prep.c_EG_addon_()
         sc.prep.ce_EG_T()
+        sc.param("t_EG_minFLH_", data=0, doc="Minimal full load hours", unit="hours")
         sc.var("P_EG_buy_T", doc="Purchased electrical power", unit="kW_el")
         sc.var("P_EG_sell_T", doc="Selling electrical power", unit="kW_el")
         sc.var("P_EG_buyPeak_", doc="Peak electrical power", unit="kW_el")
@@ -215,6 +216,12 @@ class EG(Component):
             "DEF_E_sell",
         )
         m.addConstrs((v.P_EG_buy_T[t] <= v.P_EG_buyPeak_ for t in d.T), "DEF_peakPrice")
+
+        if p.t_EG_minFLH_ > 0:
+            sc.mdl.addConstr(
+                v.P_EG_buy_T.sum() * p.k__dT_ * p.k__PartYearComp_ >= p.t_EG_minFLH_ * v.P_EG_buyPeak_,
+                "EG_NEV19",
+            )
 
         sc.balances.P_EL_source_T["EG"] = lambda t: v.P_EG_buy_T[t]
         sc.balances.P_EL_sink_T["EG"] = lambda t: v.P_EG_sell_T[t]

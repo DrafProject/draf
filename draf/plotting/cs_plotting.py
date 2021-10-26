@@ -106,6 +106,35 @@ class CsPlotter(BasePlotter):
 
         return styled_df
 
+    def peak_reductions(self, gradient: bool = False, pv: bool = False):
+        cs = self.cs
+        df = pd.DataFrame(index=cs.scens_ids)
+        df["$P_{max}$"] = [sc.res.P_EG_buyPeak_ for sc in cs.scens_list]
+        df["Reduced $P_{max}$"] = df["$P_{max}$"].iloc[0] - df["$P_{max}$"]
+        df["Reduced $P_{max}$ (%)"] = df["Reduced $P_{max}$"] / df["$P_{max}$"].iloc[0]
+        df["$t_{use}$"] = [sc.get_EG_full_load_hours() for sc in cs.scens_list]
+        df["$W_{buy}$"] = [sc.gte(sc.res.P_EG_buy_T) / 1e6 for sc in cs.scens_list]
+        df["$W_{sell}$"] = [sc.gte(sc.res.P_EG_sell_T) / 1e6 for sc in cs.scens_list]
+        if pv:
+            df["$W_{pv,own}$"] = [sc.gte(sc.res.P_PV_OC_T) / 1e3 for sc in cs.scens_list]
+
+        styled_df = df.style.format(
+            {
+                "$P_{max}$": "{:,.0f} kW",
+                "Reduced $P_{max}$": "{:,.0f} kW",
+                "Reduced $P_{max}$ (%)": "{:,.1%}",
+                "$t_{use}$": "{:,.0f} h",
+                "$W_{buy}$": "{:,.2f} GWh/a",
+                "$W_{sell}$": "{:,.2f} GWh/a",
+                "$W_{pv,own}$": "{:,.2f} MWh/a",
+            }
+        )
+
+        if gradient:
+            styled_df = styled_df.background_gradient(cmap="OrRd")
+
+        return styled_df
+
     def pareto(
         self,
         use_plotly: bool = True,

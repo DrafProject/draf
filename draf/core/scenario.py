@@ -193,6 +193,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
     def get_total_energy(self, data: pd.Series) -> float:
         return data.sum() * self.step_width
 
+    gte = get_total_energy
+
     @property
     def par_dic(self):
         """Creates the par_dic at the first use then caches it. Use `update_par_dic()` to update."""
@@ -316,16 +318,19 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def set_model(
         self,
-        model_builder_func: Optional[Callable] = None,
+        custom_model_func: Optional[Callable] = None,
+        custom_model_func_loc: int = 0,
         speed_up: bool = True,
         mdl_language: str = "gp",
     ) -> Scenario:
-        """Instantiates an optimization model and sets the model_builder_func on top of the given
+        """Instantiates an optimization model and sets the custom_model_func on top of the given
         parameters and meta-informations for variables.
 
         Args:
-            model_builder_func: A functions that takes the arguments m, d, p, v and populates the
-                parameters and variable meta data.
+            custom_model_func: A functions that takes the arguments sc, m, d, p, v and populates
+                the parameters and variable meta data.
+            custom_model_func_loc: Location of the custom_model_func. Determines when given
+                custom_model_func is executed compared to the model_funcs of the components.
             speed_up: If speed increases should be exploited by converting the parameter objects to
                 tuple-dicts before building the constraints.
             mdl_language: Choose either 'gp' or 'pyo'.
@@ -345,13 +350,13 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         logger.info(f"Set model for scenario {self.id}.")
 
-        tmp = []
-        if model_builder_func is not None:
-            tmp += [model_builder_func]
+        model_func_list = []
         if hasattr(self, "components"):
-            tmp += [comp.model_func for comp in self.components]
+            model_func_list += [comp.model_func for comp in self.components]
+        if custom_model_func is not None:
+            model_func_list.insert(custom_model_func_loc, custom_model_func)
 
-        for model_func in tmp:
+        for model_func in model_func_list:
             model_func(sc=self, m=self.mdl, d=self.dims, p=params, v=self.vars)
 
         self._update_time_param("t__model_", "Time to build model", self._get_time_diff())
@@ -366,7 +371,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def get_tuple_dict_container(self, params) -> Params:
         """Returns a copy of the params object where all Pandas Series objects are converted
-         to gurobipy's tupledicts in order to speed up the execution of the model_builder_func.
+         to gurobipy's tupledicts in order to speed up the execution of the model_func.
 
         Meta data are not copied.
         """
@@ -939,6 +944,14 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                     v = v.sum()
                 d[hp.get_component(n)] = v
         return d
+
+    def get_EG_full_load_hours(self):
+        return (
+            self.res.P_EG_buy_T.sum()
+            * self.params.k__dT_
+            * self.params.k__PartYearComp_
+            / self.res.P_EG_buyPeak_
+        )
 
     def get_all_balance_values(self, cache: bool = True) -> Dict[str, Dict[str, float]]:
         if not cache or not hasattr(self, "balance_values"):
