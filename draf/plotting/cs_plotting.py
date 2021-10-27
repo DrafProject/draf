@@ -38,7 +38,7 @@ class CsPlotter(BasePlotter):
         """For serialization with pickle."""
         return None
 
-    def yields(self, gradient: bool = False) -> pdStyler:
+    def yields_table(self, gradient: bool = False) -> pdStyler:
         """Returns a styled pandas table with cost and carbon savings, and avoidance cost.
 
         Args:
@@ -88,11 +88,6 @@ class CsPlotter(BasePlotter):
         else:
             styled_df = df.style.applymap(color_negative_red)
 
-        rows = dict(
-            selector="th.row_heading",
-            props=[("text-align", "left"), ("background-color", "white")],
-        )
-
         styled_df = styled_df.format(
             {
                 ("Absolute", "Costs"): "{:,.0f} k€",
@@ -107,11 +102,22 @@ class CsPlotter(BasePlotter):
                 ("Annual costs", "C_op"): "{:,.0f} k€/a",
                 ("", "Payback time"): "{:,.1f} a",
             }
-        ).set_table_styles([rows] + get_styles_for_multi_col_headers(df))
+        ).set_table_styles(get_leftAlignedIndex_style() + get_multiColumnHeader_style(df))
 
         return styled_df
 
-    def peak_reductions(self, gradient: bool = False, pv: bool = False):
+    def bes_table(self) -> pdStyler:
+        cs = self.cs
+        df = pd.DataFrame(index=cs.scens_ids)
+        df["CAPn"] = [sc.res.E_BES_CAPn_ for sc in cs.scens_list]
+        df["$W_{out}$"] = [sc.gte(sc.res.P_BES_out_T) / 1e3 for sc in cs.scens_list]
+        df["Charging_cycles"] = df["$W_{out}$"] / df["CAPn"]
+        styled_df = df.style.format(
+            {"CAPn": "{:,.0f} kWh", "$W_{out}$": "{:,.0f} MWh/a", "Charging_cycles": "{:,.0f}"}
+        )
+        return styled_df
+
+    def eGrid_table(self, gradient: bool = False, pv: bool = False) -> pdStyler:
         cs = self.cs
         df = pd.DataFrame(index=cs.scens_ids)
         df["P_max"] = [sc.res.P_EG_buyPeak_ for sc in cs.scens_list]
@@ -133,14 +139,7 @@ class CsPlotter(BasePlotter):
                 "W_sell": "{:,.2f} GWh/a",
                 "W_pv_own": "{:,.2f} MWh/a",
             }
-        ).set_table_styles(
-            [
-                dict(
-                    selector="th.row_heading",
-                    props=[("text-align", "left"), ("background-color", "white")],
-                )
-            ]
-        )
+        ).set_table_styles(get_leftAlignedIndex_style())
 
         if gradient:
             styled_df = styled_df.background_gradient(cmap="OrRd")
@@ -586,7 +585,9 @@ class CsPlotter(BasePlotter):
         show_comp: bool = False,
         show_desc: bool = False,
         show_dims: bool = False,
+        gradient: bool = False,
         filter_func: Optional[Callable] = None,
+        precision: int = 0,
     ) -> pdStyler:
         """Creates a table with all scalars.
 
@@ -619,7 +620,6 @@ class CsPlotter(BasePlotter):
         if show_src:
             df["Src"] = [cs.any_scen.get_src(ent_name) for ent_name in df.index]
         df.index.name = what
-        cm = sns.light_palette("green", n_colors=20, as_cmap=True)
 
         def highlight_diff1(s):
             other_than_REF = s == df.iloc[:, 0]
@@ -630,14 +630,19 @@ class CsPlotter(BasePlotter):
             return ["font-weight: bold" if v else "" for v in other_than_REF]
 
         left_aligner = list(df.dtypes[df.dtypes == object].index)
-        return (
-            df.style.background_gradient(cmap=cm)
+
+        styled_df = (
+            df.style.format(precision=precision, thousands=",")
             .apply(highlight_diff1, subset=df.columns[1:])
             .apply(highlight_diff2, subset=df.columns[1:])
-            .set_caption("Note: Bold font indicate deviation from first/reference scenario.")
+            .set_caption("Note: <b>Bold</b> numbers indicate deviation from REF-scenario.")
             .set_properties(subset=left_aligner, **{"text-align": "left"})
             .set_table_styles([dict(selector="th", props=[("text-align", "left")])])
         )
+        if gradient:
+            styled_df = styled_df.background_gradient(cmap="OrRd", axis=1)
+
+        return styled_df
 
     @hp.copy_doc(ScenPlotter.describe, start="Args:")
     def describe(self, **kwargs) -> None:
@@ -682,7 +687,7 @@ class CsPlotter(BasePlotter):
         ax.legend(handles[::-1], labels[::-1], loc="upper left", frameon=False)
         sns.despine()
 
-    def invest_table(self):
+    def invest_table(self, gradient: bool = False) -> pdStyler:
         cs = self.cs
         l = dict(
             C_TOT_inv_="Investment costs [k€]",
@@ -697,15 +702,12 @@ class CsPlotter(BasePlotter):
             }
         ).unstack(0)
 
-        rows = {
-            "selector": "th.row_heading",
-            "props": [("text-align", "left"), ("background-color", "white")],
-        }
-        return (
-            df.style.format("{:,.0f}")
-            .background_gradient(cmap="OrRd")
-            .set_table_styles([rows] + get_styles_for_multi_col_headers(df))
+        styled_df = df.style.format("{:,.0f}").set_table_styles(
+            get_leftAlignedIndex_style() + get_multiColumnHeader_style(df)
         )
+        if gradient:
+            styled_df = styled_df.background_gradient(cmap="OrRd")
+        return styled_df
 
     def invest(self, annualized: bool = True) -> go.Figure:
         cs = self.cs
@@ -768,6 +770,20 @@ class CsPlotter(BasePlotter):
         )
         fig.update_yaxes(matches="y")
         return fig
+
+    def capa_table(self, gradient: bool = False, caption: bool = False) -> pdStyler:
+        df = pd.DataFrame(
+            {which: self._get_capa_for_all_scens(which).stack() for which in ["CAPx", "CAPn"]}
+        ).unstack()
+
+        styled_df = df.style.format(precision=0, thousands=",").set_table_styles(
+            get_leftAlignedIndex_style() + get_multiColumnHeader_style(df)
+        )
+        if gradient:
+            styled_df = styled_df.background_gradient(cmap="OrRd")
+        if caption:
+            styled_df = styled_df.set_caption("Existing (CAPx) and new (CAPn) capacity ")
+        return styled_df
 
     def _get_capa_for_all_scens(self, which: str) -> pd.DataFrame:
         """'which' can be 'CAPn' or 'CAPx'"""
@@ -860,12 +876,23 @@ def get_divider(column_loc):
     }
 
 
-def get_styles_for_multi_col_headers(df):
+def get_multiColumnHeader_style(df):
     cols = {
         "selector": "th.col_heading",
         "props": [("text-align", "center")],
     }
     return [cols] + [get_divider(i) for i in get_divider_nums(df)]
+
+
+def get_leftAlignedIndex_style():
+    return [
+        dict(
+            selector="th.row_heading",
+            props=[
+                ("text-align", "left"),
+            ],
+        )
+    ]
 
 
 def get_pareto_title(pareto: pd.DataFrame, units) -> str:
