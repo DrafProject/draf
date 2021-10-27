@@ -30,7 +30,7 @@ class Etypes:
     eta = Alias(en="Efficiency", de="Effizienz", units=["", "kW_th/kW", "kW_el/kW", "kWh_th/kWh", "kW_el/t"])
     k = Alias(en="a ratio", de="ein Verhältnis", units=["", "h"])
     n = Alias(en="A natural number", de="Eine natürliche Zahl")
-    t = Alias(en="Time", de="Zeit", units=["seconds", "hours"])
+    t = Alias(en="Time", de="Zeit", units=["seconds", "h"])
     y = Alias(en="Binary indicator", de="Binärindikator")
     z = Alias(en="Binary allowance indicator", de="Binärindikator")
     # SORTING_END

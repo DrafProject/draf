@@ -180,20 +180,6 @@ class CsPlotter(BasePlotter):
                 pareto[x], scens_list[0].get_unit(x), target_unit=target_unit
             )
 
-        def get_title(pareto: pd.DataFrame) -> str:
-            ce_saving = pareto.iloc[0, 1] - pareto.iloc[:, 1].min()
-            ce_saving_rel = 100 * (pareto.iloc[0, 1] - pareto.iloc[:, 1].min()) / pareto.iloc[0, 1]
-            c_saving = pareto.iloc[0, 0] - pareto.iloc[:, 0].min()
-            c_saving_rel = 100 * (pareto.iloc[0, 0] - pareto.iloc[:, 0].min()) / pareto.iloc[0, 0]
-
-            title = (
-                f"Max. cost savings: {c_saving:,.1f} {units['C_TOT_']} ({c_saving_rel:.2f}%)\n"
-                f"Max. carbon savings: {ce_saving:.1f} {units['CE_TOT_']} ({ce_saving_rel:.2f}%)"
-            )
-            if use_plotly:
-                title = title.replace("\n", "<br>")
-            return title
-
         def get_colors(c_dict: Dict) -> List:
             return [c for sc in scens_list for i, c in c_dict.items() if i in sc.doc]
 
@@ -216,7 +202,7 @@ class CsPlotter(BasePlotter):
             data = [trace]
             layout = go.Layout(
                 hovermode="closest",
-                title=get_title(pareto) if do_title else "",
+                title=get_pareto_title(pareto, units).replace("\n", "<br>") if do_title else "",
                 xaxis=dict(title=xlabel),
                 yaxis=dict(title=ylabel),
                 margin=dict(l=5, r=5, b=5),
@@ -233,7 +219,7 @@ class CsPlotter(BasePlotter):
             pareto.plot.scatter("CE_TOT_", "C_TOT_", s=30, marker="o", ax=ax, color=colors)
             ax.set(ylabel=ylabel, xlabel=xlabel)
             if do_title:
-                ax.set(title=get_title(pareto))
+                ax.set(title=get_pareto_title(pareto, units))
 
             for sc_name in list(pareto.index):
                 ax.annotate(
@@ -880,3 +866,14 @@ def get_styles_for_multi_col_headers(df):
         "props": [("text-align", "center")],
     }
     return [cols] + [get_divider(i) for i in get_divider_nums(df)]
+
+
+def get_pareto_title(pareto: pd.DataFrame, units) -> str:
+    ce_saving = pareto.iloc[0, 1] - pareto.iloc[:, 1].min()
+    ce_saving_rel = 100 * (pareto.iloc[0, 1] - pareto.iloc[:, 1].min()) / pareto.iloc[0, 1]
+    c_saving = pareto.iloc[0, 0] - pareto.iloc[:, 0].min()
+    c_saving_rel = 100 * (pareto.iloc[0, 0] - pareto.iloc[:, 0].min()) / pareto.iloc[0, 0]
+    return (
+        f"Max. cost savings: {c_saving:,.2f} {units['C_TOT_']} ({c_saving_rel:.2f}%)\n"
+        f"Max. carbon savings: {ce_saving:.2f} {units['CE_TOT_']} ({ce_saving_rel:.2f}%)"
+    )

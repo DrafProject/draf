@@ -187,6 +187,7 @@ class EG(Component):
     c_buyPeak: float = 50.0
     prepared_tariffs: Tuple = ("FLAT", "TOU", "RTP")
     selected_tariff: str = "RTP"
+    consider_intensiveGridUse: bool = False
 
     def param_func(self, sc: Scenario):
         sc.param("c_EG_buyPeak_", data=self.c_buyPeak, doc="Peak price", unit="€/kW_el")
@@ -205,10 +206,25 @@ class EG(Component):
         )
         sc.prep.c_EG_addon_()
         sc.prep.ce_EG_T()
-        sc.param("t_EG_minFLH_", data=0, doc="Minimal full load hours", unit="hours")
+        sc.param("t_EG_minFLH_", data=0, doc="Minimal full load hours", unit="h")
         sc.var("P_EG_buy_T", doc="Purchased electrical power", unit="kW_el")
         sc.var("P_EG_sell_T", doc="Selling electrical power", unit="kW_el")
         sc.var("P_EG_buyPeak_", doc="Peak electrical power", unit="kW_el")
+
+        if self.consider_intensiveGridUse:
+            sc.dim(
+                "G",
+                data=["7000-7500", "7500-8000", ">8000"],
+                doc="Full load hour sections for indensive grid use",
+            )
+            sc.var("y_EG_FLH_G", doc="If full load hour section applies", vtype=GRB.BINARY)
+            sc.param("t_EG_minFLH_G", data=[7000, 7500, 8000], unit="h")
+            sc.param(
+                "k_EG_FLH_G",
+                data=[0.8, 0.85, 0.9],
+                doc="Peak price reduction factor if full load hour section applies",
+                src=SRC.Tieman_2020,
+            )
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
         m.addConstrs(
@@ -218,15 +234,29 @@ class EG(Component):
         m.addConstrs((v.P_EG_buy_T[t] <= v.P_EG_buyPeak_ for t in d.T), "DEF_peakPrice")
 
         if p.t_EG_minFLH_ > 0:
-            sc.mdl.addConstr(
+            m.addConstr(
                 v.P_EG_buy_T.sum() * p.k__dT_ * p.k__PartYearComp_
                 >= p.t_EG_minFLH_ * v.P_EG_buyPeak_,
                 "EG_NEV19",
             )
 
+        if self.consider_intensiveGridUse:
+            m.addConstrs(
+                (
+                    v.P_EG_buy_T.sum() * p.k__dT_ * p.k__PartYearComp_
+                    >= p.t_EG_minFLH_G[g] * v.y_EG_FLH_G[g] * v.P_EG_buyPeak_
+                    for g in d.G
+                ),
+                "DEF_FLH_1",
+            )
+            m.addConstr(v.y_EG_FLH_G.sum() <= 1, "DEF_FLH_2")
+
         sc.balances.P_EL_source_T["EG"] = lambda t: v.P_EG_buy_T[t]
         sc.balances.P_EL_sink_T["EG"] = lambda t: v.P_EG_sell_T[t]
-        sc.balances.C_TOT_op_["EG_peak"] = v.P_EG_buyPeak_ * p.c_EG_buyPeak_ * conv("€", "k€", 1e-3)
+        igu_factor = (1 - v.y_EG_FLH_G.prod(p.k_EG_FLH_G)) if self.consider_intensiveGridUse else 1
+        sc.balances.C_TOT_op_["EG_peak"] = (
+            v.P_EG_buyPeak_ * igu_factor * p.c_EG_buyPeak_ * conv("€", "k€", 1e-3)
+        )
         sc.balances.C_TOT_op_["EG"] = (
             p.k__dT_
             * p.k__PartYearComp_
@@ -266,12 +296,8 @@ class Fuel(Component):
             (v.F_fuel_F[f] == quicksum(x(f) for x in sc.balances.F_fuel_F.values()) for f in d.F),
             "DEF_F_fuel_F",
         )
-        m.addConstr(v.CE_Fuel_ == p.k__dT_ * quicksum(v.F_fuel_F[f] * p.ce_Fuel_F[f] for f in d.F))
-        m.addConstr(
-            v.C_Fuel_
-            == p.k__dT_
-            * quicksum(v.F_fuel_F[f] * p.c_Fuel_F[f] * conv("€", "k€", 1e-3) for f in d.F)
-        )
+        m.addConstr(v.CE_Fuel_ == p.k__dT_ * v.F_fuel_F.prod(p.ce_Fuel_F))
+        m.addConstr(v.C_Fuel_ == p.k__dT_ * v.F_fuel_F.prod(p.c_Fuel_F) * conv("€", "k€", 1e-3))
         m.addConstr(
             v.C_Fuel_ceTax_
             == p.c_Fuel_ceTax_ * conv("/t", "(/kg", 1e-3) * v.CE_Fuel_ * conv("€", "k€", 1e-3)
