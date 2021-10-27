@@ -588,6 +588,7 @@ class CsPlotter(BasePlotter):
         gradient: bool = False,
         filter_func: Optional[Callable] = None,
         precision: int = 0,
+        caption: bool = False,
     ) -> pdStyler:
         """Creates a table with all scalars.
 
@@ -635,10 +636,14 @@ class CsPlotter(BasePlotter):
             df.style.format(precision=precision, thousands=",")
             .apply(highlight_diff1, subset=df.columns[1:])
             .apply(highlight_diff2, subset=df.columns[1:])
-            .set_caption("Note: <b>Bold</b> numbers indicate deviation from REF-scenario.")
             .set_properties(subset=left_aligner, **{"text-align": "left"})
             .set_table_styles([dict(selector="th", props=[("text-align", "left")])])
         )
+        if caption:
+            styled_df = styled_df.set_caption(
+                "Scalar values where <b>bold</b> numbers indicate deviation from <code>REF</code>-scenario."
+            )
+
         if gradient:
             styled_df = styled_df.background_gradient(cmap="OrRd", axis=1)
 
@@ -686,6 +691,27 @@ class CsPlotter(BasePlotter):
         handles, labels = ax.get_legend_handles_labels()
         ax.legend(handles[::-1], labels[::-1], loc="upper left", frameon=False)
         sns.despine()
+
+    def time_table(
+        self, gradient: bool = False, caption: bool = False, precision: int = 0
+    ) -> pdStyler:
+        cs = self.cs
+        df = pd.DataFrame(
+            {
+                "Params": pd.Series(cs.get_ent("t__params_")),
+                "Vars": pd.Series(cs.get_ent("t__vars_")),
+                "Model": pd.Series(cs.get_ent("t__model_")),
+                "Solve": pd.Series(cs.get_ent("t__solve_")),
+            }
+        )
+        styled_df = df.style.format(precision=precision).set_table_styles(
+            get_leftAlignedIndex_style()
+        )
+        if caption:
+            styled_df = styled_df.set_caption("Time in seconds")
+        if gradient:
+            styled_df = styled_df.background_gradient(cmap="OrRd", axis=None)
+        return styled_df
 
     def invest_table(self, gradient: bool = False) -> pdStyler:
         cs = self.cs
