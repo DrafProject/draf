@@ -88,6 +88,11 @@ class CsPlotter(BasePlotter):
         else:
             styled_df = df.style.applymap(color_negative_red)
 
+        rows = dict(
+            selector="th.row_heading",
+            props=[("text-align", "left"), ("background-color", "white")],
+        )
+
         styled_df = styled_df.format(
             {
                 ("Absolute", "Costs"): "{:,.0f} k€",
@@ -102,32 +107,39 @@ class CsPlotter(BasePlotter):
                 ("Annual costs", "C_op"): "{:,.0f} k€/a",
                 ("", "Payback time"): "{:,.1f} a",
             }
-        ).set_table_styles(get_styles_for_multi_col_headers(df))
+        ).set_table_styles([rows] + get_styles_for_multi_col_headers(df))
 
         return styled_df
 
     def peak_reductions(self, gradient: bool = False, pv: bool = False):
         cs = self.cs
         df = pd.DataFrame(index=cs.scens_ids)
-        df["$P_{max}$"] = [sc.res.P_EG_buyPeak_ for sc in cs.scens_list]
-        df["Reduced $P_{max}$"] = df["$P_{max}$"].iloc[0] - df["$P_{max}$"]
-        df["Reduced $P_{max}$ (%)"] = df["Reduced $P_{max}$"] / df["$P_{max}$"].iloc[0]
-        df["$t_{use}$"] = [sc.get_EG_full_load_hours() for sc in cs.scens_list]
-        df["$W_{buy}$"] = [sc.gte(sc.res.P_EG_buy_T) / 1e6 for sc in cs.scens_list]
-        df["$W_{sell}$"] = [sc.gte(sc.res.P_EG_sell_T) / 1e6 for sc in cs.scens_list]
+        df["P_max"] = [sc.res.P_EG_buyPeak_ for sc in cs.scens_list]
+        df["P_max_reduction"] = df["P_max"].iloc[0] - df["P_max"]
+        df["P_max_reduction_rel"] = df["P_max_reduction"] / df["P_max"].iloc[0]
+        df["t_use"] = [sc.get_EG_full_load_hours() for sc in cs.scens_list]
+        df["W_buy"] = [sc.gte(sc.res.P_EG_buy_T) / 1e6 for sc in cs.scens_list]
+        df["W_sell"] = [sc.gte(sc.res.P_EG_sell_T) / 1e6 for sc in cs.scens_list]
         if pv:
-            df["$W_{pv,own}$"] = [sc.gte(sc.res.P_PV_OC_T) / 1e3 for sc in cs.scens_list]
+            df["W_pv_own"] = [sc.gte(sc.res.P_PV_OC_T) / 1e3 for sc in cs.scens_list]
 
         styled_df = df.style.format(
             {
-                "$P_{max}$": "{:,.0f} kW",
-                "Reduced $P_{max}$": "{:,.0f} kW",
-                "Reduced $P_{max}$ (%)": "{:,.1%}",
-                "$t_{use}$": "{:,.0f} h",
-                "$W_{buy}$": "{:,.2f} GWh/a",
-                "$W_{sell}$": "{:,.2f} GWh/a",
-                "$W_{pv,own}$": "{:,.2f} MWh/a",
+                "P_max": "{:,.0f} kW",
+                "P_max_reduction": "{:,.0f} kW",
+                "P_max_reduction_rel": "{:,.1%}",
+                "t_use": "{:,.0f} h",
+                "W_buy": "{:,.2f} GWh/a",
+                "W_sell": "{:,.2f} GWh/a",
+                "W_pv_own": "{:,.2f} MWh/a",
             }
+        ).set_table_styles(
+            [
+                dict(
+                    selector="th.row_heading",
+                    props=[("text-align", "left"), ("background-color", "white")],
+                )
+            ]
         )
 
         if gradient:

@@ -219,7 +219,8 @@ class EG(Component):
 
         if p.t_EG_minFLH_ > 0:
             sc.mdl.addConstr(
-                v.P_EG_buy_T.sum() * p.k__dT_ * p.k__PartYearComp_ >= p.t_EG_minFLH_ * v.P_EG_buyPeak_,
+                v.P_EG_buy_T.sum() * p.k__dT_ * p.k__PartYearComp_
+                >= p.t_EG_minFLH_ * v.P_EG_buyPeak_,
                 "EG_NEV19",
             )
 
@@ -330,7 +331,6 @@ class BES(Component):
             ),
             "BAL_BES",
         )
-
         sc.balances.P_EL_source_T["BES"] = lambda t: v.P_BES_out_T[t]
         sc.balances.P_EL_sink_T["BES"] = lambda t: v.P_BES_in_T[t]
         if sc.consider_invest:
