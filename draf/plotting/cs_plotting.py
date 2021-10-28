@@ -8,7 +8,8 @@ import plotly as py
 import plotly.figure_factory as ff
 import plotly.graph_objs as go
 import seaborn as sns
-from ipywidgets import interact
+from IPython.display import display
+from ipywidgets import interact, widgets
 from pandas.io.formats.style import Styler as pdStyler
 
 from draf import helper as hp
@@ -37,6 +38,48 @@ class CsPlotter(BasePlotter):
     def __getstate__(self):
         """For serialization with pickle."""
         return None
+
+    def tables(self):
+        cs = self.cs
+        funcs = {
+            "1D params ": ("p_table", "table fa-lg"),
+            "1D variables ": ("v_table", "table fa-lg"),
+            "Investments ": ("invest_table", "money fa-lg"),
+            "Capacities ": ("capa_table", " fa-cubes fa-lg"),
+            "Yields ": ("yields_table", " fa-eur fa-lg"),
+            "eGrid ": ("eGrid_table", " fa-plug fa-lg"),
+            "Pareto ": ("pareto_table", " fa-arrows-h fa-lg"),
+            "BES ": ("bes_table", "fa-solid fa-battery-half fa-lg"),
+            "Time ": ("time_table", " fa-clock-o fa-lg"),
+        }
+        ui = widgets.ToggleButtons(
+            options={k: v[0] for k, v in funcs.items()},
+            description="Table:",
+            icons=[v[1] for v in funcs.values()],
+            # for icons see https://fontawesome.com/v4.7/icons/
+        )
+
+        @interact(table=ui, gradient=False)
+        def f(table, gradient):
+            kw = dict()
+            if table in ("p_table", "v_table"):
+                what, func = table.split("_")
+                kw.update(what=what)
+            else:
+                func = table
+            kw.update(gradient=gradient)
+            display(getattr(cs.plot, func)(**kw))
+
+    def pareto_table(self, gradient: bool = False) -> pdStyler:
+        cs = self.cs
+        df = cs.pareto
+        styled_df = df.style.set_table_styles(get_leftAlignedIndex_style()).format(
+            {v: "{:,.0f} " + f"{cs.REF_scen.get_unit(v)}" for v in cs.obj_vars}
+        )
+
+        if gradient:
+            styled_df = styled_df.background_gradient(cmap="OrRd")
+        return styled_df
 
     def yields_table(self, gradient: bool = False) -> pdStyler:
         """Returns a styled pandas table with cost and carbon savings, and avoidance cost.
@@ -106,15 +149,17 @@ class CsPlotter(BasePlotter):
 
         return styled_df
 
-    def bes_table(self) -> pdStyler:
+    def bes_table(self, gradient: bool = False) -> pdStyler:
         cs = self.cs
         df = pd.DataFrame(index=cs.scens_ids)
         df["CAPn"] = [sc.res.E_BES_CAPn_ for sc in cs.scens_list]
-        df["$W_{out}$"] = [sc.gte(sc.res.P_BES_out_T) / 1e3 for sc in cs.scens_list]
-        df["Charging_cycles"] = df["$W_{out}$"] / df["CAPn"]
+        df["W_out"] = [sc.gte(sc.res.P_BES_out_T) / 1e3 for sc in cs.scens_list]
+        df["Charging_cycles"] = df["W_out"] / df["CAPn"]
         styled_df = df.style.format(
-            {"CAPn": "{:,.0f} kWh", "$W_{out}$": "{:,.0f} MWh/a", "Charging_cycles": "{:,.0f}"}
+            {"CAPn": "{:,.0f} kWh", "W_out": "{:,.0f} MWh/a", "Charging_cycles": "{:,.0f}"}
         )
+        if gradient:
+            styled_df = styled_df.background_gradient(cmap="OrRd")
         return styled_df
 
     def eGrid_table(self, gradient: bool = False, pv: bool = False) -> pdStyler:
