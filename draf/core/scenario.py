@@ -160,17 +160,45 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     @property
     def _all_ents_dict(self) -> Dict:
-        """Returns a name:data Dict of all entities without meta data."""
+        """Returns a name:data Dict of all entities."""
+        d = self.params.get_all()
         if hasattr(self, "res"):
-            d = {**self.params.__dict__, **self.res.__dict__}
-        else:
-            d = self.params.__dict__
-        d.pop("_meta", None)
+            d.update(self.res.get_all())
         return d
 
     @property
     def has_thermal_entities(self) -> bool:
         return len(self.params.filtered(etype="dQ")) != 0
+
+    def filter_entities(
+        self,
+        etype: Optional[str] = None,
+        comp: Optional[str] = None,
+        desc: Optional[str] = None,
+        dims: Optional[str] = None,
+        func: Optional[Callable] = None,
+        params: bool = True,
+        vars: bool = True,
+    ) -> Dict[str, Union[float, pd.Series]]:
+        """Return a dictionary with filtered entities.
+
+        Args:
+            etype: The component part of the entity name
+            comp: The component part of the entity name, e.g. `BES`
+            desc: The description part ot the entity name, e.g. `in`
+            dims: The dimension part of the entity name, e.g. `T`
+            func: Function that takes the entity name and returns a if the entity
+                should be included or not
+            params: If parameters are included
+            vars: If variable results are included
+        """
+        kwargs = dict(etype=etype, comp=comp, desc=desc, dims=dims, func=func)
+        d = dict()
+        if params:
+            d.update(self.params.filtered(**kwargs))
+        if hasattr(self, "res") and vars:
+            d.update(self.res.filtered(**kwargs))
+        return d
 
     def get_mdpv(self) -> Tuple[gp.Model, Dimensions, Params, Vars]:
         return (self.mdl, self.dims, self.params, self.vars)
@@ -254,33 +282,12 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def yield_all_ents(self):
         """A generator that yields Name, Data tuples of all entities."""
-        if hasattr(self, "res"):
-            for k, v in self.res.get_all().items():
-                yield k, v
+        for k, v in self._all_ents_dict.items():
+            yield k, v
 
-        if hasattr(self, "params"):
-            for k, v in self.params.get_all().items():
-                yield k, v
-
-    def get_entity(
-        self, ent: str, include_params: bool = True, include_res: bool = True
-    ) -> Union[float, pd.Series]:
-        """Get entity-data by its name.
-
-        Args:
-            ent: Entity name.
-            include_params: If params are considered.
-            include_res: If variables results are considered.
-        """
-        if ent in self.params.get_all():
-            return self.params.get(ent)
-
-        elif hasattr(self, "res"):
-            if ent in self.res.get_all():
-                return self.res.get(ent)
-
-        else:
-            raise AttributeError(f"Entity {ent} not found.")
+    def get_entity(self, ent: str) -> Union[float, pd.Series]:
+        """Get entity-data by its name."""
+        return self._all_ents_dict[ent]
 
     def _get_entity_type(self, ent: str) -> str:
         """Return 'p' if 'ent' is a parameter and 'v' if ent is a variable."""
@@ -506,38 +513,30 @@ class Scenario(DrafBaseClass, DateTimeHandler):
     def _optimize_gurobipy(
         self, logToConsole, outputFlag, show_results, keep_vars, postprocess_funcs
     ):
-        logger.info(f"Optimize {self.id}.")
+        logger.info(f"Optimize {self.id}")
         self._set_time_trace()
         self.mdl.setParam("LogToConsole", int(logToConsole), verbose=False)
         self.mdl.setParam("OutputFlag", int(outputFlag), verbose=False)
         self.mdl.optimize()
-        self.param(
-            "t__solve_",
-            self._get_time_diff(),
-            doc="Time to solve model",
-            unit="seconds",
-        )
+        self._update_time_param("t__solve_", "Time to solve the model", self._get_time_diff())
         status = self.mdl.Status
         status_str = GRB_OPT_STATUS[status]
         if status in [gp.GRB.OPTIMAL, gp.GRB.TIME_LIMIT]:
             self.res = Results(self)
             if not keep_vars:
                 del self.vars
-
             for ppf in postprocess_funcs:
                 ppf(self.res)
-
             if status == gp.GRB.TIME_LIMIT:
                 logger.warning("Time-limit reached")
-
             if show_results:
                 try:
                     print(
-                        f"{self.id}: C_TOT_={self.res.C_TOT_:.2f}, CE_TOT_={self.res.CE_TOT_:.2f} ({status_str})"
+                        f"{self.id}: C_TOT_={self.res.C_TOT_:.2f}, "
+                        f"CE_TOT_={self.res.CE_TOT_:.2f} ({status_str})"
                     )
                 except ValueError:
                     logger.warning("res.C_TOT_ or res.CE_TOT_ not found.")
-
         else:
             if status in [gp.GRB.INF_OR_UNBD, gp.GRB.INFEASIBLE]:
                 response = input(
@@ -546,7 +545,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 )
                 if response == "y":
                     self.calculate_IIS()
-
             raise RuntimeError(
                 f"ERROR solving scenario {self.name}: mdl.Status= {status} ({GRB_OPT_STATUS[status]}) --> {self.mdl.Params.LogFile}"
             )
@@ -554,31 +552,23 @@ class Scenario(DrafBaseClass, DateTimeHandler):
     def _optimize_pyomo(
         self, logToConsole, outputFlag, show_results, keep_vars, postprocess_funcs, which_solver
     ):
-        logger.info(f"Optimize {self.id}.")
+        logger.info(f"Optimize {self.id}")
         self._set_time_trace()
         solver = pyo.SolverFactory(which_solver)
-
         logfile = str(self._res_fp / "pyomo.log") if outputFlag else None
-
         results = solver.solve(self.mdl, tee=logToConsole, logfile=logfile)
-
         self._update_time_param("t__solve_", "Time to solve the model", self._get_time_diff())
-
         status = results.solver.status
         tc = results.solver.termination_condition
         self._termination_condition = tc
-
         if status == pyo.SolverStatus.ok:
             self.res = Results(self)
             if not keep_vars:
                 del self.vars
-
             for ppf in postprocess_funcs:
                 ppf(self.res)
-
             if tc == pyo.TerminationCondition.maxTimeLimit:
                 logger.warning("Time-limit reached")
-
             if show_results:
                 try:
                     print(
@@ -586,7 +576,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                     )
                 except ValueError:
                     logger.warning("res.C_TOT_ or res.CE_TOT_ not found.")
-
         else:
             raise RuntimeError(
                 f"ERROR solving scenario {self.name}: status= {status}, ",

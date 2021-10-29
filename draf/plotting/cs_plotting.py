@@ -82,11 +82,7 @@ class CsPlotter(BasePlotter):
         return styled_df
 
     def yields_table(self, gradient: bool = False) -> pdStyler:
-        """Returns a styled pandas table with cost and carbon savings, and avoidance cost.
-
-        Args:
-            gradient: If the table is coloured with a gradient.
-        """
+        """Returns a styled pandas table with cost and carbon savings, and avoidance cost."""
         cs = self.cs
 
         savings = cs.pareto.iloc[0] - cs.pareto
@@ -131,7 +127,7 @@ class CsPlotter(BasePlotter):
         else:
             styled_df = df.style.applymap(color_negative_red)
 
-        styled_df = styled_df.format(
+        return styled_df.format(
             {
                 ("Absolute", "Costs"): "{:,.0f} k€",
                 ("Absolute", "Emissions"): "{:,.0f} t",
@@ -146,8 +142,6 @@ class CsPlotter(BasePlotter):
                 ("", "Payback time"): "{:,.1f} a",
             }
         ).set_table_styles(get_leftAlignedIndex_style() + get_multiColumnHeader_style(df))
-
-        return styled_df
 
     def bes_table(self, gradient: bool = False) -> pdStyler:
         cs = self.cs
@@ -173,7 +167,6 @@ class CsPlotter(BasePlotter):
         df["W_sell"] = [sc.gte(sc.res.P_EG_sell_T) / 1e6 for sc in cs.scens_list]
         if pv:
             df["W_pv_own"] = [sc.gte(sc.res.P_PV_OC_T) / 1e3 for sc in cs.scens_list]
-
         styled_df = df.style.format(
             {
                 "P_max": "{:,.0f} kW",
@@ -185,10 +178,8 @@ class CsPlotter(BasePlotter):
                 "W_pv_own": "{:,.2f} MWh/a",
             }
         ).set_table_styles(get_leftAlignedIndex_style())
-
         if gradient:
             styled_df = styled_df.background_gradient(cmap="OrRd")
-
         return styled_df
 
     def pareto(
@@ -264,7 +255,6 @@ class CsPlotter(BasePlotter):
             ax.set(ylabel=ylabel, xlabel=xlabel)
             if do_title:
                 ax.set(title=get_pareto_title(pareto, units))
-
             for sc_name in list(pareto.index):
                 ax.annotate(
                     s=sc_name,
@@ -456,6 +446,11 @@ class CsPlotter(BasePlotter):
                     )
 
         return fig
+
+    def sankey(self) -> go.Figure:
+        @interact(sc=self.cs.scens_dic)
+        def f(sc):
+            display(sc.plot.sankey())
 
     def sankey_interact(self, string_builder_func: Optional[Callable] = None) -> go.Figure:
         """Returns an interactive Sankey plot widget to browse scenarios.

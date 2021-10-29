@@ -171,7 +171,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         df = pd.DataFrame(columns=self.obj_vars)
 
         for name, sc in self.scens_dic.items():
-            df.loc[name] = [getattr(sc.res, var) for var in self.obj_vars]
+            df.loc[name] = [sc.res.get(var) for var in self.obj_vars]
         return df
 
     @property

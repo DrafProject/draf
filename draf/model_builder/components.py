@@ -223,7 +223,7 @@ class EG(Component):
                 "k_EG_FLH_G",
                 data=[0.8, 0.85, 0.9],
                 doc="Peak price reduction factor if full load hour section applies",
-                src=SRC.Tieman_2020,
+                src="@Tieman_2020",
             )
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
@@ -836,13 +836,13 @@ class BEV(Component):
             "k_BEV_inPerCap_B",
             fill=0.7,
             doc="Maximum charging power per capacity",
-            src=SRC.Figgener_2021,
+            src="@Figgener_2021",
         )
         sc.param(
             "k_BEV_v2xPerCap_B",
             fill=0.7,
             doc="Maximum v2x discharging power per capacity",
-            src=SRC.Figgener_2021,
+            src="@Figgener_2021",
         )
         sc.param("k_BEV_empty_B", fill=0.05, doc="Minimum state of charge")
         sc.param("k_BEV_full_B", fill=0.95, doc="Maximum state of charge")

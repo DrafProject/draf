@@ -113,7 +113,10 @@ class EntityStore(DrafBaseClass):
         comp: Optional[str] = None,
         desc: Optional[str] = None,
         dims: Optional[str] = None,
+        func: Optional[Callable] = None,
     ) -> Dict:
+        if func is None:
+            func = lambda n: True
         return {
             k: v
             for k, v in self.get_all().items()
@@ -122,6 +125,7 @@ class EntityStore(DrafBaseClass):
                 and (hp.get_component(k) == comp or comp is None)
                 and (hp.get_desc(k) == desc or desc is None)
                 and (hp.get_dims(k) == dims or dims is None)
+                and func(k)
             )
         }
 
