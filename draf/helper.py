@@ -3,6 +3,7 @@ import re
 import sys
 import textwrap
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
@@ -18,6 +19,7 @@ from elmada.helper import (
     write,
     z_score,
 )
+from geopy.geocoders import Nominatim
 from matplotlib import ticker
 
 from draf import paths
@@ -361,3 +363,21 @@ def get_value_from_varOrPar(term):
 def get_annuity_factor(r: float = 0.06, N: float = 20):
     """Returns the annuity factor of a given return rate r and an expected lifetime N"""
     return (r * (1 + r) ** N) / ((1 + r) ** N - 1)
+
+
+@lru_cache(maxsize=50)
+def _get_address(address: str, user_agent: str) -> Tuple[float, float]:
+    geolocator = Nominatim(user_agent=user_agent)
+    location = geolocator.geocode(address)
+    return location
+
+
+def address2coords(address: str, user_agent: str = "anonymous_draf_user") -> Tuple[float, float]:
+    """Returns geo coordinates (latitude, longitude) from given address."""
+    location = _get_address(address=address, user_agent=user_agent)
+    if location is None:
+        raise RuntimeError("No location found. Please try a different address.")
+    else:
+        coords = (location.latitude, location.longitude)
+        print(f"Used location: {location.address}, {coords}")
+        return coords

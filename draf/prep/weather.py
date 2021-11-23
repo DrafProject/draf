@@ -5,19 +5,22 @@ from typing import Dict, List, Optional, Set, Tuple
 from urllib.request import urlopen
 from zipfile import ZipFile
 
-import mpu
 import numpy as np
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from elmada.helper import read, write
+from geopy.distance import great_circle
 
 from draf.paths import CACHE_DIR
 
-DWD_BASE = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly"
-MIDDLE = dict(solar="/solar", air_temperature="/air_temperature/historical")
+# TODO: The new https://wetterdienst.readthedocs.io/ package may improve maintainability.
 
 # TODO: get 10min data and resample to 15min https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/10_minutes/
+
+
+DWD_BASE = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly"
+MIDDLE = dict(solar="/solar", air_temperature="/air_temperature/historical")
 
 ZIP = dict(
     solar="/stundenwerte_ST_{stations_id:05}_row.zip",
@@ -219,7 +222,7 @@ def get_nearest_station(
 
     for i, lat, lon in zip(df.index, lats, lons):
         destination = (lat, lon)
-        distance[i] = mpu.haversine_distance(origin=coords, destination=destination)
+        distance[i] = great_circle(coords, destination).km
 
     xmin = distance.argmin()
     ser = df.loc[xmin].copy()

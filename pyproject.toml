@@ -30,7 +30,8 @@ addopts = [
     "--disable-pytest-warnings",
 ]
 markers = [
-  "slow: marks slow tests > 1sec and not an important model test"
+  "slow: marks slow tests > 1sec and not an important model test",
+  "gurobi: marks tests that rely on a valid gurobi license"
 ]
 python_files = "test_*.py"
 python_functions = "test_*"

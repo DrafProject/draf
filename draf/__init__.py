@@ -17,3 +17,4 @@ __copyright__ = f"Copyright (C) 2021 {__author__}"
 from draf.core.case_study import CaseStudy, open_casestudy, open_latest_casestudy
 from draf.core.entity_stores import Dimensions, Params, Results, Vars
 from draf.core.scenario import Scenario
+from draf.helper import address2coords

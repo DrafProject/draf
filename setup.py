@@ -19,10 +19,10 @@ setup(
     install_requires=[
         "appdirs",
         "elmada",
+        "geopy",
         "gurobipy",
         "holidays",
         "matplotlib",
-        "mpu",
         "numpy",
         "pandas",
         "pyomo>=5.7",

@@ -48,7 +48,7 @@ class TimeSeriesPrepper:
         return sc.param(
             name=name,
             unit="kgCO2eq/kWh_el",
-            doc=f"{method} for {sc.year}, {sc.freq}, {sc.country}",
+            doc=f"Carbon emission factors (via elmada using year, freq, country, and CEF-method)",
             data=sc.match_dtindex(
                 get_emissions(
                     year=sc.year,
@@ -67,7 +67,7 @@ class TimeSeriesPrepper:
         return self.sc.param(
             name=name,
             unit="€/kWh_el",
-            doc=f"Day-ahead-market-prices {sc.year}, {sc.freq}, {sc.country}",
+            doc=f"Day-ahead-market-prices (via elmada using year, freq, and country)",
             data=sc.match_dtindex(
                 get_prices(year=sc.year, freq=sc.freq, method=method, country=sc.country, **kwargs)
                 / 1e3
@@ -139,13 +139,11 @@ class TimeSeriesPrepper:
         return sc.param(
             name=name,
             unit="€/kWh_el",
-            doc=f"Time-Of-Use-tariff with the prices {low_price:.3f}€ and {high_price:.3f}€",
+            doc=f"Time-Of-Use-tariff (calculated from Real-time-price)",
             data=low_price * isLowTime_T + high_price * isHighTime_T,
         )
 
-    def c_EG_FLAT_T(
-        self, price: Optional[float] = None, name: str = "c_EG_FLAT_T", doc_addon: str = ""
-    ):
+    def c_EG_FLAT_T(self, price: Optional[float] = None, name: str = "c_EG_FLAT_T"):
         """Add a flat electricity tariff.
 
         If no price is given the according RTP tariff is taken as basis.
@@ -163,7 +161,7 @@ class TimeSeriesPrepper:
         return self.sc.param(
             name=name,
             unit=unit,
-            doc=f"Flat-electricity tariff ({price:.4f} {unit}). {doc_addon}",
+            doc=f"Flat-electricity tariff (calculated from Real-time-price)",
             fill=price,
         )
 
@@ -215,7 +213,7 @@ class TimeSeriesPrepper:
         return sc.param(
             name=name,
             unit="kW_th",
-            doc=f"Heating demand derived from ambient temperature near {sc.coords}.",
+            doc=f"Heating demand derived from ambient temperature near coords.",
             data=sc.match_dtindex(
                 prep.get_heating_demand(
                     year=sc.year,
@@ -242,7 +240,7 @@ class TimeSeriesPrepper:
         return sc.param(
             name=name,
             unit="kW_th",
-            doc=f"Cooling demand derived from ambient temperature near {sc.coords}.",
+            doc=f"Cooling demand derived from ambient temperature near coords.",
             data=sc.match_dtindex(
                 prep.get_cooling_demand(
                     year=sc.year,
@@ -284,7 +282,7 @@ class TimeSeriesPrepper:
         return sc.param(
             name=name,
             unit="kW_el/kW_peak",
-            doc=f"Produced PV-power for 1 kW_peak",
+            doc="Produced PV-power for 1 kW_peak",
             data=sc.match_dtindex(ser, resample=True),
         )
 
@@ -300,7 +298,7 @@ class TimeSeriesPrepper:
         NEV_surcharge=0.0025,
         Offshore_surcharge=-0.00002,
         Sales=0.01537,
-    ) -> pd.Series:
+    ) -> float:
         """Add electricity price components other than wholesale prices defaults for German
         Industry for 2017.
 

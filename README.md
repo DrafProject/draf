@@ -9,12 +9,11 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![python](https://img.shields.io/badge/python-3.9-blue?logo=python&logoColor=white)](https://github.com/DrafProject/draf)
 
-`draf` is developed by [Markus Fleschutz](https://linktr.ee/m.fl) since 2017 in a cooperative PhD between [MTU](https://www.mtu.ie/), Ireland and the [University of Applied Sciences Karlsruhe](https://www.h-ka.de/en/), Germany.
-An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showcase/).
+`draf` is a ([mixed integer]) [linear programming] optimization framework for local energy systems.
 
 # Quick start
 
-1. Install [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [anaconda](https://www.anaconda.com/products/individual)
+1. Install [miniconda] or [anaconda]
 
 1. Clone the source repository:
 
@@ -54,21 +53,21 @@ An example can be seen in the [Showcase](https://mfleschutz.github.io/draf-showc
   - Sensible naming conventions for parameters and variables, see [Naming conventions](#naming-conventions).
 - **Parameter preparation tools:**
   - `TimeSeriesPrepper`: for time series data
-    - Electricity prices via [`elmada`](https://github.com/DrafProject/elmada)
-    - Carbon emission factors via [`elmada`](https://github.com/DrafProject/elmada)
+    - Electricity prices via [`elmada`]
+    - Carbon emission factors via [`elmada`]
     - Standard load profiles from BDEW
-    - PV profiles via [`gsee`](https://github.com/renewables-ninja/gsee)
+    - PV profiles via [`gsee`]
   - [`DataBase`](draf/prep/data_base.py): for scientific data such as cost or efficiency factors.
 - **Scenario generation tools:** Easily build individual scenarios or sensitivity analyses.
 - **Multi-objective mathematical optimization** with support of different model languages and solvers:
-  - [`Pyomo`](https://github.com/Pyomo/pyomo): A free and open-source modeling language in Python that supports multiple solvers.
-  - [`GurobiPy`](https://pypi.org/project/gurobipy/): The Python interface to Gurobi, the fastest MILP solver (see [Mittelmann benchmark](http://plato.asu.edu/ftp/milp.html)).
+  - [`Pyomo`]: A free and open-source modeling language in Python that supports multiple solvers.
+  - [`GurobiPy`]: The Python interface to Gurobi, the fastest MILP solver (see [Mittelmann benchmark]).
 - **Plotting tools:** Convenient plots such as heatmaps, tables, pareto plots, etc.
   - support of meta data such as `unit`, `doc`, and `dims`
   - automatic unit conversion
 - **Export tools:**
   - `CaseStudy` objects containing all parameters, meta data and results can be saved to files.
-  - Data can be exported to [xarray](http://xarray.pydata.org/en/stable/) format.
+  - Data can be exported to [xarray] format.
 
 Other
 
@@ -137,6 +136,23 @@ This piece of software is in an early stage. Use at your own risk.
 
 Copyright (c) 2021 Markus Fleschutz
 
+`draf` is developed by [Markus Fleschutz] since 2017 in a cooperative PhD between the [Munster Technological University], Ireland and the [Karlsruhe University of Applied Sciences], Germany.
+
 <https://www.gnu.org/licenses/lgpl-3.0.de.html>
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+<!-- SOURCES -->
+[`elmada`]: https://github.com/DrafProject/elmada
+[`gsee`]: https://github.com/renewables-ninja/gsee
+[`GurobiPy`]: https://pypi.org/project/gurobipy
+[`Pyomo`]: https://github.com/Pyomo/pyomo
+[anaconda]: https://www.anaconda.com/products/individual
+[linear programming]: https://en.wikipedia.org/wiki/Linear_programming
+[Markus Fleschutz]: https://linktr.ee/m.fl
+[miniconda]: https://docs.conda.io/en/latest/miniconda.html
+[Mittelmann benchmark]: http://plato.asu.edu/ftp/milp.html
+[mixed integer]: https://en.wikipedia.org/wiki/Integer_programming
+[Munster Technological University]: https://www.mtu.ie
+[Karlsruhe University of Applied Sciences]: https://www.h-ka.de/en
+[xarray]: http://xarray.pydata.org/en/stable

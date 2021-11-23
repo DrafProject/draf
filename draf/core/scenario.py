@@ -343,6 +343,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             mdl_language: Choose either 'gp' or 'pyo'.
         """
         self.mdl_language = mdl_language
+
+        # TODO: The "factory" design pattern may be suitable to cover _instantiate_model and
+        #       activate_vars (https://refactoring.guru/design-patterns/factory-method)
         self._instantiate_model()
 
         self._set_time_trace()

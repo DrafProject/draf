@@ -2,6 +2,8 @@ name: draf
 channels:
   - conda-forge
 dependencies:  # NOTE: here '=' (single)
+  - ephem  # dependency of gsee_module
+  - geopy
   - glpk
   - ipython
   - ipywidgets
@@ -11,11 +13,10 @@ dependencies:  # NOTE: here '=' (single)
   - pandas
   - pip
   - plotly
+  - pvlib-python >= 0.6.3  # dependency of gsee_module
   - pyomo
   - python
   - seaborn
-  - pvlib-python >= 0.6.3  # dependency of gsee_module
-  - ephem  # dependency of gsee_module
   - pip:  # NOTE: here '==' (double)
     - elmada
     - holidays

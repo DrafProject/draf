@@ -121,7 +121,7 @@ class CsPlotter(BasePlotter):
                 .background_gradient(subset=["Abolute savings"], cmap="Reds")
                 .background_gradient(subset=["Relative savings"], cmap="Blues")
                 .background_gradient(subset=["Annual costs"], cmap="Purples")
-                .background_gradient(subset=[""], cmap="Greys_r")
+                .background_gradient(subset=[""], cmap="Greys")
             )
 
         else:
@@ -148,7 +148,7 @@ class CsPlotter(BasePlotter):
         df = pd.DataFrame(index=cs.scens_ids)
         df["CAPn"] = [sc.res.E_BES_CAPn_ for sc in cs.scens_list]
         df["W_out"] = [sc.gte(sc.res.P_BES_out_T) / 1e3 for sc in cs.scens_list]
-        df["Charging_cycles"] = df["W_out"] / df["CAPn"]
+        df["Charging_cycles"] = df["W_out"] / (df["CAPn"] / 1e3)
         styled_df = df.style.format(
             {"CAPn": "{:,.0f} kWh", "W_out": "{:,.0f} MWh/a", "Charging_cycles": "{:,.0f}"}
         )
@@ -219,7 +219,7 @@ class CsPlotter(BasePlotter):
             return [c for sc in scens_list for i, c in c_dict.items() if i in sc.doc]
 
         colors = "black" if c_dict is None else get_colors(c_dict)
-        ylabel = f"Costs [{units['C_TOT_']}]"
+        ylabel = f"Annualized costs [{units['C_TOT_']}]"
         xlabel = f"Carbon emissions [{units['CE_TOT_']}]"
 
         if use_plotly:

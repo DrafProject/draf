@@ -7,6 +7,7 @@ import pandas as pd
 from gurobipy import GRB, Model, quicksum
 
 from draf import Dimensions, Params, Results, Scenario, Vars
+from draf.conventions import Descs
 from draf.helper import conv, get_annuity_factor, set_component_order_by_order_restrictions
 
 # from draf.model_builder import collectors
@@ -580,7 +581,7 @@ class P2H(Component):
             sc.param(from_db=db.N_P2H_)
             sc.param("z_P2H_", data=int(self.allow_new), doc="If new capacity is allowed")
             sc.param(from_db=db.c_P2H_inv_)
-            sc.param("k_P2H_RMI_", data=0)
+            sc.param("k_P2H_RMI_", data=0, doc=Descs.RMI.en)
             sc.var("dQ_P2H_CAPn_", doc="New capacity", unit="kW_th", ub=1e6 * sc.params.z_P2H_)
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
