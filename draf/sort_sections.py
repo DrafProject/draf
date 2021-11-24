@@ -1,5 +1,5 @@
 def sort_lines_in_string(s: str) -> str:
-    return "\n".join(sorted(s.split("\n")))
+    return "\n".join(sorted(s.split("\n"), key=lambda v: v.upper()))
 
 
 def sort_sections(s: str) -> str:
