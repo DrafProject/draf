@@ -548,7 +548,7 @@ class HP(Component):
         )
         cap = p.dQ_HP_CAPx_ + v.dQ_HP_CAPn_ if sc.consider_invest else p.dQ_HP_CAPx_
         m.addConstrs(
-            (v.dQ_HP_Cond_TEC[t, e, c] <= cap for t in d.T for e in d.E for c in d.C),
+            (v.dQ_HP_Cond_TEC.sum(t, "*", "*") <= cap for t in d.T for e in d.E for c in d.C),
             "HP_CAP",
         )
         m.addConstrs((v.Y_HP_TEC.sum(t, "*", "*") <= p.n_HP_ for t in d.T), "HP_maxOperatingMode")
@@ -660,7 +660,7 @@ class CHP(Component):
                 "DEF_CHP_minPL",
             )
 
-        sc.balances.P_EL_source_T["CHP"] = lambda t: v.P_CHP_T[t]
+        sc.balances.P_EL_source_T["CHP"] = lambda t: v.P_CHP_OC_T[t]
         sc.balances.dQ_heating_source_TH["CHP"] = lambda t, h: v.dQ_CHP_T[t] if h == 2 else 0
         sc.balances.P_EG_sell_T["CHP"] = lambda t: v.P_CHP_FI_T[t]
         sc.balances.F_fuel_F["CHP"] = lambda f: v.F_CHP_TF.sum("*", f) * p.k__dT_
