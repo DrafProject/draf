@@ -1091,7 +1091,7 @@ order_restrictions = [
     ("HOB", {}),
     ("H2H1", {}),
     ("HP", {"cDem", "hDem"}),  # HP calculates COP dependent on thermal demand temperatures
-    ("TES", {"cDem", "hDem"}),  # There is a TES for every thermal demand temperature level
+    ("TES", {"cDem", "hDem"}),  # TESs can be defined for every thermal demand temperature level
     ("PROD", {}),
 ]
 order_restrictions.append(("Main", [x[0] for x in order_restrictions]))

@@ -318,10 +318,10 @@ def topological_sort(source):
 def set_component_order_by_order_restrictions(
     order_restrictions: List[Tuple[str, str]], classes: Dict
 ) -> None:
-    """Sets a order variable to classes according to its order_restrictions.
+    """Sets an order variable to classes according to its order_restrictions.
 
     Args
-        deps: list of ``(name, [list of order_restrictions])`` pairs
+        order_restrictions: list of ``(name, [list of order_restrictions])`` pairs
         classes: A dictionary containing classes where the order argument is set to.
     """
     ordered_components_list = list(topological_sort(order_restrictions))
