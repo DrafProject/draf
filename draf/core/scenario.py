@@ -20,7 +20,7 @@ from draf import paths
 from draf.conventions import Etypes
 from draf.core.datetime_handler import DateTimeHandler
 from draf.core.draf_base_class import DrafBaseClass
-from draf.core.entity_stores import Balances, Dimensions, Params, Results, Vars
+from draf.core.entity_stores import Collectors, Dimensions, Params, Results, Vars
 from draf.core.mappings import GRB_OPT_STATUS, VAR_PAR
 from draf.core.time_series_prepper import TimeSeriesPrepper
 from draf.model_builder.abstract_component import Component
@@ -72,7 +72,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.plot = ScenPlotter(sc=self)
         self.prep = TimeSeriesPrepper(sc=self)
         self.vars = Vars()
-        self.balances = Balances()
+        self.collectors = Collectors()
 
         if dtindex is None and dtindex_custom is None and t1 is None and t2 is None:
             self._set_dtindex(year=year, freq=freq)
@@ -120,7 +120,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 "vars",
                 "dtindex",
                 "dtindex_custom",
-                "balances",
+                "collectors",
                 "components",
                 "res",
             ]
@@ -509,8 +509,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         elif self.mdl_language == "pyo":
             self._optimize_pyomo(**kwargs, which_solver=which_solver)
 
-        if hasattr(self, "balances"):
-            self._cache_balance_values()
+        if hasattr(self, "collectors"):
+            self._cache_collector_values()
         return self
 
     def _optimize_gurobipy(
@@ -726,7 +726,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             sc.res._meta[<entity-name>] (dict with metas {"doc":..., "unit":...})
         """
         return_value = None
-        for attr in ["params", "res", "dims", "balances"]:
+        for attr in ["params", "res", "dims", "collectors"]:
             obj = getattr(self, attr, None)
             if obj is not None:
                 metas = obj._meta.get(ent_name, "")
@@ -850,15 +850,15 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                     f"Expected {adder}{expected_units}."
                 )
 
-    def balance(
+    def collector(
         self,
         name: str,
         doc: str = "",
         unit: str = "",
     ) -> None:
-        """Add a balance to the scenario"""
-        setattr(self.balances, name, dict())
-        self.balances._meta[name] = dict(doc=doc, unit=unit)
+        """Add a collector to the scenario"""
+        setattr(self.collectors, name, dict())
+        self.collectors._meta[name] = dict(doc=doc, unit=unit)
 
     def dim(
         self,
@@ -945,18 +945,18 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             / self.res.P_EG_buyPeak_
         )
 
-    def get_all_balance_values(self, cache: bool = True) -> Dict[str, Dict[str, float]]:
-        if not cache or not hasattr(self, "balance_values"):
-            self._cache_balance_values()
-        return getattr(self, "balance_values")
+    def get_all_collector_values(self, cache: bool = True) -> Dict[str, Dict[str, float]]:
+        if not cache or not hasattr(self, "collector_values"):
+            self._cache_collector_values()
+        return getattr(self, "collector_values")
 
-    def _cache_balance_values(self) -> None:
-        d = {k: self.get_balanceValues(bal_name=k) for k in self.balances.get_all()}
-        setattr(self, "balance_values", d)
+    def _cache_collector_values(self) -> None:
+        d = {k: self.get_collectorValues(bal_name=k) for k in self.collectors.get_all()}
+        setattr(self, "collector_values", d)
 
-    def get_balanceValues(self, bal_name: str) -> Dict[str, float]:
-        balance = getattr(self.balances, bal_name)
-        return {comp: self._get_BalTermValues(bal_name, term) for comp, term in balance.items()}
+    def get_collectorValues(self, bal_name: str) -> Dict[str, float]:
+        collector = getattr(self.collectors, bal_name)
+        return {comp: self._get_BalTermValues(bal_name, term) for comp, term in collector.items()}
 
     def _get_BalTermValues(self, bal_name: str, term: Any) -> float:
         if hp.is_a_lambda(term):
@@ -968,7 +968,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         else:
             return hp.get_value_from_varOrPar(term)
 
-    def make_sankey_string_from_balances(self):
+    def make_sankey_string_from_collectors(self):
         templates = {
             "P_EL_source_T": "E {k} el_hub {v}",
             "P_EL_sink_T": "E el_hub {k} {v}",
@@ -983,8 +983,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         header = ["type source target value"]
         rows = [
             templates[name].format(k=k, v=v)
-            for name, balance in self.get_all_balance_values().items()
-            for k, v in balance.items()
+            for name, collector in self.get_all_collector_values().items()
+            for k, v in collector.items()
             if name in templates
         ]
         return "\n".join(header + rows)

@@ -63,7 +63,7 @@ class ScenPlotter(BasePlotter):
             with pd.option_context("display.max_rows", max_rows):
                 display(data)
 
-    def balances(
+    def collectors(
         self,
         filter_etype: Optional[str] = None,
         auto_convert_units: bool = True,
@@ -71,7 +71,7 @@ class ScenPlotter(BasePlotter):
         use_plt: bool = False,
     ):
         sc = self.sc
-        df = pd.DataFrame(sc.get_all_balance_values())
+        df = pd.DataFrame(sc.get_all_collector_values())
 
         units = {name: sc.get_unit(name) for name in df}
 
@@ -84,21 +84,21 @@ class ScenPlotter(BasePlotter):
         df = (
             df.T.stack()
             .reset_index()
-            .rename(columns={"level_0": "balance", "level_1": "comp", 0: "value"})
+            .rename(columns={"level_0": "collector", "level_1": "comp", 0: "value"})
         )
         if filter_etype is not None:
-            df = df[df["balance"].apply(lambda s: s.split("_")[0] == filter_etype)]
+            df = df[df["collector"].apply(lambda s: s.split("_")[0] == filter_etype)]
 
-        df["doc"] = df["balance"].apply(sc.get_doc)
-        df["unit"] = df["balance"].replace(units)
+        df["doc"] = df["collector"].apply(sc.get_doc)
+        df["unit"] = df["collector"].replace(units)
         df["desc"] = df["doc"] + " (" + df["unit"] + ")"
 
         if use_plt:
-            self._plt_balance_plot(df)
+            self._plt_collector_plot(df)
         else:
-            return self._plotly_balance_plot(df)
+            return self._plotly_collector_plot(df)
 
-    def _plt_balance_plot(self, df):
+    def _plt_collector_plot(self, df):
         fig, ax = plt.subplots(figsize=(12, 6))
         fig.tight_layout()
         df = df.pivot(index="doc", columns="comp", values="value")
@@ -107,7 +107,7 @@ class ScenPlotter(BasePlotter):
         ax.set_ylabel("")
         sns.despine()
 
-    def _plotly_balance_plot(self, df):
+    def _plotly_collector_plot(self, df):
         return (
             px.bar(
                 df,
@@ -545,7 +545,7 @@ class ScenPlotter(BasePlotter):
 
     def _get_sankey_df(self, string_builder_func: Optional[Callable] = None) -> pd.DataFrame:
         s = (
-            self.sc.make_sankey_string_from_balances()
+            self.sc.make_sankey_string_from_collectors()
             if string_builder_func is None
             else string_builder_func(self.sc)
         )

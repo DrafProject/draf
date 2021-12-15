@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
 
 
-class Balances(DrafBaseClass):
-    """Stores balances."""
+class Collectors(DrafBaseClass):
+    """Stores collectors."""
 
     def __init__(self):
         self._meta: Dict[str, Dict] = dict()
@@ -30,7 +30,7 @@ class Balances(DrafBaseClass):
         ]
         headers, col_data = zip(*l)
         rows = list(zip(*col_data))
-        return "<Balances object> preview:\n" + textwrap.indent(
+        return "<Collectors object> preview:\n" + textwrap.indent(
             text=tabulate(rows, headers=headers), prefix="  "
         )
 

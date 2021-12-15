@@ -356,8 +356,8 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         fp = self._res_fp / f"{date_time}_{name}.p" if fp is None else Path(fp)
 
         for sc in self.scens_list:
-            for x in ["components", "balances"]:
-                # Note: components and balances contain lambda function and therefore cannot be
+            for x in ["components", "collectors"]:
+                # Note: components and collectors contain lambda function and therefore cannot be
                 # pickled. We could use dill (https://stackoverflow.com/a/25353243, but dill has
                 # other problems (https://github.com/uqfoundation/dill/issues/354). However they can
                 # be deepcopied, so they are removed here rather than in __getstate__:

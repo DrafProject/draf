@@ -762,7 +762,7 @@ class CsPlotter(BasePlotter):
         df = pd.DataFrame(
             {
                 desc: pd.DataFrame(
-                    {n: sc.balance_values[which] for n, sc in cs.scens_dic.items()}
+                    {n: sc.collector_values[which] for n, sc in cs.scens_dic.items()}
                 ).stack()
                 for which, desc in l.items()
             }
@@ -784,7 +784,7 @@ class CsPlotter(BasePlotter):
             ent_name = "C_TOT_inv_"
             title = "Investment cost [k€]"
 
-        df = pd.DataFrame({n: sc.balance_values[ent_name] for n, sc in cs.scens_dic.items()}).T
+        df = pd.DataFrame({n: sc.collector_values[ent_name] for n, sc in cs.scens_dic.items()}).T
 
         fig = _get_capa_heatmap(df)
         fig.update_layout(
