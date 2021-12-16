@@ -367,7 +367,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             model_func_list.insert(custom_model_func_loc, custom_model_func)
 
         for model_func in model_func_list:
-            model_func(sc=self, m=self.mdl, d=self.dims, p=params, v=self.vars)
+            model_func(sc=self, m=self.mdl, d=self.dims, p=params, v=self.vars, c=self.collectors)
 
         self._update_time_param("t__model_", "Time to build model", self._get_time_diff())
         return self

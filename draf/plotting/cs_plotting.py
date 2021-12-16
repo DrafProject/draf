@@ -91,6 +91,12 @@ class CsPlotter(BasePlotter):
 
         avoid_cost = -savings["C_TOT_"] / savings["CE_TOT_"] * 1e6  # in k€/kgCO2eq  # in €/tCO2eq
 
+        def get_cost(ent_name):
+            try:
+                return pd.Series(cs.get_ent(ent_name))
+            except KeyError:
+                return pd.NA
+
         df = pd.DataFrame(
             {
                 ("Absolute", "Costs"): cs.pareto["C_TOT_"],
@@ -99,10 +105,10 @@ class CsPlotter(BasePlotter):
                 ("Abolute savings", "Emissions"): savings["CE_TOT_"] / 1e3,
                 ("Relative savings", "Costs"): rel_savings["C_TOT_"],
                 ("Relative savings", "Emissions"): rel_savings["CE_TOT_"],
-                ("Annual costs", "C_invAnn"): pd.Series(cs.get_ent("C_TOT_invAnn_")),
-                ("Annual costs", "C_op"): pd.Series(cs.get_ent("C_TOT_op_")),
+                ("Annual costs", "C_invAnn"): get_cost("C_TOT_invAnn_"),
+                ("Annual costs", "C_op"): get_cost("C_TOT_op_"),
                 ("", "Emission avoidance costs"): avoid_cost,
-                ("", "C_inv"): pd.Series(cs.get_ent("C_TOT_inv_")),
+                ("", "C_inv"): get_cost("C_TOT_inv_"),
             }
         )
         df[("", "Payback time")] = df[("", "C_inv")] / (

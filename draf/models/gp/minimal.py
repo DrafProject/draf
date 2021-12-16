@@ -3,7 +3,7 @@
 from gurobipy import GRB, Model, quicksum
 
 import draf
-from draf import Dimensions, Params, Scenario, Vars
+from draf import Collectors, Dimensions, Params, Scenario, Vars
 from draf.model_builder.abstract_component import Component
 
 
@@ -15,7 +15,7 @@ class Minimal(Component):
         sc.prep.c_EG_RTP_T()
         sc.prep.P_eDem_T(profile="G1", annual_energy=5e6)
 
-    def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
+    def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         m.setObjective(v.C_TOT_, GRB.MINIMIZE)
         m.addConstr(v.C_TOT_ == p.k__dT_ * quicksum(p.P_eDem_T[t] * p.c_EG_RTP_T[t] for t in d.T))
 

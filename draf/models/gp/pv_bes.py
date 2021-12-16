@@ -5,7 +5,7 @@ see: https://mfleschutz.github.io/draf-showcase/#/2
 from gurobipy import GRB, Model, quicksum
 
 import draf
-from draf import Dimensions, Params, Results, Scenario, Vars
+from draf import Collectors, Dimensions, Params, Results, Scenario, Vars
 from draf.prep import DataBase as db
 
 
@@ -66,7 +66,7 @@ def params_func(sc: Scenario):
     sc.var("P_BES_out_T", doc="Discharging power", unit="kW_el")
 
 
-def model_func(sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars):
+def model_func(sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
 
     m.setObjective(
         ((1 - p.k_PTO_alpha_) * v.C_TOT_ * p.k_PTO_C_ + p.k_PTO_alpha_ * v.CE_TOT_ * p.k_PTO_CE_),

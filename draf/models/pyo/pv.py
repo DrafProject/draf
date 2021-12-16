@@ -8,7 +8,7 @@ import pyomo.environ as pyo
 from gurobipy import GRB
 
 import draf
-from draf import Dimensions, Params, Results, Scenario, Vars
+from draf import Collectors, Dimensions, Params, Results, Scenario, Vars
 
 
 def params_func(sc: draf.Scenario):
@@ -37,7 +37,7 @@ def params_func(sc: draf.Scenario):
     sc.prep.P_PV_profile_T(use_coords=True)
 
 
-def model_func(sc: Scenario, m: pyo.Model, d: Dimensions, p: Params, v: Vars):
+def model_func(sc: Scenario, m: pyo.Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
 
     m.obj = pyo.Objective(
         expr=(1 - p.k_PTO_alpha_) * v.C_TOT_ + p.k_PTO_alpha_ * v.CE_TOT_, sense=pyo.minimize

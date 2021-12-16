@@ -7,5 +7,5 @@ class Component(ABC):
         pass
 
     @abstractmethod
-    def model_func(self, sc, m, d, p, v):
+    def model_func(self, sc, m, d, p, v, c):
         pass
