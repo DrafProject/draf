@@ -119,11 +119,12 @@ For examples of types, components, and descriptors please see [conventions.py](d
 
 # For developers
 
-Bump version using `bump2version` e.g. the patch version can be altered with
+Bump version (replace `<part>` with `major`, `minor`, or `patch`):
 
 ```sh
-bump2version patch
-git push --follow-tags
+bump2version --dry-run --verbose <part>
+bump2version <part>
+git push origin <tag_name>
 ```
 
 Type annotations are used throughout the project.
