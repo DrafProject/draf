@@ -1,7 +1,7 @@
 """A small script using the model pv_bes."""
 
 import draf
-from draf.model_builder.components import *
+from draf.components import *
 
 
 def main():

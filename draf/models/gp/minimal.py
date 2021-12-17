@@ -4,7 +4,7 @@ from gurobipy import GRB, Model, quicksum
 
 import draf
 from draf import Collectors, Dimensions, Params, Scenario, Vars
-from draf.model_builder.abstract_component import Component
+from draf.abstract_component import Component
 
 
 class Minimal(Component):

@@ -2,7 +2,7 @@
 
 
 import draf
-from draf.model_builder.components import *
+from draf.components import *
 
 
 def main():

@@ -14,12 +14,12 @@ from tqdm.auto import tqdm
 
 from draf import helper as hp
 from draf import paths
+from draf.abstract_component import Component
 from draf.core.datetime_handler import DateTimeHandler
 from draf.core.draf_base_class import DrafBaseClass
 from draf.core.entity_stores import Dimensions, Params, Scenarios
 from draf.core.scenario import Scenario
 from draf.core.time_series_prepper import TimeSeriesPrepper
-from draf.model_builder.abstract_component import Component
 from draf.plotting.cs_plotting import CsPlotter
 from draf.plotting.scen_plotting import ScenPlotter
 

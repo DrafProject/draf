@@ -7,12 +7,11 @@ import pandas as pd
 from gurobipy import GRB, Model, quicksum
 
 from draf import Collectors, Dimensions, Params, Results, Scenario, Vars
+
+# from draf.model_builder import autocollectors
+from draf.abstract_component import Component
 from draf.conventions import Descs
 from draf.helper import conv, get_annuity_factor, set_component_order_by_order_restrictions
-
-# from draf.model_builder import collectors
-from draf.model_builder.abstract_component import Component
-from draf.prep import SRC
 from draf.prep import DataBase as db
 
 logger = logging.getLogger(__name__)
@@ -66,14 +65,16 @@ class Main(Component):
             GRB.MINIMIZE,
         )
 
-        # C
+        # Costs (C)
         m.addConstr(v.C_TOT_op_ == quicksum(c.C_TOT_op_.values()), "DEF_C_TOT_op_")
         c.C_TOT_["op"] = v.C_TOT_op_
 
         if sc.consider_invest:
-            # m.addConstr( (v.C_TOT_inv_ == collectors.C_inv_(p, v, r=p.k__r_) * conv("€", "k€", 1e-3)) )
-            # m.addConstr( (v.C_TOT_invAnn_ == collectors.C_inv_Annual_(p, v, r=p.k__r_) * conv("€", "k€", 1e-3)) )
-            # m.addConstr( (v.C_TOT_RMI_ == collectors.C_TOT_RMI_(p, v) * conv("€", "k€", 1e-3)), "DEF_C_TOT_RMI_", )
+            ## AUTOCOLLECTORS ----------------------------------------------------------------------
+            # m.addConstr( (v.C_TOT_inv_ == autocollectors.C_inv_(p, v, r=p.k__r_) * conv("€", "k€", 1e-3)) )
+            # m.addConstr( (v.C_TOT_invAnn_ == autocollectors.C_inv_Annual_(p, v, r=p.k__r_) * conv("€", "k€", 1e-3)) )
+            # m.addConstr( (v.C_TOT_RMI_ == autocollectors.C_TOT_RMI_(p, v) * conv("€", "k€", 1e-3)), "DEF_C_TOT_RMI_", )
+            ## -------------------------------------------------------------------------------------
             m.addConstr(v.C_TOT_inv_ == quicksum(c.C_TOT_inv_.values()), "DEF_C_TOT_inv_")
             m.addConstr(v.C_TOT_RMI_ == quicksum(c.C_TOT_RMI_.values()), "DEF_C_TOT_RMI_")
             m.addConstr(
@@ -85,7 +86,7 @@ class Main(Component):
 
         m.addConstr(v.C_TOT_ == quicksum(c.C_TOT_.values()), "DEF_C_TOT_")
 
-        # CE
+        # Carbon Emissions (CE)
         m.addConstr(
             v.CE_TOT_ == p.k__PartYearComp_ * quicksum(c.CE_TOT_.values()),
             "DEF_CE_TOT_",
@@ -94,7 +95,7 @@ class Main(Component):
         # Penalty
         m.addConstr(v.Penalty_ == quicksum(c.Penalty_.values()), "DEF_Penalty_")
 
-        # Electricity
+        # Electricity (EL)
         m.addConstrs(
             (
                 quicksum(x(t) for x in c.P_EL_source_T.values())
@@ -291,7 +292,7 @@ class Fuel(Component):
         sc.var("C_Fuel_", doc="Total cost for fuel", unit="k€/a")
         sc.var("F_fuel_F", doc="Total fuel consumption", unit="kW")
 
-    def model_func(self, sc, m, d, p, v, c):
+    def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         m.addConstrs(
             (v.F_fuel_F[f] == quicksum(x(f) for x in c.F_fuel_F.values()) for f in d.F),
             "DEF_F_fuel_F",

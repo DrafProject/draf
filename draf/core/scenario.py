@@ -17,13 +17,13 @@ import pyomo.environ as pyo
 
 from draf import helper as hp
 from draf import paths
+from draf.abstract_component import Component
 from draf.conventions import Etypes
 from draf.core.datetime_handler import DateTimeHandler
 from draf.core.draf_base_class import DrafBaseClass
 from draf.core.entity_stores import Collectors, Dimensions, Params, Results, Vars
 from draf.core.mappings import GRB_OPT_STATUS, VAR_PAR
 from draf.core.time_series_prepper import TimeSeriesPrepper
-from draf.model_builder.abstract_component import Component
 from draf.plotting import ScenPlotter
 from draf.prep.data_base import ParDat
 from draf.tsa.demand_analyzer import DemandAnalyzer

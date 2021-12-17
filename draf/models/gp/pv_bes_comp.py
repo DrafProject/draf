@@ -3,7 +3,7 @@ see: https://mfleschutz.github.io/draf-showcase/#/2
 """
 
 import draf
-from draf.model_builder.components import *
+from draf.components import *
 
 
 def main():
