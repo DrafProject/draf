@@ -10,7 +10,6 @@ from gurobipy import GRB
 import draf
 from draf import Collectors, Dimensions, Params, Results, Scenario, Vars
 
-
 def params_func(sc: draf.Scenario):
 
     # General

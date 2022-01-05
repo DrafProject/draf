@@ -1,6 +1,6 @@
 import pytest
 
-from draf.models.gp import (
+from examples.gp import (
     bev_comp,
     der_hut_comp,
     minimal,
@@ -10,10 +10,9 @@ from draf.models.gp import (
     pv_bes,
     pv_bes_comp,
 )
-from draf.models.pyo import pv as pyo_pv
+from examples.pyo import pv as pyo_pv
 
 
-@pytest.mark.slow
 def test_pyo():
     assert pv.main().REF_scen.res.C_TOT_ == pytest.approx(pyo_pv.main().REF_scen.res.C_TOT_)
 

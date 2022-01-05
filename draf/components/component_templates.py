@@ -196,8 +196,10 @@ class EG(Component):
         if "RTP" in self.prepared_tariffs:
             sc.prep.c_EG_RTP_T()
         if "TOU" in self.prepared_tariffs:
+            sc.prep.c_EG_RTP_T()
             sc.prep.c_EG_TOU_T()
         if "FLAT" in self.prepared_tariffs:
+            sc.prep.c_EG_RTP_T()
             sc.prep.c_EG_FLAT_T()
         sc.param(
             "c_EG_T",
@@ -931,28 +933,55 @@ class BEV(Component):
         c.Penalty_["BEV"] = v.x_BEV_penalty_
 
 
-@dataclass
 class PROD(Component):
-    """Production containing production process (PP) and product storage (PS)."""
+    """Product demand and product balance
+
+    Product balance:
+        DEM <-- |
+        PP  --> |
+        PS  <-> |
+    """
+
+    def __init__(self, sorts=(1,), machines=(1,)) -> None:
+        self.sorts: int = sorts
+        self.machines: int = machines
+
+    def dim_func(self, sc: Scenario):
+        sc.dim("S", data=self.sorts, doc="Product sorts")
+        sc.dim("M", data=self.machines, doc="Production machines")
+
+    def param_func(self, sc: Scenario):
+        sc.collector("dG_PROD_TS", doc="Positive = into the balance nod", unit="t/h")
+        sc.param("dG_PROD_Dem_TS", fill=2500, doc="Product demand", unit="t/h")
+
+    def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
+        T, S = d.T, d.S
+
+        c.dG_PROD_TS["PRODdem"] = lambda t, s: -p.dG_PROD_Dem_TS[t, s]
+        m.addConstrs(
+            (quicksum(f(t, s) for f in c.dG_PROD_TS.values()) == 0 for t in T for s in S),
+            "DEF_G_balance",
+        )
+
+
+@dataclass
+class PP(Component):
+    """Production process"""
 
     allow_new: bool = False
 
     def param_func(self, sc: Scenario):
-        sc.dim("S", data=[1], doc="Production sorts")
-        sc.dim("M", data=[1], doc="Production machines")
-
-        # Production process (PP)
         sc.param("c_PP_SU_", data=0.1, doc="Costs per start up", unit="€/SU")
         sc.param("y_PP_revision_TM", fill=0, doc="If in revision").loc[:, 1] = [
             1 if datetime.date(sc.year, 3, 15) <= x.date() <= datetime.date(sc.year, 3, 16) else 0
             for x in sc.dtindex_custom
         ]
-        sc.param("dG_PP_Dem_TS", fill=10, doc="Product demand", unit="t/h")
-        sc.param("P_PP_CAPx_M", fill=2500, doc="", unit="kW_el")
+        sc.param("y_PP_compat_SM", fill=1, doc="If machine and sort is compatible")
+        sc.param("P_PP_CAPx_M", fill=2500 * 35, doc="", unit="kW_el")
         sc.param(
             "eta_PP_M", fill=35, doc="Production-process-specific power demand", unit="kW_el/t"
         )
-        sc.param("k_PP_minPL_M", fill=0.5, doc="Minimum part load")
+        sc.param("k_PP_minPL_M", fill=1.0, doc="Minimum part load")
         sc.var("dG_PP_TSM", doc="Production of machine", unit="t/h")
         sc.var("P_PP_TSM", doc="Nominal power consumption of machine", unit="kW_el")
         sc.var("C_PP_SU_", doc="Total cost of start up", unit="k€", lb=-GRB.INFINITY)
@@ -965,27 +994,9 @@ class PROD(Component):
             sc.param("k_PP_RMI_", data=0)
             sc.var("P_PP_CAPn_M", doc="New capacity", unit="kW_el")
 
-        # Product storage (PS)
-        sc.param("G_PS_CAPx_S", fill=5000, doc="Existing storage capacity of product", unit="t")
-        sc.param("k_PS_min_S", fill=0.1, doc="Share of minimal required storage filling level")
-        sc.param("k_PS_init_S", fill=0.5, doc="Initial storage filling level")
-        sc.param("y_PS_compat_SM", fill=1, doc="If machine and sort is compatible")
-        sc.var("G_PS_TS", doc="Storage filling level", unit="t")
-        sc.var(
-            "G_PS_delta_S", doc="Final time step deviation from init", unit="t", lb=-GRB.INFINITY
-        )
-        sc.var("E_PS_deltaTot_", doc="Energy equivalent", unit="kWh_el")
-        if sc.consider_invest:
-            sc.param("z_PS_S", fill=int(self.allow_new), doc="If new storage capacity is allowed")
-            sc.param("c_PS_inv_", data=1000, doc="Investment cost", unit="€/t")  # TODO
-            sc.param("N_PS_", data=50, doc="Operation life", unit="a")
-            sc.param("k_PS_RMI_", data=0)
-            sc.var("G_PS_CAPn_S", doc="New capacity", unit="t")
-
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         T, S, M = d.T, d.S, d.M
 
-        # Production process (PP)
         def cap_PP_M(m):
             capx = p.P_PP_CAPx_M[m]
             return capx + p.z_PP_M[m] * v.P_PP_CAPn_M[m] if sc.consider_invest else capx
@@ -993,7 +1004,7 @@ class PROD(Component):
         m.addConstrs(
             (
                 v.dG_PP_TSM[t, s, m] * p.eta_PP_M[m]
-                == v.P_PP_TSM[t, s, m] * p.y_PS_compat_SM[s, m] * (1 - p.y_PP_revision_TM[t, m])
+                == v.P_PP_TSM[t, s, m] * p.y_PP_compat_SM[s, m] * (1 - p.y_PP_revision_TM[t, m])
                 for t in T
                 for s in S
                 for m in M
@@ -1033,6 +1044,8 @@ class PROD(Component):
             ),
             "DEF_SU",
         )
+
+        c.dG_PROD_TS["PP"] = lambda t, s: v.dG_PP_TSM.sum(t, s, "*")
         c.P_EL_sink_T["PP"] = lambda t: v.P_PP_TSM.sum(t, "*", "*")
         c.C_TOT_op_["PP_SU"] = v.C_PP_SU_
         if sc.consider_invest:
@@ -1041,27 +1054,41 @@ class PROD(Component):
             c.C_TOT_invAnn_["PP"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_PP_)
             c.C_TOT_RMI_["PP"] = C_inv_ * p.k_PP_RMI_
 
-        # Product storage (PS)
+
+@dataclass
+class PS(Component):
+    """Product storage"""
+
+    def param_func(self, sc: Scenario):
+        sc.param("G_PS_CAPx_S", fill=25000, doc="Existing storage capacity of product", unit="t")
+        sc.param("k_PS_min_S", fill=0.0, doc="Share of minimal required storage filling level")
+        sc.param("k_PS_init_S", fill=1.0, doc="Initial storage filling level")
+        sc.var("G_PS_TS", doc="Storage filling level", unit="t")
+        sc.var(
+            "G_PS_delta_S",
+            doc="Final time step deviation from init",
+            unit="t",
+            lb=0,  # -GRB.INFINITY,
+        )
+        sc.var("E_PS_deltaTot_", doc="Energy equivalent", unit="kWh_el")
+        if sc.consider_invest:
+            sc.param("z_PS_S", fill=int(self.allow_new), doc="If new storage capacity is allowed")
+            sc.param("c_PS_inv_", data=1000, doc="Investment cost", unit="€/t")  # TODO
+            sc.param("N_PS_", data=50, doc="Operation life", unit="a")
+            sc.param("k_PS_RMI_", data=0)
+            sc.var("G_PS_CAPn_S", doc="New capacity", unit="t")
+
+    def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
+        T, S = d.T, d.S
+
         def cap_PS_S(s):
             capx = p.G_PS_CAPx_S[s]
             return capx + p.z_PS_S[s] * v.G_PS_CAPn_S[s] if sc.consider_invest else capx
 
-        m.addConstrs(
-            (
-                v.G_PS_TS[t, s]
-                == v.G_PS_TS[t - 1, s]
-                + p.k__dT_ * v.dG_PP_TSM.sum(t, s, "*")
-                - p.k__dT_ * p.dG_PP_Dem_TS[t, s]
-                for t in T[1:]
-                for s in S
-            ),
-            "BAL_PS",
-        )
         m.addConstrs((v.G_PS_TS[t, s] <= cap_PS_S(s) for t in T for s in S), "RES_PS")
         m.addConstrs(
             (v.G_PS_TS[t, s] >= p.k_PS_min_S[s] * cap_PS_S(s) for t in T for s in S), "MIN_PS"
         )
-        m.addConstrs((v.G_PS_TS[min(T), s] == p.k_PS_init_S[s] * cap_PS_S(s) for s in S), "INI_PS")
         m.addConstrs(
             (v.G_PS_TS[max(T), s] == p.k_PS_init_S[s] * cap_PS_S(s) + v.G_PS_delta_S[s] for s in S),
             "END_PS",
@@ -1070,6 +1097,14 @@ class PROD(Component):
             v.E_PS_deltaTot_ == v.G_PS_delta_S.sum() * sc.params.eta_PP_M.max(),
             "DEF_E_PS_deltaTot_",
         )
+
+        def get_output(t, s):
+            if t == min(T):
+                return p.k__dT_ * ((p.k_PS_init_S[s] * cap_PS_S(s)) - v.G_PS_TS[t, s])
+            else:
+                return p.k__dT_ * (v.G_PS_TS[t - 1, s] - v.G_PS_TS[t, s])
+
+        c.dG_PROD_TS["PS"] = get_output
         c.Penalty_["PS"] = v.E_PS_deltaTot_ * sc.params.c_EG_T.mean()
         if sc.consider_invest:
             C_inv_ = v.G_PS_CAPn_S.sum() * p.c_PS_inv_ * conv("€", "k€", 1e-3)
@@ -1093,7 +1128,9 @@ order_restrictions = [
     ("H2H1", {}),
     ("HP", {"cDem", "hDem"}),  # HP calculates COP dependent on thermal demand temperatures
     ("TES", {"cDem", "hDem"}),  # TESs can be defined for every thermal demand temperature level
-    ("PROD", {}),
+    ("PROD", {"PP", "PS"}),
+    ("PP", {}),
+    ("PS", {}),
 ]
 order_restrictions.append(("Main", [x[0] for x in order_restrictions]))
 

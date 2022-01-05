@@ -424,7 +424,7 @@ class CsPlotter(BasePlotter):
 
                 if len(dim) > 1:
                     if select is None:
-                        ser = ser.sum(level=0)
+                        ser = ser.groupby(level=0).sum()
                     else:
                         indexer = select if isinstance(select, Tuple) else (select,)
                         ser = ser.loc[(slice(None, None),) + indexer]
@@ -871,7 +871,7 @@ class CsPlotter(BasePlotter):
         for sc in cs.scens_list:
             ser1 = sc.get_entity(ent1)
             ser2 = sc.get_entity(ent2)
-            d[sc.id] = ser1.sum(level=0).corr(ser2.sum(level=0))
+            d[sc.id] = ser1.groupby(level=0).sum.corr(ser2.groupby(level=0).sum())
         return pd.Series(d)
 
 

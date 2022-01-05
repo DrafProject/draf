@@ -107,10 +107,7 @@ class TimeSeriesPrepper:
         """A Time-of-Use tariff with two prices.
         If no prices are given the according RTP tariff is taken as basis.
         """
-        sc = self.sc
-
-        holis = getattr(holidays, sc.country)(prov=prov)
-
+        holis = getattr(holidays, self.sc.country)(prov=prov)
         isLowTime_T = np.array(
             [
                 True
@@ -136,7 +133,7 @@ class TimeSeriesPrepper:
                 low_price = min(prices)
                 high_price = max(prices)
 
-        return sc.param(
+        return self.sc.param(
             name=name,
             unit="€/kWh_el",
             doc=f"Time-Of-Use-tariff (calculated from Real-time-price)",

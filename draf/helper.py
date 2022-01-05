@@ -310,7 +310,7 @@ def topological_sort(source):
                     name
                 )  # remember what we emitted for difference_update() in next pass
         if not next_emitted:  # all entries have unmet deps, one of two things is wrong...
-            raise ValueError("cyclic or missing dependancy detected: %r" % (next_pending,))
+            raise ValueError("cyclic or missing dependency detected: %r" % (next_pending,))
         pending = next_pending
         emitted = next_emitted
 
@@ -338,12 +338,6 @@ def make_symlink_to_cache():
     cache_dir = paths.CACHE_DIR
     link_dir.symlink_to(target=cache_dir, target_is_directory=True)
     print(f"Symbolic link created: {link_dir} --> {cache_dir}")
-
-
-def is_a_lambda(v):
-    # https://stackoverflow.com/a/3655857
-    LAMBDA = lambda: 0
-    return isinstance(v, type(LAMBDA)) and v.__name__ == LAMBDA.__name__
 
 
 def get_value_from_varOrPar(term):

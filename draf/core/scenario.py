@@ -316,6 +316,10 @@ class Scenario(DrafBaseClass, DateTimeHandler):
     def add_components(self, components: List):
         self._set_time_trace()
         logger.info(f"Set params for scenario {self.id}")
+
+        for comp in components:
+            comp.dim_func(sc=self)
+
         for comp in components:
             logger.debug(f" ⤷ component {comp.__class__.__name__}")
             comp.param_func(sc=self)
@@ -959,7 +963,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         return {comp: self._get_BalTermValues(bal_name, term) for comp, term in collector.items()}
 
     def _get_BalTermValues(self, bal_name: str, term: Any) -> float:
-        if hp.is_a_lambda(term):
+        if callable(term):
             idx = self._get_idx(bal_name)
             if isinstance(idx, pd.MultiIndex):
                 return sum(hp.get_value_from_varOrPar(term(*i)) for i in idx)

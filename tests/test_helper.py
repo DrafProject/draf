@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from draf import helper as hp
 
@@ -71,3 +72,13 @@ def test_ser_to_df_for_latex_table():
 
 def test_human_readable_size():
     assert hp.human_readable_size(size=1400, decimal_places=2) == "1.40 KB"
+
+
+def test_topological_sort():
+    order_restriction_with_cyclic_dependency = [
+        ("A", {"B"}),
+        ("B", {"C"}),
+        ("C", {"A"}),
+    ]
+    with pytest.raises(ValueError):
+        list(hp.topological_sort(order_restriction_with_cyclic_dependency))

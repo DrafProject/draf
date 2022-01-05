@@ -77,8 +77,8 @@ Other
 
 # Usage
 
-For usage examples please see example models in [draf/models](draf/models).
-Start with [`minimal.py`](draf/models/minimal.py)
+For usage examples please see example models in [examples](examples).
+Start with [`minimal.py`](examples/gp/minimal.py)
 
 For the usage of Gurobi, a valid Gurobi license is required.
 
