@@ -78,6 +78,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         doc: str = "No doc available.",
         coords: Tuple[float, float] = None,
         obj_vars: Tuple[str, str] = ("C_TOT_", "CE_TOT_"),
+        mdl_language: str = "gp",
     ):
         assert freq in ["15min", "30min", "60min"]
 
@@ -92,6 +93,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         self.dims = Dimensions()
         self.params = Params()
         self.obj_vars = obj_vars
+        self.mdl_language = mdl_language
 
     def __repr__(self):
         return self._make_repr(excluded=["scens", "dtindex", "dtindex_custom", "scen_df"])
@@ -252,6 +254,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 t2=self._t2,
                 components=components,
                 consider_invest=self.consider_invest,
+                mdl_language=self.mdl_language,
             )
         else:
             sc = getattr(self.scens, based_on)._special_copy()
@@ -458,7 +461,6 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         model_func: Optional[Callable] = None,
         speed_up: bool = True,
         scens: Optional[List] = None,
-        mdl_language: str = "gp",
     ) -> CaseStudy:
         """Set model for multiple scenarios at once."""
         if scens is None:
@@ -467,7 +469,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         pbar = tqdm(scens)
         for sc in pbar:
             pbar.set_description(f"Build model for {sc.id}")
-            sc.set_model(model_func, speed_up=speed_up, mdl_language=mdl_language)
+            sc.set_model(model_func, speed_up=speed_up)
 
         return self
 

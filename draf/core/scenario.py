@@ -57,6 +57,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         cs_name: str = "no_case_study",
         components: Optional[List[Union[Component, type]]] = None,
         consider_invest: bool = False,
+        mdl_language="gp",
     ):
         self.id = id
         self.name = name
@@ -65,7 +66,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.consider_invest = consider_invest
         self.coords = coords
         self.cs_name = cs_name
-        self.mdl_language = "gp"
+        self.mdl_language = mdl_language
 
         self.dims = Dimensions()
         self.params = Params()
@@ -332,7 +333,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         custom_model_func: Optional[Callable] = None,
         custom_model_func_loc: int = 0,
         speed_up: bool = True,
-        mdl_language: str = "gp",
     ) -> Scenario:
         """Instantiates an optimization model and sets the custom_model_func on top of the given
         parameters and meta-informations for variables.
@@ -344,10 +344,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 custom_model_func is executed compared to the model_funcs of the components.
             speed_up: If speed increases should be exploited by converting the parameter objects to
                 tuple-dicts before building the constraints.
-            mdl_language: Choose either 'gp' or 'pyo'.
         """
-        self.mdl_language = mdl_language
-
         # TODO: The "factory" design pattern may be suitable to cover _instantiate_model and
         #       activate_vars (https://refactoring.guru/design-patterns/factory-method)
         self._instantiate_model()

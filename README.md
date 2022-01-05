@@ -48,7 +48,7 @@
 - **Time series analysis tools:**
   - `DemandAnalyzer`: analyze energy demand profiles
   - `PeakLoadAnalyzer`: analyze peak loads or run simple battery simulation
-- **Pre defined [components](draf/model_builder/components.py):**
+- **Easily parameterizable [component templates](draf/model_builder/components.py):**
   - E.g. Battery energy storage (BES), Battery electric vehicle (BEV), Combined heat and power (CHP), Heat pump (HP), Power to heat (P2H), Photovoltaic (PV), and Thermal energy storage (TES).
   - Sensible naming conventions for parameters and variables, see [Naming conventions](#naming-conventions).
 - **Parameter preparation tools:**
@@ -72,8 +72,6 @@
 Other
 
 - Runs on Windows, macOS and Linux.
-- Ecological assessment uses dynamic carbon emission factors calculated from historic national electric generation data.
-- Economic assessment uses historic day-ahead market prices.
 
 # Usage
 
