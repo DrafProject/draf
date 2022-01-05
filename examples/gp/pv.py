@@ -12,12 +12,6 @@ from draf import Collectors, Dimensions, Params, Results, Scenario, Vars
 
 def params_func(sc: Scenario):
 
-    # Dimensions
-    sc.dim("T", infer=True)
-
-    # General
-    sc.prep.k__dT_()
-
     # Total
     sc.var("C_TOT_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)
     sc.var("CE_TOT_", doc="Total emissions", unit="kgCO2eq/a", lb=-GRB.INFINITY)

@@ -9,8 +9,6 @@ from draf.abstract_component import Component
 
 class Minimal(Component):
     def param_func(self, sc: Scenario):
-        sc.dim("T", infer=True)
-        sc.prep.k__dT_()
         sc.var("C_TOT_", unit="€/a")
         sc.prep.c_EG_RTP_T()
         sc.prep.P_eDem_T(profile="G1", annual_energy=5e6)
