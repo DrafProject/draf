@@ -127,17 +127,14 @@ git push origin <tag_name>
 
 Type annotations are used throughout the project.
 
-# Status
+# License and Status
 
-This piece of software is in an early stage. Use at your own risk.
+Copyright (c) 2022 Markus Fleschutz
 
-# License
+License: [LGPL v3](https://www.gnu.org/licenses/lgpl-3.0.de.html)
 
-Copyright (c) 2021 Markus Fleschutz
-
-`draf` is developed by [Markus Fleschutz] since 2017 in a cooperative PhD between the [Munster Technological University], Ireland and the [Karlsruhe University of Applied Sciences], Germany.
-
-<https://www.gnu.org/licenses/lgpl-3.0.de.html>
+The development of `draf` was initiated by [Markus Fleschutz] in 2017 and continued in a cooperative PhD between the [MeSSO Research Group] of the [Munster Technological University], Ireland and the [Energy System Analysis Research Group] of the [Karlsruhe University of Applied Sciences], Germany.
+<img src="doc/images/MTU_HKA_Logo.svg" width="500" alt="MTU_HKA_Logo">
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
@@ -147,11 +144,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [`GurobiPy`]: https://pypi.org/project/gurobipy
 [`Pyomo`]: https://github.com/Pyomo/pyomo
 [anaconda]: https://www.anaconda.com/products/individual
+[Energy System Analysis Research Group]: https://www.h-ka.de/en/ikku/energy-system-analysis
+[Karlsruhe University of Applied Sciences]: https://www.h-ka.de/en
 [linear programming]: https://en.wikipedia.org/wiki/Linear_programming
-[Markus Fleschutz]: https://linktr.ee/m.fl
+[Markus Fleschutz]: https://mfleschutz.github.io
+[MeSSO Research Group]: https://messo.cit.ie
 [miniconda]: https://docs.conda.io/en/latest/miniconda.html
 [Mittelmann benchmark]: http://plato.asu.edu/ftp/milp.html
 [mixed integer]: https://en.wikipedia.org/wiki/Integer_programming
 [Munster Technological University]: https://www.mtu.ie
-[Karlsruhe University of Applied Sciences]: https://www.h-ka.de/en
 [xarray]: http://xarray.pydata.org/en/stable
