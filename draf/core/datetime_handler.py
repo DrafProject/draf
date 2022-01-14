@@ -76,7 +76,7 @@ class DateTimeHandler(ABC):
     def _get_last_int_loc_from_dtstring(self, s: str) -> int:
         x = self._get_int_loc_from_dtstring(s)
         try:
-            return x.end
+            return x.stop
         except AttributeError:
             return x
 
@@ -92,6 +92,11 @@ class DateTimeHandler(ABC):
         else:
             raise ValueError("One of steps or end must be given.")
         return t1, t2
+
+    def timeslice(self, start, stop):
+        start_int = self._get_first_int_loc_from_dtstring(start)
+        stop_int = self._get_last_int_loc_from_dtstring(stop)
+        return slice(start_int, stop_int)
 
     def dated(
         self, data: Union[pd.Series, pd.DataFrame], activated=True

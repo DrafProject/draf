@@ -320,7 +320,18 @@ class BES(Component):
     def param_func(self, sc: Scenario):
         sc.param("E_BES_CAPx_", data=self.E_CAPx, doc="Existing capacity", unit="kWh_el")
         sc.param("k_BES_ini_", data=0, doc="Initial and final energy filling share")
-        sc.param(from_db=db.eta_BES_cycle_)
+        sc.param(
+            "eta_BES_ch_",
+            data=(db.eta_BES_cycle_.data + 1) / 2,
+            doc="Charging efficiency",
+            src="@Carroquino_2021",
+        )
+        sc.param(
+            "eta_BES_dis_",
+            data=(db.eta_BES_cycle_.data + 1) / 2,
+            doc="Discharging efficiency",
+            src="@Carroquino_2021",
+        )
         sc.param(from_db=db.eta_BES_time_)
         sc.param(from_db=db.k_BES_inPerCap_)
         sc.param(from_db=db.k_BES_outPerCap_)
@@ -354,8 +365,7 @@ class BES(Component):
             (
                 v.E_BES_T[t]
                 == v.E_BES_T[t - 1] * p.eta_BES_time_
-                + v.P_BES_in_T[t] * p.eta_BES_cycle_ * p.k__dT_
-                - v.P_BES_out_T[t] * p.k__dT_
+                + (v.P_BES_in_T[t] * p.eta_BES_ch_ - v.P_BES_out_T[t] / p.eta_BES_dis_) * p.k__dT_
                 for t in d.T[1:]
             ),
             "BAL_BES",
@@ -830,7 +840,18 @@ class BEV(Component):
             data=1.0,
             doc="Storing efficiency. Must be 1.0 for the uncontrolled charging in REF",
         )
-        sc.param("eta_BEV_cycle_", from_db=db.eta_BES_cycle_)
+        sc.param(
+            "eta_BEV_ch_",
+            data=(db.eta_BES_cycle_.data + 1) / 2,
+            doc="Charging efficiency",
+            src="@Carroquino_2021",
+        )
+        sc.param(
+            "eta_BEV_dis_",
+            data=(db.eta_BES_cycle_.data + 1) / 2,
+            doc="Discharging efficiency",
+            src="@Carroquino_2021",
+        )
         sc.param("P_BEV_drive_TB", fill=0, doc="Power use", unit="kW_el")
         sc.param(
             "y_BEV_avail_TB",
@@ -873,9 +894,8 @@ class BEV(Component):
                 == v.E_BEV_TB[t - 1, b] * p.eta_BEV_time_
                 + p.k__dT_
                 * (
-                    v.P_BEV_in_TB[t, b] * p.eta_BEV_cycle_
-                    - p.P_BEV_drive_TB[t, b]
-                    - v.P_BEV_V2X_TB[t, b]
+                    v.P_BEV_in_TB[t, b] * p.eta_BES_ch_
+                    - (p.P_BEV_drive_TB[t, b] + v.P_BEV_V2X_TB[t, b]) / p.eta_BES_dis_
                 )
                 for t in T[1:]
                 for b in B
@@ -933,6 +953,7 @@ class BEV(Component):
         c.Penalty_["BEV"] = v.x_BEV_penalty_
 
 
+@dataclass
 class PROD(Component):
     """Product demand and product balance
 
@@ -942,9 +963,8 @@ class PROD(Component):
         PS  <-> |
     """
 
-    def __init__(self, sorts=(1,), machines=(1,)) -> None:
-        self.sorts: int = sorts
-        self.machines: int = machines
+    sorts: Tuple = (1,)
+    machines: Tuple = (1,)
 
     def dim_func(self, sc: Scenario):
         sc.dim("S", data=self.sorts, doc="Product sorts")
@@ -952,7 +972,7 @@ class PROD(Component):
 
     def param_func(self, sc: Scenario):
         sc.collector("dG_PROD_TS", doc="Positive = into the balance nod", unit="t/h")
-        sc.param("dG_PROD_Dem_TS", fill=2500, doc="Product demand", unit="t/h")
+        sc.param("dG_PROD_Dem_TS", fill=40, doc="Product demand", unit="t/h")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         T, S = d.T, d.S
@@ -972,15 +992,10 @@ class PP(Component):
 
     def param_func(self, sc: Scenario):
         sc.param("c_PP_SU_", data=0.1, doc="Costs per start up", unit="€/SU")
-        sc.param("y_PP_revision_TM", fill=0, doc="If in revision").loc[:, 1] = [
-            1 if datetime.date(sc.year, 3, 15) <= x.date() <= datetime.date(sc.year, 3, 16) else 0
-            for x in sc.dtindex_custom
-        ]
+        sc.param("y_PP_avail_TM", fill=1, doc="If avail")
         sc.param("y_PP_compat_SM", fill=1, doc="If machine and sort is compatible")
-        sc.param("P_PP_CAPx_M", fill=2500 * 35, doc="", unit="kW_el")
-        sc.param(
-            "eta_PP_M", fill=35, doc="Production-process-specific power demand", unit="kW_el/t"
-        )
+        sc.param("P_PP_CAPx_M", fill=2800, doc="", unit="kW_el")
+        sc.param("eta_PP_SM", fill=0.025, doc="Production efficiency", unit="t/kW_el")
         sc.param("k_PP_minPL_M", fill=1.0, doc="Minimum part load")
         sc.var("dG_PP_TSM", doc="Production of machine", unit="t/h")
         sc.var("P_PP_TSM", doc="Nominal power consumption of machine", unit="kW_el")
@@ -1003,8 +1018,11 @@ class PP(Component):
 
         m.addConstrs(
             (
-                v.dG_PP_TSM[t, s, m] * p.eta_PP_M[m]
-                == v.P_PP_TSM[t, s, m] * p.y_PP_compat_SM[s, m] * (1 - p.y_PP_revision_TM[t, m])
+                v.dG_PP_TSM[t, s, m]
+                == v.P_PP_TSM[t, s, m]
+                * p.eta_PP_SM[s, m]
+                * p.y_PP_compat_SM[s, m]
+                * p.y_PP_avail_TM[t, m]
                 for t in T
                 for s in S
                 for m in M
@@ -1060,7 +1078,7 @@ class PS(Component):
     """Product storage"""
 
     def param_func(self, sc: Scenario):
-        sc.param("G_PS_CAPx_S", fill=25000, doc="Existing storage capacity of product", unit="t")
+        sc.param("G_PS_CAPx_S", fill=2000, doc="Existing storage capacity of product", unit="t")
         sc.param("k_PS_min_S", fill=0.0, doc="Share of minimal required storage filling level")
         sc.param("k_PS_init_S", fill=1.0, doc="Initial storage filling level")
         sc.var("G_PS_TS", doc="Storage filling level", unit="t")
@@ -1072,7 +1090,7 @@ class PS(Component):
         )
         sc.var("E_PS_deltaTot_", doc="Energy equivalent", unit="kWh_el")
         if sc.consider_invest:
-            sc.param("z_PS_S", fill=int(self.allow_new), doc="If new storage capacity is allowed")
+            sc.param("z_PS_S", fill=0, doc="If new storage capacity is allowed")
             sc.param("c_PS_inv_", data=1000, doc="Investment cost", unit="€/t")  # TODO
             sc.param("N_PS_", data=50, doc="Operation life", unit="a")
             sc.param("k_PS_RMI_", data=0)
@@ -1090,11 +1108,11 @@ class PS(Component):
             (v.G_PS_TS[t, s] >= p.k_PS_min_S[s] * cap_PS_S(s) for t in T for s in S), "MIN_PS"
         )
         m.addConstrs(
-            (v.G_PS_TS[max(T), s] == p.k_PS_init_S[s] * cap_PS_S(s) + v.G_PS_delta_S[s] for s in S),
+            (v.G_PS_TS[max(T), s] == p.k_PS_init_S[s] * cap_PS_S(s) - v.G_PS_delta_S[s] for s in S),
             "END_PS",
         )
         m.addConstr(
-            v.E_PS_deltaTot_ == v.G_PS_delta_S.sum() * sc.params.eta_PP_M.max(),
+            v.E_PS_deltaTot_ == v.G_PS_delta_S.sum() / sc.params.eta_PP_SM.min(),
             "DEF_E_PS_deltaTot_",
         )
 

@@ -21,7 +21,7 @@ class Etypes:
     dG = Alias(en="Product flow", de="Produkt flow", units=["t/h"])
     dQ = Alias(en="Heat flow", de="Wärmestrom", units=["kW_th", "kW"])
     E = Alias(en="Electrical energy", de="Elektrische Energie", units=["kWh_el"])
-    eta = Alias(en="Efficiency", de="Effizienz", units=["", "kW_th/kW", "kW_el/kW", "kWh_th/kWh", "kW_el/t"])
+    eta = Alias(en="Efficiency", de="Effizienz", units=["", "kW_th/kW", "kW_el/kW", "kWh_th/kWh", "t/kW_el"])
     F = Alias(en="Fuel", de="Brennstoff", units=["kW", "kWh"])
     G = Alias(en="Product", de="Produkt", units=["t"])
     k = Alias(en="A ratio", de="ein Verhältnis", units=["", "h"])
@@ -40,6 +40,8 @@ class Descs:
     # SORTING_START
     CAPn = Alias(en="New Capacity", de="Neue Kapazität")
     CAPx = Alias(en="Existing Capacity", de="Bestehende Kapazität")
+    ch = Alias(en="Charging", de="Lade-")
+    dis = Alias(en="Discharging", de="Entlade-")
     FI = Alias(en="Feed-in", de="Einspeisungsanteil")
     inv = Alias(en="Investment", de="Investitionen")
     MEF = Alias(en="Marginal Power Plant Emission Factors", de="Marginale CO2-Emissionsfaktoren des Stromsystems")

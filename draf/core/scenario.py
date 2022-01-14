@@ -469,6 +469,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         keep_vars: bool = True,
         postprocess_func: Optional[Callable] = None,
         which_solver="gurobi",
+        solver_params: Optional[Dict] = None,
     ) -> Scenario:
         """Solves the optimization problem and does postprocessing if the function is given.
         Results are stored in the Results-object of the scenario.
@@ -505,7 +506,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         if self.mdl_language == "gp":
             assert which_solver == "gurobi"
-            self._optimize_gurobipy(**kwargs)
+            self._optimize_gurobipy(**kwargs, solver_params=solver_params)
 
         elif self.mdl_language == "pyo":
             self._optimize_pyomo(**kwargs, which_solver=which_solver)
@@ -515,12 +516,17 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         return self
 
     def _optimize_gurobipy(
-        self, logToConsole, outputFlag, show_results, keep_vars, postprocess_funcs
+        self, logToConsole, outputFlag, show_results, keep_vars, postprocess_funcs, solver_params
     ):
         logger.info(f"Optimize {self.id}")
         self._set_time_trace()
-        self.mdl.setParam("LogToConsole", int(logToConsole), verbose=False)
-        self.mdl.setParam("OutputFlag", int(outputFlag), verbose=False)
+
+        solver_params_dic = {"LogToConsole": int(logToConsole), "OutputFlag": int(outputFlag)}
+        if solver_params is not None:
+            solver_params_dic.update(solver_params)
+        for k, v in solver_params_dic.items():
+            self.mdl.setParam(k, v, verbose=False)
+
         self.mdl.optimize()
         self._update_time_param("t__solve_", "Time to solve the model", self._get_time_diff())
         status = self.mdl.Status

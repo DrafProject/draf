@@ -50,7 +50,8 @@ def params_func(sc: Scenario):
     sc.var("P_PV_T", doc="Producing electrical power", unit="kW_el")
     # BES
     sc.param("E_BES_CAPx_", data=100, doc="Existing capacity", unit="kWh_el")
-    sc.param(from_db=db.eta_BES_cycle_)
+    sc.param("eta_BES_ch_", data=(db.eta_BES_cycle_.data + 1) / 2, doc="Charging efficiency")
+    sc.param("eta_BES_dis_", data=(db.eta_BES_cycle_.data + 1) / 2, doc="Discharging efficiency")
     sc.param(from_db=db.eta_BES_time_)
     sc.param(from_db=db.k_BES_inPerCap_)
     sc.param(from_db=db.k_BES_outPerCap_)
@@ -122,8 +123,7 @@ def model_func(sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Col
         (
             v.E_BES_T[t]
             == v.E_BES_T[t - 1] * p.eta_BES_time_
-            + v.P_BES_in_T[t] * p.eta_BES_cycle_ * p.k__dT_
-            - v.P_BES_out_T[t] * p.k__dT_
+                + (v.P_BES_in_T[t] * p.eta_BES_ch_ - v.P_BES_out_T[t] / p.eta_BES_dis_) * p.k__dT_
             for t in d.T[1:]
         ),
         "BAL_BES",
