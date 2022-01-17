@@ -322,13 +322,13 @@ class BES(Component):
         sc.param("k_BES_ini_", data=0, doc="Initial and final energy filling share")
         sc.param(
             "eta_BES_ch_",
-            data=(db.eta_BES_cycle_.data + 1) / 2,
+            data=db.eta_BES_cycle_.data ** 0.5,
             doc="Charging efficiency",
             src="@Carroquino_2021",
         )
         sc.param(
             "eta_BES_dis_",
-            data=(db.eta_BES_cycle_.data + 1) / 2,
+            data=db.eta_BES_cycle_.data ** 0.5,
             doc="Discharging efficiency",
             src="@Carroquino_2021",
         )
