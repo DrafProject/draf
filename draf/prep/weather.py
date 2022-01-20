@@ -223,7 +223,6 @@ def get_nearest_station(
     for i, lat, lon in zip(df.index, lats, lons):
         destination = (lat, lon)
         distance[i] = great_circle(coords, destination).km
-
     xmin = distance.argmin()
     ser = df.loc[xmin].copy()
     ser.loc["distance_in_km"] = distance[xmin]
@@ -236,10 +235,10 @@ def filter_year(df, year):
     else:
         dt = datetime.datetime(year=year, month=12, day=31)
         bis = pd.to_datetime(df["bis_datum"], format="%Y%m%d")
-        return df[bis > dt].reset_index(drop=True)
+        return df[bis >= dt].reset_index(drop=True)
 
 
-def read_stations(data_type: str, cache: bool = True) -> pd.DataFrame:
+def read_stations(data_type: str, cache: bool = False) -> pd.DataFrame:
     fp_cache = CACHE_DIR / f"stations_{data_type}.parquet"
 
     if fp_cache.exists() and cache:

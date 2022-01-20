@@ -191,7 +191,7 @@ class EG(Component):
 
     def param_func(self, sc: Scenario):
         sc.collector("P_EG_sell_T", doc="Sold electricity power", unit="kW_el")
-        sc.param("c_EG_buyPeak_", data=self.c_buyPeak, doc="Peak price", unit="€/kW_el")
+        sc.param("c_EG_buyPeak_", data=self.c_buyPeak, doc="Peak price", unit="€/kW_el/a")
 
         if "RTP" in self.prepared_tariffs:
             sc.prep.c_EG_RTP_T()
