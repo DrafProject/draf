@@ -1,6 +1,3 @@
-"""DER-HUT: Distributed Energy Resources - Heat Upgrading Technologies"""
-
-
 import draf
 from draf.components import *
 

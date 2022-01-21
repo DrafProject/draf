@@ -1,4 +1,4 @@
-"""DER-HUT: Distributed Energy Resources - Heat Upgrading Technologies"""
+"""Flexible operation of an industrial process"""
 
 
 import draf

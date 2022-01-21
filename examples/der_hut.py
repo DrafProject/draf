@@ -1,4 +1,4 @@
-"""DER-HUT: Distributed Energy Resources - Heat Upgrading Technologies"""
+"""Distributed Energy Resources (DER) and Heat Upgrading Technologies (HUT)"""
 
 
 import draf

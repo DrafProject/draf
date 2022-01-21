@@ -1,4 +1,11 @@
-"""A very short model that populates the variables and parameters without `params_func`"""
+"""Very simple example with only one user-defined component.
+
+Notes:
+    - There is nothing to optimize.
+    - Most of the imports are type hints and can be omitted.
+    - param_func is DRAF syntax, the model_func is GurobiPy syntax.
+    - Most of the CaseStudy functions can be chained.
+"""
 
 from gurobipy import GRB, Model, quicksum
 
@@ -8,18 +15,31 @@ from draf.abstract_component import Component
 
 
 class Minimal(Component):
+
     def param_func(self, sc: Scenario):
-        sc.var("C_TOT_", unit="€/a")
+
+        # Define the optimization variable C_TOT_:
+        sc.var("C_TOT_", doc="Total costs", unit="€/a")
+        
+        # Prepare time-dependent day-ahead market prices as parameter c_EG_RTP_T:
         sc.prep.c_EG_RTP_T()
+        
+        # Prepare a time-dependent G1 standard load profile (Business on weekdays 08:00 - 18:00)
+        # with the annual energy of 5 GWh:
         sc.prep.P_eDem_T(profile="G1", annual_energy=5e6)
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
+
+        # Set the objective function:
         m.setObjective(v.C_TOT_, GRB.MINIMIZE)
+
+        # Add a constraint to the model
         m.addConstr(v.C_TOT_ == p.k__dT_ * quicksum(p.P_eDem_T[t] * p.c_EG_RTP_T[t] for t in d.T))
 
 
 def main():
     cs = draf.CaseStudy()
     cs.set_time_horizon(start="Apr-01 00:00", steps=24 * 2)
-    cs.add_REF_scen(components=[Minimal]).optimize()
+    cs.add_REF_scen(components=[Minimal])
+    cs.optimize()
     return cs
