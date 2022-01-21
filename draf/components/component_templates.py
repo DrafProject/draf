@@ -358,14 +358,15 @@ class BES(Component):
         )
         m.addConstrs((v.E_BES_T[t] <= cap for t in d.T), "MAX_BES_E")
         m.addConstrs(
-            (v.E_BES_T[t] == p.k_BES_ini_ * cap for t in [min(d.T), max(d.T)]),
+            (v.E_BES_T[t] == p.k_BES_ini_ * cap for t in [d.T[0], d.T[-1]]),
             "INI_BES",
         )
         m.addConstrs(
             (
                 v.E_BES_T[t]
                 == v.E_BES_T[t - 1] * p.eta_BES_time_
-                + (v.P_BES_in_T[t] * p.eta_BES_ch_ - v.P_BES_out_T[t] / p.eta_BES_dis_) * p.k__dT_
+                + (v.P_BES_in_T[t - 1] * p.eta_BES_ch_ - v.P_BES_out_T[t - 1] / p.eta_BES_dis_)
+                * p.k__dT_
                 for t in d.T[1:]
             ),
             "BAL_BES",
@@ -781,11 +782,7 @@ class TES(Component):
             "MAX_TES_OUT",
         )
         m.addConstrs(
-            (
-                v.Q_TES_TL[t, l] == p.k_TES_ini_L[l] * cap(l)
-                for t in [min(d.T), max(d.T)]
-                for l in d.L
-            ),
+            (v.Q_TES_TL[t, l] == p.k_TES_ini_L[l] * cap(l) for t in [d.T[0], d.T[-1]] for l in d.L),
             "INI_TES",
         )
 
@@ -842,13 +839,13 @@ class BEV(Component):
         )
         sc.param(
             "eta_BEV_ch_",
-            data=(db.eta_BES_cycle_.data + 1) / 2,
+            data=db.eta_BES_cycle_.data ** 0.5,
             doc="Charging efficiency",
             src="@Carroquino_2021",
         )
         sc.param(
             "eta_BEV_dis_",
-            data=(db.eta_BES_cycle_.data + 1) / 2,
+            data=db.eta_BES_cycle_.data ** 0.5,
             doc="Discharging efficiency",
             src="@Carroquino_2021",
         )
@@ -894,8 +891,8 @@ class BEV(Component):
                 == v.E_BEV_TB[t - 1, b] * p.eta_BEV_time_
                 + p.k__dT_
                 * (
-                    v.P_BEV_in_TB[t, b] * p.eta_BES_ch_
-                    - (p.P_BEV_drive_TB[t, b] + v.P_BEV_V2X_TB[t, b]) / p.eta_BES_dis_
+                    v.P_BEV_in_TB[t, b] * p.eta_BEV_ch_
+                    - (p.P_BEV_drive_TB[t, b] + v.P_BEV_V2X_TB[t, b]) / p.eta_BEV_dis_
                 )
                 for t in T[1:]
                 for b in B
@@ -914,7 +911,7 @@ class BEV(Component):
         m.addConstrs(
             (
                 v.E_BEV_TB[t, b] == p.k_BEV_ini_B[b] * p.E_BEV_CAPx_B[b]
-                for t in [min(T), max(T)]
+                for t in [T[0], T[-1]]
                 for b in B
             ),
             "INI_BEV",
@@ -1117,7 +1114,7 @@ class PS(Component):
         )
 
         def get_output(t, s):
-            if t == min(T):
+            if t == T[0]:
                 return p.k__dT_ * ((p.k_PS_init_S[s] * cap_PS_S(s)) - v.G_PS_TS[t, s])
             else:
                 return p.k__dT_ * (v.G_PS_TS[t - 1, s] - v.G_PS_TS[t, s])

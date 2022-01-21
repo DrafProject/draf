@@ -375,3 +375,38 @@ def address2coords(address: str, user_agent: str = "anonymous_draf_user") -> Tup
         coords = (location.latitude, location.longitude)
         print(f"Used location: {location.address}, {coords}")
         return coords
+
+
+def delete_cache(filter_str: str = "*") -> None:
+    """Deletes parts or all of the cache directory.
+
+    Unless `filter_str` is '*' only files are selected that contain the `filter_string` somewhere
+    in the filename.
+    """
+
+    s = "*" if filter_str == "*" else f"*{filter_str}*"
+
+    files = list(paths.CACHE_DIR.glob(f"{s}"))
+    lenf = len(files)
+
+    if lenf == 0:
+        print(f"No file found containing '{filter_str}'.")
+
+    else:
+        print(f"{lenf} files containing '{filter_str}':")
+
+        for f in files:
+            size = human_readable_size(f.stat().st_size)
+            print(f"\t{size:>5}  {f.name}")
+
+        if confirm_deletion(lenf):
+            for f in files:
+                f.unlink()
+            print(f"{lenf} files deleted")
+
+        else:
+            print("No files deleted")
+
+
+def confirm_deletion(nfiles: int) -> bool:
+    return input(f"Do you really want to delete these {nfiles} files? (y/n)") == "y"

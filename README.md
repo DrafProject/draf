@@ -75,8 +75,8 @@ Other
 
 # Usage
 
-For usage examples please see example models in [examples](examples).
-Start with [`minimal.py`](examples/gp/minimal.py)
+There are different examples for Gurob [examples](examples).
+Start with [`minimal.py`](examples/minimal.py)
 
 For the usage of Gurobi, a valid Gurobi license is required.
 
