@@ -114,7 +114,7 @@ class ScenPlotter(BasePlotter):
                 y="desc",
                 x="value",
                 color="comp",
-                pattern_shape="comp",
+                # pattern_shape="comp",  #FIXME: may cause issues
                 orientation="h",
                 color_discrete_sequence=px.colors.qualitative.Alphabet,
                 category_orders={"desc": sorted(df.desc.unique())},
