@@ -288,7 +288,10 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def get_entity(self, ent: str) -> Union[float, pd.Series]:
         """Get entity-data by its name."""
-        return self._all_ents_dict[ent]
+        try:
+            return getattr(self.res, ent)
+        except AttributeError:
+            return getattr(self.params, ent)
 
     def _get_entity_type(self, ent: str) -> str:
         """Return 'p' if 'ent' is a parameter and 'v' if ent is a variable."""

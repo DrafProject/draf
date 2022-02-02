@@ -48,6 +48,7 @@ class CsPlotter(BasePlotter):
             "Capacities ": ("capa_table", " fa-cubes fa-lg"),
             "Yields ": ("yields_table", " fa-eur fa-lg"),
             "eGrid ": ("eGrid_table", " fa-plug fa-lg"),
+            "eFlex ": ("eFlex_table", " fa-balance-scale"),
             "Pareto ": ("pareto_table", " fa-arrows-h fa-lg"),
             "BES ": ("bes_table", "fa-solid fa-battery-half fa-lg"),
             "Time ": ("time_table", " fa-clock-o fa-lg"),
@@ -84,35 +85,24 @@ class CsPlotter(BasePlotter):
     def yields_table(self, gradient: bool = False) -> pdStyler:
         """Returns a styled pandas table with cost and carbon savings, and avoidance cost."""
         cs = self.cs
-
-        savings = cs.pareto.iloc[0] - cs.pareto
-
-        rel_savings = savings / cs.pareto.iloc[0]
-
-        avoid_cost = -savings["C_TOT_"] / savings["CE_TOT_"] * 1e6  # in k€/kgCO2eq  # in €/tCO2eq
-
-        def get_cost(ent_name):
-            try:
-                return pd.Series(cs.get_ent(ent_name))
-            except KeyError:
-                return pd.NA
-
         df = pd.DataFrame(
             {
-                ("Absolute", "Costs"): cs.pareto["C_TOT_"],
-                ("Absolute", "Emissions"): cs.pareto["CE_TOT_"] / 1e3,
-                ("Abolute savings", "Costs"): savings["C_TOT_"],
-                ("Abolute savings", "Emissions"): savings["CE_TOT_"] / 1e3,
-                ("Relative savings", "Costs"): rel_savings["C_TOT_"],
-                ("Relative savings", "Emissions"): rel_savings["CE_TOT_"],
-                ("Annual costs", "C_invAnn"): get_cost("C_TOT_invAnn_"),
-                ("Annual costs", "C_op"): get_cost("C_TOT_op_"),
-                ("", "Emission avoidance costs"): avoid_cost,
-                ("", "C_inv"): get_cost("C_TOT_inv_"),
+                ("Absolute", "Costs"): cs.get_ent("C_TOT_"),
+                ("Absolute", "Emissions"): cs.get_ent("CE_TOT_") / 1e3,
+                ("Abolute savings", "Costs"): cs.get_diff("C_TOT_"),
+                ("Abolute savings", "Emissions"): cs.get_diff("CE_TOT_") / 1e3,
+                ("Relative savings", "Costs"): cs.get_diff("C_TOT_")
+                / cs.REF_scen.get_entity("C_TOT_"),
+                ("Relative savings", "Emissions"): cs.get_diff("CE_TOT_")
+                / cs.REF_scen.get_entity("CE_TOT_"),
+                ("Annual costs", "C_invAnn"): cs.get_ent("C_TOT_invAnn_"),
+                ("Annual costs", "C_op"): cs.get_ent("C_TOT_op_"),
+                ("", "Emission avoidance costs"): -cs.get_diff("C_TOT_")
+                / cs.get_diff("CE_TOT_")
+                * 1e6,
+                ("", "C_inv"): cs.get_ent("C_TOT_inv_"),
+                ("", "Payback time"): cs.get_ent("C_TOT_inv_") / cs.get_diff("C_TOT_op_"),
             }
-        )
-        df[("", "Payback time")] = df[("", "C_inv")] / (
-            df[("Annual costs", "C_op")].iloc[0] - df[("Annual costs", "C_op")]
         )
 
         def color_negative_red(val):
@@ -150,40 +140,113 @@ class CsPlotter(BasePlotter):
         ).set_table_styles(get_leftAlignedIndex_style() + get_multiColumnHeader_style(df))
 
     def bes_table(self, gradient: bool = False) -> pdStyler:
-        cs = self.cs
-        df = pd.DataFrame(index=cs.scens_ids)
-        df["CAPn"] = [sc.res.E_BES_CAPn_ for sc in cs.scens_list]
-        df["W_out"] = [sc.gte(sc.res.P_BES_out_T) / 1e3 for sc in cs.scens_list]
-        df["Charging_cycles"] = df["W_out"] / (df["CAPn"] / 1e3)
-        styled_df = df.style.format(
-            {"CAPn": "{:,.0f} kWh", "W_out": "{:,.0f} MWh/a", "Charging_cycles": "{:,.0f}"}
-        )
-        if gradient:
-            styled_df = styled_df.background_gradient(cmap="OrRd")
-        return styled_df
+        data = [
+            ("CAPn", "{:,.0f} kWh", lambda df, cs: cs.get_ent("E_BES_CAPn_")),
+            (
+                "W_out",
+                "{:,.0f} MWh/a",
+                lambda df, cs: [sc.gte(sc.res.P_BES_out_T) / 1e3 for sc in cs.scens_list],
+            ),
+            ("Charging_cycles", "{:,.0f}", lambda df, cs: df["W_out"] / (df["CAPn"] / 1e3)),
+        ]
+        return self.base_table(data=data, gradient=gradient)
 
     def eGrid_table(self, gradient: bool = False, pv: bool = False) -> pdStyler:
+        data = [
+            ("P_max", "{:,.0f} kW", lambda df, cs: cs.get_ent("P_EG_buyPeak_")),
+            ("P_max_reduction", "{:,.0f} kW", lambda df, cs: cs.get_diff("P_EG_buyPeak_")),
+            (
+                "P_max_reduction_rel",
+                "{:,.1%}",
+                lambda df, cs: df["P_max_reduction"] / df["P_max"].iloc[0],
+            ),
+            (
+                "t_use",
+                "{:,.0f} h",
+                lambda df, cs: [sc.get_EG_full_load_hours() for sc in cs.scens_list],
+            ),
+            (
+                "t_use_diff_rel",
+                "{:,.1%}",
+                lambda df, cs: (df["t_use"] - df["t_use"].iloc[0]) / df["t_use"].iloc[0],
+            ),
+            (
+                "W_buy",
+                "{:,.2f} GWh/a",
+                lambda df, cs: [sc.gte(sc.res.P_EG_buy_T) / 1e6 for sc in cs.scens_list],
+            ),
+            (
+                "W_sell",
+                "{:,.2f} GWh/a",
+                lambda df, cs: [sc.gte(sc.res.P_EG_sell_T) / 1e6 for sc in cs.scens_list],
+            ),
+        ]
+
+        if pv:
+            data.append(
+                (
+                    "W_pv_own",
+                    "{:,.2f} MWh/a",
+                    lambda df, cs: [sc.gte(sc.res.P_PV_OC_T) / 1e3 for sc in cs.scens_list],
+                ),
+            )
+
+        return self.base_table(data=data, gradient=gradient)
+
+    def eFlex_table(self, gradient: bool = False) -> pdStyler:
+        data = [
+            (
+                "avg P_devAbs",
+                "{:,.0f} kW",
+                lambda df, cs: [
+                    ((sc.res.P_EG_buy_T - cs.REF_scen.res.P_EG_buy_T).abs()).mean()
+                    for sc in cs.scens_list
+                ],
+            ),
+            (
+                "avg P_devAbs (%)",
+                "{:,.1%}",
+                lambda df, cs: df["avg P_devAbs"] / cs.REF_scen.res.P_EG_buy_T.mean(),
+            ),
+            (
+                "corr (P_dev,c_RTP)",
+                "{:,.3f}",
+                lambda df, cs: [
+                    (sc.res.P_EG_buy_T - cs.REF_scen.res.P_EG_buy_T).corr(sc.params.c_EG_RTP_T)
+                    for sc in cs.scens_list
+                ],
+            ),
+            (
+                "abs_flex_score",
+                "{:,.1f}",
+                lambda df, cs: df["avg P_devAbs"] * -df["corr (P_dev,c_RTP)"],
+            ),
+            (
+                "rel_flex_score",
+                "{:,.1%}",
+                lambda df, cs: df["avg P_devAbs (%)"] * -df["corr (P_dev,c_RTP)"],
+            ),
+        ]
+        return self.base_table(data=data, gradient=gradient).set_caption(
+            "<b>Legend</b>: <code>avg P_devAbs</code>: mean absolute deviation of the scenarios'"
+            " purchased power and the one of the reference case study."
+            " <code>corr (P_dev,c_RTP)</code>: Pearson correlation coefficient between the deviation of the scenarios'"
+            " purchased power and the one of the reference case study, and the real time prices."
+            " <code>abs_flex_score</code> / <code>rel_flex_score</code>: Column 1/2 multiplied with column 3."
+
+        )
+
+    def base_table(self, data: List[Tuple[str, str, Callable]], gradient: bool = False):
         cs = self.cs
         df = pd.DataFrame(index=cs.scens_ids)
-        df["P_max"] = [sc.res.P_EG_buyPeak_ for sc in cs.scens_list]
-        df["P_max_reduction"] = df["P_max"].iloc[0] - df["P_max"]
-        df["P_max_reduction_rel"] = df["P_max_reduction"] / df["P_max"].iloc[0]
-        df["t_use"] = [sc.get_EG_full_load_hours() for sc in cs.scens_list]
-        df["W_buy"] = [sc.gte(sc.res.P_EG_buy_T) / 1e6 for sc in cs.scens_list]
-        df["W_sell"] = [sc.gte(sc.res.P_EG_sell_T) / 1e6 for sc in cs.scens_list]
-        if pv:
-            df["W_pv_own"] = [sc.gte(sc.res.P_PV_OC_T) / 1e3 for sc in cs.scens_list]
-        styled_df = df.style.format(
-            {
-                "P_max": "{:,.0f} kW",
-                "P_max_reduction": "{:,.0f} kW",
-                "P_max_reduction_rel": "{:,.1%}",
-                "t_use": "{:,.0f} h",
-                "W_buy": "{:,.2f} GWh/a",
-                "W_sell": "{:,.2f} GWh/a",
-                "W_pv_own": "{:,.2f} MWh/a",
-            }
-        ).set_table_styles(get_leftAlignedIndex_style())
+
+        for name, fmt, func in data:
+            df[name] = func(df, cs)
+
+        format_dict = {name: fmt for name, fmt, func in data}
+
+        styled_df = df.style.format(format_dict).set_table_styles(get_leftAlignedIndex_style())
+
         if gradient:
             styled_df = styled_df.background_gradient(cmap="OrRd")
         return styled_df
@@ -269,7 +332,6 @@ class CsPlotter(BasePlotter):
                     ha="left",
                     va="bottom",
                 )
-            return fig
 
     def pareto_curves(
         self,
@@ -864,15 +926,25 @@ class CsPlotter(BasePlotter):
             {n: sc.get_CAP(which=which, agg=True) for n, sc in cs.scens_dic.items()}
         ).T
 
-    def _get_correlation(self, ent1: str, ent2: str) -> pd.Series:
-        """EXPERIMENTAL: Returns correlation coefficients between two entities for all scenarios."""
+    def _get_correlations(self, ent1: str, ent2: str) -> pd.Series:
+        """Returns correlation coefficients between two entities for all scenarios."""
         d = dict()
         cs = self.cs
         for sc in cs.scens_list:
             ser1 = sc.get_entity(ent1)
             ser2 = sc.get_entity(ent2)
-            d[sc.id] = ser1.groupby(level=0).sum.corr(ser2.groupby(level=0).sum())
+            d[sc.id] = ser1.groupby(level=0).sum().corr(ser2.groupby(level=0).sum())
         return pd.Series(d)
+
+    def correlations(self, ent1: str, ent2: str):
+        fig, ax = plt.subplots(figsize=(6, 3))
+        ser = self._get_correlations(ent1=ent1, ent2=ent2)
+        ser.plot.barh(ax=ax, width=0.85)
+        ax.invert_yaxis()
+        ax.margins(0.15, 0.15)
+        plt.bar_label(ax.containers[0], fmt="%.2f", padding=5, color="grey")
+        ax.set_xlabel("Correlation coefficient")
+        sns.despine()
 
 
 def _get_capa_heatmap(df) -> go.Figure:

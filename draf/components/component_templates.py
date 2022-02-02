@@ -206,6 +206,7 @@ class EG(Component):
         sc.var("P_EG_buyPeak_", doc="Peak electrical power", unit="kW_el")
 
         if self.consider_intensiveGridUse:
+            # FIXME: Currently not working
             sc.dim(
                 "G",
                 data=["7000-7500", "7500-8000", ">8000"],

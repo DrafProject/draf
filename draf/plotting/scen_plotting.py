@@ -99,12 +99,13 @@ class ScenPlotter(BasePlotter):
             return self._plotly_collector_plot(df)
 
     def _plt_collector_plot(self, df):
-        fig, ax = plt.subplots(figsize=(12, 6))
+        fig, ax = plt.subplots(figsize=(10, 6))
         fig.tight_layout()
-        df = df.pivot(index="doc", columns="comp", values="value")
-        df.plot.barh(stacked=True, ax=ax)
+        df = df.pivot(index="desc", columns="comp", values="value")
+        df.plot.barh(stacked=True, ax=ax, width=0.8)
         ax.legend(loc="center left", bbox_to_anchor=(1.0, 0.5))
         ax.set_ylabel("")
+        ax.invert_yaxis()
         sns.despine()
 
     def _plotly_collector_plot(self, df):

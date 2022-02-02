@@ -42,6 +42,11 @@ class Scenarios(DrafBaseClass):
         layout = "{bullet}{name:<10} | {doc}\n"
         return self._build_repr(layout, which_metadata=["doc"])
 
+    def rename(self, old_scen_id: str, new_scen_id: str) -> None:
+        sc = self.__dict__.pop(old_scen_id)
+        sc.id = new_scen_id
+        self.__dict__[new_scen_id] = sc
+
 
 class Dimensions(DrafBaseClass):
     """Stores dimensions."""

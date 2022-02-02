@@ -49,7 +49,7 @@ def open_latest_casestudy(name: str, verbose: bool = True) -> CaseStudy:
     files = sorted(list(fd.glob("*.p")))
     fp = files[-1]
     if verbose:
-        print(f"Open CaseStudy from {fp.name}")
+        print(f"Open CaseStudy {name} from {fp.name}")
     return open_casestudy(fp)
 
 
@@ -320,9 +320,8 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         for sc_name, ser in scen_df.items():
             doc_list = [f"{x[0]}={x[1]}" for x in zip(ser.index, ser.values)]
             long_doc = "; ".join(doc_list)
-            sc = self.add_scen(
-                id=f"sc{len(self.scens_dic)}", name=sc_name, doc=long_doc, based_on=based_on
-            )
+            scen_id = sc_name if sc_name.isidentifier() else f"sc{len(self.scens_dic)}"
+            sc = self.add_scen(id=scen_id, name=sc_name, doc=long_doc, based_on=based_on)
             sc.update_params(t__params_=0)
 
             for ent_name, value in ser.items():
@@ -505,9 +504,39 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
 
         return self
 
-    def get_ent(self, ent_name: str) -> Dict:
+    def get_entity_dict(self, ent_name: str) -> Dict:
         """Returns the data of an entity for all scenarios."""
-        return {name: sc.get_entity(ent_name) for name, sc in self.scens_dic.items()}
+        return {sc.id: sc.get_entity(ent_name) for sc in self.scens_list}
+
+    def get_collector_values(self, collector_name: str):
+        return pd.DataFrame(
+            {k: sc.collector_values[collector_name] for k, sc in self.scens_dic.items()}
+        )
+
+    def get_ent(self, ent_name) -> Union[pd.Series, pd.DataFrame]:
+        """Returns the data of an entity for all scenarios.
+
+        Returns a Series for scalar entities and a DataFrame for multi-dimensional entities.
+        """
+        try:
+            d = self.get_entity_dict(ent_name)
+            arbitrary_element = next(iter(d.values()))
+            if isinstance(arbitrary_element, pd.Series):
+                return pd.DataFrame(d)
+            else:
+                return pd.Series(d)
+        except KeyError:
+            return pd.NA
+
+    def get_diff(self, ent_name):
+        try:
+            d = {
+                sc.id: self.REF_scen.get_entity(ent_name) - sc.get_entity(ent_name)
+                for sc in self.scens_list
+            }
+            return pd.Series(d)
+        except KeyError:
+            return pd.NA
 
     def import_scens(
         self, other_cs: CaseStudy, exclude: List[str] = None, include: List[str] = None
