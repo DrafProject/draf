@@ -124,7 +124,7 @@ class TimeSeriesPrepper:
                 high_price = self.sc.params.c_EG_RTP_T[isHighTime_T].mean()
             except AttributeError as err:
                 logger.error(
-                    f"Mean price for TOU tariff cannot be inferred"
+                    "Mean price for TOU tariff cannot be inferred"
                     f" from RTP, since there is no RTP. {err}"
                 )
 
@@ -150,7 +150,7 @@ class TimeSeriesPrepper:
                 price = self.sc.params.c_EG_RTP_T.mean()
             except AttributeError as err:
                 logger.error(
-                    f"Mean price for FLAT tariff cannot be inferred"
+                    "Mean price for FLAT tariff cannot be inferred"
                     f" from RTP, since there is no RTP. {err}"
                 )
 

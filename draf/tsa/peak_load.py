@@ -241,12 +241,11 @@ class PeakLoadAnalyzer(DateTimeHandler):
         def get_success():
             if switch_point == p_eex_buy.max():
                 return (
-                    f"reduce the maximum peak power by "
-                    f"{self.p_el.max() - p_eex_buy.max():,.0f} kW."
+                    f"reduce the maximum peak power by {self.p_el.max() - p_eex_buy.max():,.0f} kW."
                 )
             else:
                 return (
-                    f"only reduce the maximum peak power by "
+                    "only reduce the maximum peak power by "
                     f"{self.p_el.max() - p_eex_buy.max():,.0f} kW instead of "
                     f"the wanted {self.p_el.max() - switch_point:,.0f} kW."
                 )

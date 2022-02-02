@@ -559,7 +559,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 if response == "y":
                     self.calculate_IIS()
             raise RuntimeError(
-                f"ERROR solving scenario {self.name}: mdl.Status= {status} ({GRB_OPT_STATUS[status]}) --> {self.mdl.Params.LogFile}"
+                f"ERROR solving scenario {self.name}: mdl.Status="
+                f" {status} ({GRB_OPT_STATUS[status]}) --> {self.mdl.Params.LogFile}"
             )
 
     def _optimize_pyomo(
@@ -585,7 +586,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             if show_results:
                 try:
                     print(
-                        f"{self.id}: C_TOT_={self.res.C_TOT_:.2f}, CE_TOT_={self.res.CE_TOT_:.2f} ({tc})"
+                        f"{self.id}: C_TOT_={self.res.C_TOT_:.2f},"
+                        f" CE_TOT_={self.res.CE_TOT_:.2f} ({tc})"
                     )
                 except ValueError:
                     logger.warning("res.C_TOT_ or res.CE_TOT_ not found.")
@@ -856,8 +858,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 expected_units = "None"
             if not unit in expected_units:
                 logger.warning(
-                    f"Unexpected unit {unit} for entity {name}. "
-                    f"Expected {adder}{expected_units}."
+                    f"Unexpected unit {unit} for entity {name}. Expected {adder}{expected_units}."
                 )
 
     def collector(

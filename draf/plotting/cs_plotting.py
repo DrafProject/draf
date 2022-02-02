@@ -229,11 +229,11 @@ class CsPlotter(BasePlotter):
         ]
         return self.base_table(data=data, gradient=gradient).set_caption(
             "<b>Legend</b>: <code>avg P_devAbs</code>: mean absolute deviation of the scenarios'"
-            " purchased power and the one of the reference case study."
-            " <code>corr (P_dev,c_RTP)</code>: Pearson correlation coefficient between the deviation of the scenarios'"
-            " purchased power and the one of the reference case study, and the real time prices."
-            " <code>abs_flex_score</code> / <code>rel_flex_score</code>: Column 1/2 multiplied with column 3."
-
+            " purchased power and the one of the reference case study. <code>corr"
+            " (P_dev,c_RTP)</code>: Pearson correlation coefficient between the deviation of the"
+            " scenarios' purchased power and the one of the reference case study, and the real time"
+            " prices. <code>abs_flex_score</code> / <code>rel_flex_score</code>: Column 1/2"
+            " multiplied with column 3."
         )
 
     def base_table(self, data: List[Tuple[str, str, Callable]], gradient: bool = False):
@@ -504,13 +504,11 @@ class CsPlotter(BasePlotter):
                 if show_info:
                     unit = "-" if sc.get_unit(ent) == "" else sc.get_unit(ent)
                     heatmap.layout.title = (
-                        "<span style='font-size:medium;'>"
-                        f"{grey('Scenario:')} <b>{scen_id}</b> ◦ {sc.doc}"
-                        f"<br>{grey(' ⤷ Entity:')} <b>{ent}</b>{title_addon_if_select} ◦ {sc.get_doc(ent)}"
-                        f"<br>{grey('    ⤷ Stats:')} ∑ <b>{data.sum():,.2f}</b> ◦ Ø <b>{data.mean():,.2f}</b>"
-                        f" ◦ min <b>{data.min():,.2f}</b> ◦ max <b>{data.max():,.2f}</b>"
-                        f"  [<b>{unit}</b>]"
-                        "</span>"
+                        f"<span style='font-size:medium;'>{grey('Scenario:')} <b>{scen_id}</b> ◦"
+                        f" {sc.doc}<br>{grey(' ⤷ Entity:')} <b>{ent}</b>{title_addon_if_select} ◦"
+                        f" {sc.get_doc(ent)}<br>{grey('    ⤷ Stats:')} ∑ <b>{data.sum():,.2f}</b> ◦"
+                        f" Ø <b>{data.mean():,.2f}</b> ◦ min <b>{data.min():,.2f}</b> ◦ max"
+                        f" <b>{data.max():,.2f}</b>  [<b>{unit}</b>]</span>"
                     )
 
         return fig
@@ -749,7 +747,8 @@ class CsPlotter(BasePlotter):
         )
         if caption:
             styled_df = styled_df.set_caption(
-                "Scalar values where <b>bold</b> numbers indicate deviation from <code>REF</code>-scenario."
+                "Scalar values where <b>bold</b> numbers indicate deviation from"
+                " <code>REF</code>-scenario."
             )
 
         if gradient:

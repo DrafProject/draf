@@ -745,7 +745,7 @@ class ScenPlotter(BasePlotter):
         steps_per_day = self.sc.steps_per_day
 
         assert len(series) % steps_per_day == 0, (
-            f"Timeseries doesn't fit the steps per day. There are "
+            "Timeseries doesn't fit the steps per day. There are "
             f"{steps_per_day - len(series) % steps_per_day:.0f} timesteps missing."
             f" (timeseries: {len(series):.0f}, steps_per_day:{steps_per_day:.0f})"
         )

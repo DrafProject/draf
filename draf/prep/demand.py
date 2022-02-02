@@ -138,7 +138,7 @@ def get_el_SLP(
     ser = ser + offset
 
     logger.info(
-        f"SLP created\n"
+        "SLP created\n"
         f"\t{str(year)}, {freq}\n"
         f"\t{profile} ({SLP_PROFILES[profile]})\n"
         f"\tpeak_load: {ser.max()}\n"
