@@ -21,7 +21,7 @@ class Etypes:
     dG = Alias(en="Product flow", de="Produkt flow", units=["t/h"])
     dQ = Alias(en="Heat flow", de="Wärmestrom", units=["kW_th", "kW"])
     E = Alias(en="Electrical energy", de="Elektrische Energie", units=["kWh_el"])
-    eta = Alias(en="Efficiency", de="Effizienz", units=["", "kW_th/kW", "kW_el/kW", "kWh_th/kWh", "t/kW_el"])
+    eta = Alias(en="Efficiency", de="Effizienz", units=["", "kW_th/kW", "kW_el/kW", "kWh_th/kWh", "t/kWh_el"])
     F = Alias(en="Fuel", de="Brennstoff", units=["kW", "kWh"])
     G = Alias(en="Product", de="Produkt", units=["t"])
     k = Alias(en="A ratio", de="ein Verhältnis", units=["", "h"])

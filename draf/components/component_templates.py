@@ -339,6 +339,12 @@ class BES(Component):
             sc.var("E_BES_CAPn_", doc="New capacity", unit="kWh_el")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
+        """Note: In this model does not prevent simultaneous charging and discharging,
+        which can appear negativ electricity prices. To avoid this behaviour expensive binary
+        variables can be introduced, e.g., like in
+        AmirMansouri.2021: https://doi.org/10.1016/j.seta.2021.101376
+        """
+
         cap = p.E_BES_CAPx_ + v.E_BES_CAPn_ if sc.consider_invest else p.E_BES_CAPx_
         m.addConstrs(
             (v.P_BES_in_T[t] <= p.k_BES_inPerCap_ * cap for t in d.T),
@@ -997,7 +1003,9 @@ class PP(Component):
         sc.param("y_PP_avail_TM", fill=1, doc="If avail")
         sc.param("y_PP_compat_SM", fill=1, doc="If machine and sort is compatible")
         sc.param("P_PP_CAPx_M", fill=2800, doc="", unit="kW_el")
-        sc.param("eta_PP_SM", fill=0.025, doc="Production efficiency", unit="t/kW_el")
+        sc.param(
+            "eta_PP_SM", fill=0.025, doc="Production efficiency", unit="t/kWh_el"
+        )  # for cement mill 52–57 kWh/ton, see https://doi.org/10.1016/j.rser.2021.111963
         sc.param("k_PP_minPL_M", fill=1.0, doc="Minimum part load")
         sc.var("dG_PP_TSM", doc="Production of machine", unit="t/h")
         sc.var("P_PP_TSM", doc="Nominal power consumption of machine", unit="kW_el")

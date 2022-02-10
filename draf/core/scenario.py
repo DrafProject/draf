@@ -534,7 +534,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self._update_time_param("t__solve_", "Time to solve the model", self._get_time_diff())
         status = self.mdl.Status
         status_str = GRB_OPT_STATUS[status]
-        if status in [gp.GRB.OPTIMAL, gp.GRB.TIME_LIMIT]:
+        if (status == gp.GRB.OPTIMAL) or (status == gp.GRB.TIME_LIMIT and self.mdl.SolCount > 0):
             self.res = Results(self)
             if not keep_vars:
                 del self.vars
@@ -550,14 +550,16 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                     )
                 except ValueError:
                     logger.warning("res.C_TOT_ or res.CE_TOT_ not found.")
+        elif status in [gp.GRB.INF_OR_UNBD, gp.GRB.INFEASIBLE]:
+            response = input(
+                "The model is infeasible. Do you want to compute an Irreducible"
+                " Inconsistent Subsystem (IIS)?\n[(y)es / (n)o] + ENTER"
+            )
+            if response == "y":
+                self.calculate_IIS()
+        elif status == gp.GRB.TIME_LIMIT and self.mdl.SolCount == 0:
+            logger.warning("Time limit reached withouth feasible solution.")
         else:
-            if status in [gp.GRB.INF_OR_UNBD, gp.GRB.INFEASIBLE]:
-                response = input(
-                    "The model is infeasible. Do you want to compute an Irreducible"
-                    " Inconsistent Subsystem (IIS)?\n[(y)es / (n)o] + ENTER"
-                )
-                if response == "y":
-                    self.calculate_IIS()
             raise RuntimeError(
                 f"ERROR solving scenario {self.name}: mdl.Status="
                 f" {status} ({GRB_OPT_STATUS[status]}) --> {self.mdl.Params.LogFile}"
