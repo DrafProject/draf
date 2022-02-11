@@ -58,6 +58,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         components: Optional[List[Union[Component, type]]] = None,
         consider_invest: bool = False,
         mdl_language="gp",
+        obj_vars=("C_TOT_", "CE_TOT_"),
     ):
         self.id = id
         self.name = name
@@ -128,10 +129,23 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         )
 
     @property
-    def size(self):
+    def size(self) -> str:
         return hp.human_readable_size(hp.get_size(self))
 
-    def info(self):
+    @property
+    def _has_feasible_solution(self) -> bool:
+        return hasattr(self, "res")
+
+    @property
+    def _is_optimal(self) -> bool:
+        if self.mdl_language == "gp":
+            return self.mdl.Status == gp.GRB.OPTIMAL
+        elif self.mdl_language == "pyo":
+            return self._termination_condition == pyo.TerminationCondition.optimal
+        else:
+            RuntimeError("`mdl_language` must be 'gp' or 'pyo'.")
+
+    def info(self) -> None:
         print(self._make_repr())
 
     def _make_repr(self, excluded: Optional[Iterable] = None):
@@ -146,10 +160,10 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             attribute_list.append(f"• {k}: {v}")
         return "{}\n{}".format(preface, "\n".join(attribute_list))
 
-    def _set_time_trace(self):
+    def _set_time_trace(self) -> None:
         self._time = time.perf_counter()
 
-    def _get_time_diff(self):
+    def _get_time_diff(self) -> float:
         return time.perf_counter() - self._time
 
     @property
@@ -163,7 +177,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
     def _all_ents_dict(self) -> Dict:
         """Returns a name:data Dict of all entities."""
         d = self.params.get_all()
-        if hasattr(self, "res"):
+        if self._has_feasible_solution:
             d.update(self.res.get_all())
         return d
 
@@ -197,7 +211,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         d = dict()
         if params:
             d.update(self.params.filtered(**kwargs))
-        if hasattr(self, "res") and vars:
+        if self._has_feasible_solution and vars:
             d.update(self.res.filtered(**kwargs))
         return d
 
@@ -216,16 +230,17 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         for param, value in defaults.items():
             self.mdl.setParam(param, value, verbose=False)
 
-    def update_par_dic(self):
+    def update_par_dic(self) -> None:
         self._par_dic = self.params._to_dims_dic()
 
     def get_total_energy(self, data: pd.Series) -> float:
+        """Get the total energy of a power entity."""
         return data.sum() * self.step_width
 
     gte = get_total_energy
 
     @property
-    def par_dic(self):
+    def par_dic(self) -> Dict:
         """Creates the par_dic at the first use then caches it. Use `update_par_dic()` to update."""
         if not hasattr(self, "_par_dic") or self.params._changed_since_last_dic_export:
             self._par_dic = self.params._to_dims_dic()
@@ -238,18 +253,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         da = DemandAnalyzer(p_el=data, year=self.year, freq=self.freq)
         da.show_stats()
         return da
-
-    @property
-    def _is_optimal(self):
-
-        if self.mdl_language == "gp":
-            return self.mdl.Status == gp.GRB.OPTIMAL
-
-        elif self.mdl_language == "pyo":
-            return self._termination_condition == pyo.TerminationCondition.optimal
-
-        else:
-            RuntimeError("`mdl_language` must be 'gp' or 'pyo'.")
 
     @property
     def res_dic(self):
@@ -398,7 +401,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             setattr(td, name, data)
         return td
 
-    def _instantiate_model(self):
+    def _instantiate_model(self) -> None:
 
         if self.mdl_language == "gp":
             self.mdl = gp.Model(name=self.id)
@@ -417,7 +420,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         return self
 
-    def _activate_gurobipy_vars(self):
+    def _activate_gurobipy_vars(self) -> None:
         for name, metas in self.vars._meta.items():
 
             kwargs = dict(lb=metas["lb"], ub=metas["ub"], name=name, vtype=metas["vtype"])
@@ -440,7 +443,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
             setattr(self.vars, name, var_obj)
 
-    def _activate_pyomo_vars(self):
+    def _activate_pyomo_vars(self) -> None:
         def get_domain(vtype: str):
             vtype_mapper = {"C": pyo.Reals, "B": pyo.Binary, "I": pyo.Integers}
             return vtype_mapper[vtype]
@@ -509,18 +512,18 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         if self.mdl_language == "gp":
             assert which_solver == "gurobi"
-            self._optimize_gurobipy(**kwargs, solver_params=solver_params)
+            solution_exists = self._optimize_gurobipy(**kwargs, solver_params=solver_params)
 
         elif self.mdl_language == "pyo":
-            self._optimize_pyomo(**kwargs, which_solver=which_solver)
+            solution_exists = self._optimize_pyomo(**kwargs, which_solver=which_solver)
 
-        if hasattr(self, "collectors"):
+        if hasattr(self, "collectors") and solution_exists:
             self._cache_collector_values()
         return self
 
     def _optimize_gurobipy(
         self, logToConsole, outputFlag, show_results, keep_vars, postprocess_funcs, solver_params
-    ):
+    ) -> bool:
         logger.info(f"Optimize {self.id}")
         self._set_time_trace()
 
@@ -544,12 +547,11 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 logger.warning("Time-limit reached")
             if show_results:
                 try:
-                    print(
-                        f"{self.id}: C_TOT_={self.res.C_TOT_:.2f}, "
-                        f"CE_TOT_={self.res.CE_TOT_:.2f} ({status_str})"
-                    )
+                    results = ", ".join([f"{x}={self.res.get(x):.2f}" for x in self.obj_vars])
+                    print(f"{self.id}: {results}({status_str})")
                 except ValueError:
-                    logger.warning("res.C_TOT_ or res.CE_TOT_ not found.")
+                    s = " or ".join(self.obj_vars)
+                    logger.warning(f"{s} not found.")
         elif status in [gp.GRB.INF_OR_UNBD, gp.GRB.INFEASIBLE]:
             response = input(
                 "The model is infeasible. Do you want to compute an Irreducible"
@@ -564,10 +566,12 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 f"ERROR solving scenario {self.name}: mdl.Status="
                 f" {status} ({GRB_OPT_STATUS[status]}) --> {self.mdl.Params.LogFile}"
             )
+        solution_exists = self.mdl.SolCount > 0
+        return solution_exists
 
     def _optimize_pyomo(
         self, logToConsole, outputFlag, show_results, keep_vars, postprocess_funcs, which_solver
-    ):
+    ) -> bool:
         logger.info(f"Optimize {self.id}")
         self._set_time_trace()
         solver = pyo.SolverFactory(which_solver)
@@ -598,8 +602,10 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 f"ERROR solving scenario {self.name}: status= {status}, ",
                 f"termination condition={tc}) --> logfile: {logfile}",
             )
+        solution_exists = status == pyo.SolverStatus.ok
+        return solution_exists
 
-    def calculate_IIS(self):
+    def calculate_IIS(self) -> None:
         """Calculate and print the Irreducible Inconsistent Subsystem (IIS)."""
         self.mdl.computeIIS()
         if self.mdl.IISMinimal:
@@ -739,7 +745,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             sc.res._meta (dict)
             sc.res._meta[<entity-name>] (dict with metas {"doc":..., "unit":...})
         """
-        return_value = None
         for attr in ["params", "res", "dims", "collectors"]:
             obj = getattr(self, attr, None)
             if obj is not None:
@@ -846,7 +851,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.params._changed_since_last_dic_export = True
         return data
 
-    def _warn_if_unexpected_unit(self, name, unit):
+    def _warn_if_unexpected_unit(self, name, unit) -> None:
         etype = hp.get_etype(name)
         try:
             expected_units = getattr(Etypes, etype).units
@@ -950,7 +955,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 d[hp.get_component(n)] = v
         return d
 
-    def get_EG_full_load_hours(self):
+    def get_EG_full_load_hours(self) -> float:
         return (
             self.res.P_EG_buy_T.sum()
             * self.params.k__dT_
@@ -981,7 +986,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         else:
             return hp.get_value_from_varOrPar(term)
 
-    def make_sankey_string_from_collectors(self):
+    def make_sankey_string_from_collectors(self) -> str:
         templates = {
             "P_EL_source_T": "E {k} el_hub {v}",
             "P_EL_sink_T": "E el_hub {k} {v}",

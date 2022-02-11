@@ -255,6 +255,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 components=components,
                 consider_invest=self.consider_invest,
                 mdl_language=self.mdl_language,
+                obj_vars=self.obj_vars,
             )
         else:
             sc = getattr(self.scens, based_on)._special_copy()

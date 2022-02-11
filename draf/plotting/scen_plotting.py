@@ -624,7 +624,9 @@ class ScenPlotter(BasePlotter):
             make_plots (bool): If plots are shown.
             log_scale (bool): If plots have logarithmic scale.
         """
-        entTypeDic = self._get_filled_entTypeDic(include_pars, include_vars)
+        entTypeDic = self._get_filled_entTypeDic(
+            include_pars=include_pars, include_vars=include_vars and hasattr(self.sc, "res")
+        )
 
         for entType, dims_dic in entTypeDic.items():
             desc_dict = self._make_descDict_and_plot_data(
