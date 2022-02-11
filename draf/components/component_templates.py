@@ -962,7 +962,7 @@ class BEV(Component):
 
 
 @dataclass
-class PROD(Component):
+class pDem(Component):
     """Product demand and product balance
 
     Product balance:
@@ -980,12 +980,12 @@ class PROD(Component):
 
     def param_func(self, sc: Scenario):
         sc.collector("dG_PROD_TS", doc="Positive = into the balance nod", unit="t/h")
-        sc.param("dG_PROD_Dem_TS", fill=40, doc="Product demand", unit="t/h")
+        sc.param("dG_pDem_TS", fill=40, doc="Product demand", unit="t/h")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         T, S = d.T, d.S
 
-        c.dG_PROD_TS["PRODdem"] = lambda t, s: -p.dG_PROD_Dem_TS[t, s]
+        c.dG_PROD_TS["pDem"] = lambda t, s: -p.dG_pDem_TS[t, s]
         m.addConstrs(
             (quicksum(f(t, s) for f in c.dG_PROD_TS.values()) == 0 for t in T for s in S),
             "PROD_product_balance",
@@ -1004,8 +1004,8 @@ class PP(Component):
         sc.param("y_PP_compat_SM", fill=1, doc="If machine and sort is compatible")
         sc.param("P_PP_CAPx_M", fill=2800, doc="", unit="kW_el")
         sc.param(
-            "eta_PP_SM", fill=0.025, doc="Production efficiency", unit="t/kWh_el"
-        )  # for cement mill 52–57 kWh/ton, see https://doi.org/10.1016/j.rser.2021.111963
+            "eta_PP_SM", fill=0.018, doc="Production efficiency", unit="t/kWh_el"
+        )  # for cement mill 52–57 kWh/t or 0.017-0.020 t/kWh, see https://doi.org/10.1016/j.rser.2021.111963
         sc.param("k_PP_minPL_M", fill=1.0, doc="Minimum part load")
         sc.var("dG_PP_TSM", doc="Production of machine", unit="t/h")
         sc.var("P_PP_TSM", doc="Nominal power consumption of machine", unit="kW_el")
@@ -1013,19 +1013,9 @@ class PP(Component):
         sc.var("Y_PP_op_TSM", doc="If machine is in operation", vtype=GRB.BINARY)
         sc.var("Y_PP_SU_TM", doc="If machine just started up", vtype=GRB.BINARY)
 
-        if sc.consider_invest:
-            sc.param("z_PP_M", fill=int(self.allow_new), doc="If new machine capacity is allowed")
-            sc.param("c_PP_inv_", data=1000, doc="Investment cost", unit="€/kW_el")  # TODO
-            sc.param("N_PP_", data=20, doc="Operation life", unit="a")
-            sc.param("k_PP_RMI_", data=0)
-            sc.var("P_PP_CAPn_M", doc="New capacity", unit="kW_el")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         T, S, M = d.T, d.S, d.M
-
-        def cap_PP_M(m):
-            capx = p.P_PP_CAPx_M[m]
-            return capx + v.P_PP_CAPn_M[m] if sc.consider_invest else capx
 
         m.addConstrs(
             (
@@ -1042,7 +1032,7 @@ class PP(Component):
         )
         m.addConstrs(
             (
-                v.P_PP_TSM[t, s, m] <= v.Y_PP_op_TSM[t, s, m] * cap_PP_M(m)
+                v.P_PP_TSM[t, s, m] <= v.Y_PP_op_TSM[t, s, m] * p.P_PP_CAPx_M[m]
                 for t in T
                 for s in S
                 for m in M
@@ -1051,7 +1041,7 @@ class PP(Component):
         )
         m.addConstrs(
             (
-                v.P_PP_TSM[t, s, m] >= v.Y_PP_op_TSM[t, s, m] * p.k_PP_minPL_M[m] * cap_PP_M(m)
+                v.P_PP_TSM[t, s, m] >= v.Y_PP_op_TSM[t, s, m] * p.k_PP_minPL_M[m] * p.P_PP_CAPx_M[m]
                 for t in T
                 for s in S
                 for m in M
@@ -1081,12 +1071,6 @@ class PP(Component):
         c.P_EL_sink_T["PP"] = lambda t: v.P_PP_TSM.sum(t, "*", "*")
         c.C_TOT_op_["PP_SU"] = v.C_PP_SU_
 
-        if sc.consider_invest:
-            m.addConstrs((v.P_PP_CAPn_M[m] <= p.z_PP_M[m] * 1e10 for m in M), "PP_limit_capn")
-            C_inv_ = v.P_PP_CAPn_M.sum() * p.c_PP_inv_ * conv("€", "k€", 1e-3)
-            c.C_TOT_inv_["PP"] = C_inv_
-            c.C_TOT_invAnn_["PP"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_PP_)
-            c.C_TOT_RMI_["PP"] = C_inv_ * p.k_PP_RMI_
 
 
 @dataclass
@@ -1165,7 +1149,7 @@ order_restrictions = [
     ("H2H1", {}),
     ("HP", {"cDem", "hDem"}),  # HP calculates COP based on thermal demand temperatures
     ("TES", {"cDem", "hDem"}),  # TESs can be defined for every thermal demand temperature level
-    ("PROD", {"PP", "PS"}),
+    ("pDem", {"PP", "PS"}),
     ("PP", {}),
     ("PS", {}),
 ]
