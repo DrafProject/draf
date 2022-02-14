@@ -1000,6 +1000,7 @@ class PP(Component):
 
     def param_func(self, sc: Scenario):
         sc.param("c_PP_SU_", data=0.1, doc="Costs per start up", unit="€/SU")
+        sc.param("c_PP_SC_", data=0.1, doc="Costs per sort change", unit="€/change")
         sc.param("y_PP_avail_TM", fill=1, doc="If avail")
         sc.param("y_PP_compat_SM", fill=1, doc="If machine and sort is compatible")
         sc.param("P_PP_CAPx_M", fill=2800, doc="", unit="kW_el")
@@ -1009,10 +1010,11 @@ class PP(Component):
         sc.param("k_PP_minPL_M", fill=1.0, doc="Minimum part load")
         sc.var("dG_PP_TSM", doc="Production of machine", unit="t/h")
         sc.var("P_PP_TSM", doc="Nominal power consumption of machine", unit="kW_el")
-        sc.var("C_PP_SU_", doc="Total cost of start up", unit="k€", lb=-GRB.INFINITY)
+        sc.var("C_PP_SU_", doc="Total cost of start up", unit="k€")
+        sc.var("C_PP_SC_", doc="Total cost of sort change", unit="k€")
         sc.var("Y_PP_op_TSM", doc="If machine is in operation", vtype=GRB.BINARY)
         sc.var("Y_PP_SU_TM", doc="If machine just started up", vtype=GRB.BINARY)
-
+        sc.var("Y_PP_SC_TSM", doc="If sort hast just changed", vtype=GRB.BINARY)
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         T, S, M = d.T, d.S, d.M
@@ -1058,6 +1060,16 @@ class PP(Component):
             ),
             "PP_start_up_2",
         )
+        m.addConstr((v.C_PP_SC_ == v.Y_PP_SC_TSM.sum() * p.c_PP_SC_), "PP_sort_change")
+        m.addConstrs(
+            (
+                v.Y_PP_SC_TSM[t, s, m] >= v.Y_PP_op_TSM[t, s, m] - v.Y_PP_op_TSM[t - 1, s, m]
+                for t in T[1:]
+                for m in M
+                for s in S
+            ),
+            "PP_sort_change_2",
+        )
         m.addConstrs(
             (v.dG_PP_TSM[t, s, m] <= v.Y_PP_op_TSM[t, s, m] * 1e8 for t in T for s in S for m in M),
             "PP_bigM",
@@ -1070,7 +1082,7 @@ class PP(Component):
         c.dG_PROD_TS["PP"] = lambda t, s: v.dG_PP_TSM.sum(t, s, "*")
         c.P_EL_sink_T["PP"] = lambda t: v.P_PP_TSM.sum(t, "*", "*")
         c.C_TOT_op_["PP_SU"] = v.C_PP_SU_
-
+        c.C_TOT_op_["PP_SC"] = v.C_PP_SC_
 
 
 @dataclass

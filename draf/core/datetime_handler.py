@@ -1,6 +1,6 @@
 import logging
 from abc import ABC
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import pandas as pd
 
@@ -93,9 +93,15 @@ class DateTimeHandler(ABC):
             raise ValueError("One of steps or end must be given.")
         return t1, t2
 
-    def timeslice(self, start, stop):
-        start_int = self._get_first_int_loc_from_dtstring(start)
-        stop_int = self._get_last_int_loc_from_dtstring(stop)
+    def timeslice(self, start: Optional[str], stop: Optional[str]) -> "Slice":
+        """Get timeslice from start and stop strings.
+
+        Example slicing from 17th to 26th of August
+            >>> ts = cs.timeslice("8-17", "8-26")
+            >>> sc.params.c_EG_T[ts].plot()
+        """
+        start_int = None if start is None else self._get_first_int_loc_from_dtstring(start)
+        stop_int = None if stop is None else self._get_last_int_loc_from_dtstring(stop)
         return slice(start_int, stop_int)
 
     def dated(
