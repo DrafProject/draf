@@ -32,7 +32,7 @@ class Main(Component):
         sc.collector("C_TOT_", doc="Total costs", unit="k€/a")
         sc.collector("C_TOT_op_", doc="Total operating costs", unit="k€/a")
         sc.collector("CE_TOT_", doc="Total carbon emissions", unit="kgCO2eq/a")
-        sc.collector("Penalty_", doc="Penalty term for objective function", unit="Any")
+        sc.collector("X_TOT_penalty_", doc="Penalty term for objective function", unit="Any")
 
         if sc.consider_invest:
             sc.collector("C_TOT_RMI_", doc="Total annual maintainance cost", unit="k€/a")
@@ -48,7 +48,6 @@ class Main(Component):
             sc.var("C_TOT_inv_", doc="Total investment costs", unit="k€")
             sc.var("C_TOT_invAnn_", doc="Total annualized investment costs", unit="k€")
             sc.var("C_TOT_RMI_", doc="Total annual maintainance cost", unit="k€")
-        sc.var("Penalty_", "Penalty term for objective function")
 
         sc.param("k_PTO_alpha_", data=0, doc="Pareto weighting factor")
         sc.param("k_PTO_C_", data=1, doc="Normalization factor")
@@ -59,7 +58,7 @@ class Main(Component):
             (
                 (1 - p.k_PTO_alpha_) * v.C_TOT_ * p.k_PTO_C_
                 + p.k_PTO_alpha_ * v.CE_TOT_ * p.k_PTO_CE_
-                + v.Penalty_
+                + quicksum(c.X_TOT_penalty_.values())
             ),
             GRB.MINIMIZE,
         )
@@ -87,7 +86,6 @@ class Main(Component):
             v.CE_TOT_ == p.k__PartYearComp_ * quicksum(c.CE_TOT_.values()),
             "carbon_emission_balance",
         )
-        m.addConstr(v.Penalty_ == quicksum(c.Penalty_.values()), "penalty_balance")
         m.addConstrs(
             (
                 quicksum(x(t) for x in c.P_EL_source_T.values())
@@ -869,7 +867,7 @@ class BEV(Component):
         sc.var("E_BEV_TB", doc="Electricity stored in BEV battery", unit="kWh_el")
         sc.var("P_BEV_in_TB", doc="Charging power", unit="kW_el")
         sc.var("P_BEV_V2X_TB", doc="Discharging power for vehicle-to-X", unit="kW_el")
-        sc.var("x_BEV_penalty_", doc="Penalty to ensure uncontrolled charging in REF")
+        sc.var("X_BEV_penalty_", doc="Penalty to ensure uncontrolled charging in REF")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         T, B = d.T, d.B
@@ -909,7 +907,7 @@ class BEV(Component):
         )
         m.addConstr(
             (
-                v.x_BEV_penalty_
+                v.X_BEV_penalty_
                 == (1 - p.z_BEV_smart_) * quicksum(t * v.P_BEV_in_TB[t, b] for t in T for b in B)
             ),
             "BEV_penalty",
@@ -938,7 +936,7 @@ class BEV(Component):
 
         c.P_EL_source_T["BEV"] = lambda t: v.P_BEV_V2X_TB.sum(t, "*")
         c.P_EL_sink_T["BEV"] = lambda t: v.P_BEV_in_TB.sum(t, "*")
-        c.Penalty_["BEV"] = v.x_BEV_penalty_
+        c.X_TOT_penalty_["BEV"] = v.X_BEV_penalty_
 
 
 @dataclass
@@ -1030,7 +1028,9 @@ class PP(Component):
             ),
             "PP_minimum_part_load",
         )
-        m.addConstr((v.C_PP_SU_ == v.Y_PP_SU_TM.sum() * p.c_PP_SU_), "PP_start_up")
+        m.addConstr(
+            (v.C_PP_SU_ == v.Y_PP_SU_TM.sum() * p.c_PP_SU_ * conv("€", "k€", 1e-3)), "PP_start_up"
+        )
         m.addConstrs(
             (
                 v.Y_PP_SU_TM[t, m]
@@ -1040,7 +1040,10 @@ class PP(Component):
             ),
             "PP_start_up_2",
         )
-        m.addConstr((v.C_PP_SC_ == v.Y_PP_SC_TSM.sum() * p.c_PP_SC_), "PP_sort_change")
+        m.addConstr(
+            (v.C_PP_SC_ == v.Y_PP_SC_TSM.sum() * p.c_PP_SC_ * conv("€", "k€", 1e-3)),
+            "PP_sort_change",
+        )
         m.addConstrs(
             (
                 v.Y_PP_SC_TSM[t, s, m] >= v.Y_PP_op_TSM[t, s, m] - v.Y_PP_op_TSM[t - 1, s, m]
@@ -1075,13 +1078,12 @@ class PS(Component):
         sc.param("k_PS_ini_S", fill=1.0, doc="Initial storage filling level")
         sc.var("G_PS_TS", doc="Storage filling level", unit="t")
         sc.var("G_PS_delta_S", doc="Final time step deviation from init", unit="t", lb=0)
-        sc.var("E_PS_deltaTot_", doc="Energy equivalent", unit="kWh_el")
+        sc.var("E_PS_delta_", doc="Energy equivalent", unit="kWh_el")
 
         if sc.consider_invest:
             sc.param("z_PS_S", fill=0, doc="If new storage capacity is allowed")
             sc.param("c_PS_inv_", data=1000, doc="Investment cost", unit="€/t")  # TODO
             sc.param("N_PS_", data=50, doc="Operation life", unit="a")
-            sc.param("k_PS_RMI_", data=0)
             sc.var("G_PS_CAPn_S", doc="New capacity", unit="t")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
@@ -1099,25 +1101,24 @@ class PS(Component):
             (v.G_PS_TS[T[-1], s] == p.k_PS_ini_S[s] * cap_PS_S(s) - v.G_PS_delta_S[s] for s in S),
             "PS_last_timestep",
         )
-        m.addConstr(
-            v.E_PS_deltaTot_ == v.G_PS_delta_S.sum() / sc.params.eta_PP_SM.min(), "PS_delta"
-        )
+        m.addConstr(v.E_PS_delta_ == v.G_PS_delta_S.sum() / sc.params.eta_PP_SM.min(), "PS_delta")
 
         def get_output(t, s):
             if t == T[0]:
-                return p.k_PS_ini_S[s] * cap_PS_S(s) - v.G_PS_TS[t, s] / p.k__dT_
+                return (p.k_PS_ini_S[s] * cap_PS_S(s) - v.G_PS_TS[t, s]) / p.k__dT_
             else:
-                return v.G_PS_TS[t - 1, s] - v.G_PS_TS[t, s] / p.k__dT_
+                return (v.G_PS_TS[t - 1, s] - v.G_PS_TS[t, s]) / p.k__dT_
 
         c.dG_PROD_TS["PS"] = get_output
-        c.Penalty_["PS"] = v.E_PS_deltaTot_ * sc.params.c_EG_T.mean()
+        c.C_TOT_op_["PS_deviation"] = (
+            v.E_PS_delta_ * sc.params.c_EG_T.mean() * conv("€", "k€", 1e-3)
+        )
 
         if sc.consider_invest:
             m.addConstrs((v.G_PS_CAPn_S[s] <= p.z_PS_S[s] * 1e9 for s in S), "PS_limit_capn")
             C_inv_ = v.G_PS_CAPn_S.sum() * p.c_PS_inv_ * conv("€", "k€", 1e-3)
             c.C_TOT_inv_["PS"] = C_inv_
             c.C_TOT_invAnn_["PS"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_PS_)
-            c.C_TOT_RMI_["PS"] = C_inv_ * p.k_PS_RMI_
 
 
 order_restrictions = [

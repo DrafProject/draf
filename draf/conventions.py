@@ -31,6 +31,7 @@ class Etypes:
     Q = Alias(en="Thermal Energy", de="Thermische Energie", units=["kWh_th"])
     T = Alias(en="Temperature", de="Temperatur", units=["°C"])
     t = Alias(en="Time", de="Zeit", units=["seconds", "h"])
+    X = Alias(en="A real number", de="Eine reelle Zahl")
     y = Alias(en="Binary indicator", de="Binärindikator")
     z = Alias(en="Binary allowance indicator", de="Binärindikator")
     # SORTING_END
