@@ -868,12 +868,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                     f"Unexpected unit {unit} for entity {name}. Expected {adder}{expected_units}."
                 )
 
-    def collector(
-        self,
-        name: str,
-        doc: str = "",
-        unit: str = "",
-    ) -> None:
+    def collector(self, name: str, doc: str = "", unit: str = "") -> None:
         """Add a collector to the scenario"""
         setattr(self.collectors, name, dict())
         self.collectors._meta[name] = dict(doc=doc, unit=unit)

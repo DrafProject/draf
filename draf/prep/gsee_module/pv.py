@@ -379,9 +379,7 @@ def run_model(
     area_per_capacity = 0.001 / panel_efficiency
 
     panel = panel_class(
-        panel_aperture=capacity * area_per_capacity,
-        panel_ref_efficiency=panel_efficiency,
-        **kwargs,
+        panel_aperture=capacity * area_per_capacity, panel_ref_efficiency=panel_efficiency, **kwargs
     )
 
     # Run the panel model and return output

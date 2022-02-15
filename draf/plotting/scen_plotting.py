@@ -581,11 +581,7 @@ class ScenPlotter(BasePlotter):
             valueformat=".2f",
             valuesuffix="MWh",
             node=dict(
-                pad=10,
-                thickness=10,
-                line=dict(width=0),
-                label=label,
-                color="hsla(0, 0%, 0%, 0.5)",
+                pad=10, thickness=10, line=dict(width=0), label=label, color="hsla(0, 0%, 0%, 0.5)"
             ),
             link=dict(source=source, target=target, value=value, color=link_color),
         )

@@ -71,8 +71,7 @@ class Main(Component):
             m.addConstr(v.C_TOT_inv_ == quicksum(c.C_TOT_inv_.values()), "investment_cost")
             m.addConstr(v.C_TOT_RMI_ == quicksum(c.C_TOT_RMI_.values()), "repair_cost")
             m.addConstr(
-                v.C_TOT_invAnn_ == quicksum(c.C_TOT_invAnn_.values()),
-                "annualized_investment_cost",
+                v.C_TOT_invAnn_ == quicksum(c.C_TOT_invAnn_.values()), "annualized_investment_cost"
             )
             c.C_TOT_["RMI"] = v.C_TOT_RMI_
             c.C_TOT_["inv"] = v.C_TOT_invAnn_
@@ -223,8 +222,7 @@ class EG(Component):
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         m.addConstrs(
-            (v.P_EG_sell_T[t] == sum(x(t) for x in c.P_EG_sell_T.values()) for t in d.T),
-            "EG_sell",
+            (v.P_EG_sell_T[t] == sum(x(t) for x in c.P_EG_sell_T.values()) for t in d.T), "EG_sell"
         )
         m.addConstrs((v.P_EG_buy_T[t] <= v.P_EG_buyPeak_ for t in d.T), "EG_peak_price")
 
@@ -347,8 +345,7 @@ class BES(Component):
 
         cap = p.E_BES_CAPx_ + v.E_BES_CAPn_ if sc.consider_invest else p.E_BES_CAPx_
         m.addConstrs(
-            (v.P_BES_in_T[t] <= p.k_BES_inPerCap_ * cap for t in d.T),
-            "BES_limit_charging_power",
+            (v.P_BES_in_T[t] <= p.k_BES_inPerCap_ * cap for t in d.T), "BES_limit_charging_power"
         )
         m.addConstrs(
             (v.P_BES_out_T[t] <= p.k_BES_outPerCap_ * cap for t in d.T),
@@ -468,16 +465,10 @@ class HP(Component):
         sc.param("T__amb_", data=25, doc="Approximator for ambient air", unit="°C")
 
         sc.param(
-            "T_HP_Cond_C",
-            data=p.T_hDem_in_H + 5,
-            doc="Condensation side temperature",
-            unit="°C",
+            "T_HP_Cond_C", data=p.T_hDem_in_H + 5, doc="Condensation side temperature", unit="°C"
         )
         sc.param(
-            "T_HP_Eva_E",
-            data=p.T_cDem_in_N - 5,
-            doc="Evaporation side temperature",
-            unit="°C",
+            "T_HP_Eva_E", data=p.T_cDem_in_N - 5, doc="Evaporation side temperature", unit="°C"
         )
         sc.param("n_HP_", data=self.n, doc="Number of existing heat pumps")
         sc.param("eta_HP_", data=0.5, doc="Ratio of reaching the ideal COP (exergy efficiency)")
@@ -557,10 +548,7 @@ class HP(Component):
             "HP_bigM",
         )
         cap = p.dQ_HP_CAPx_ + v.dQ_HP_CAPn_ if sc.consider_invest else p.dQ_HP_CAPx_
-        m.addConstrs(
-            (v.dQ_HP_Cond_TEC.sum(t, "*", "*") <= cap for t in d.T),
-            "HP_limit_cap",
-        )
+        m.addConstrs((v.dQ_HP_Cond_TEC.sum(t, "*", "*") <= cap for t in d.T), "HP_limit_cap")
         m.addConstrs((v.Y_HP_TEC.sum(t, "*", "*") <= p.n_HP_ for t in d.T), "HP_operating_mode")
 
         c.P_EL_sink_T["HP"] = lambda t: v.P_HP_TEC.sum(t, "*", "*")
@@ -781,10 +769,7 @@ class TES(Component):
             ),
             "TES_balance",
         )
-        m.addConstrs(
-            (v.Q_TES_TL[t, l] <= cap(l) for t in d.T for l in d.L),
-            "TES_limit_cap",
-        )
+        m.addConstrs((v.Q_TES_TL[t, l] <= cap(l) for t in d.T for l in d.L), "TES_limit_cap")
         m.addConstrs(
             (v.dQ_TES_in_TL[t, l] <= p.k_TES_inPerCap_ * cap(l) for t in d.T for l in d.L),
             "TES_limit_in",
@@ -794,8 +779,7 @@ class TES(Component):
             "TES_limit_out",
         )
         m.addConstrs(
-            (v.Q_TES_TL[d.T[-1], l] == p.k_TES_ini_L[l] * cap(l) for l in d.L),
-            "TES_last_timestep",
+            (v.Q_TES_TL[d.T[-1], l] == p.k_TES_ini_L[l] * cap(l) for l in d.L), "TES_last_timestep"
         )
 
         # only sink here, since dQ_TES_in_TL is also defined for negative
@@ -864,11 +848,7 @@ class BEV(Component):
             src="@Carroquino_2021",
         )
         sc.param("P_BEV_drive_TB", fill=0, doc="Power use", unit="kW_el")
-        sc.param(
-            "y_BEV_avail_TB",
-            fill=1,
-            doc="If BEV is available for charging at time step",
-        )
+        sc.param("y_BEV_avail_TB", fill=1, doc="If BEV is available for charging at time step")
         sc.param(
             "k_BEV_inPerCap_B",
             fill=0.7,
@@ -1060,10 +1040,7 @@ class PP(Component):
             ),
             "PP_start_up_2",
         )
-        m.addConstr(
-            (v.C_PP_SC_ == v.Y_PP_SC_TSM.sum() * p.c_PP_SC_),
-            "PP_sort_change",
-        )
+        m.addConstr((v.C_PP_SC_ == v.Y_PP_SC_TSM.sum() * p.c_PP_SC_), "PP_sort_change")
         m.addConstrs(
             (
                 v.Y_PP_SC_TSM[t, s, m] >= v.Y_PP_op_TSM[t, s, m] - v.Y_PP_op_TSM[t - 1, s, m]
@@ -1123,8 +1100,7 @@ class PS(Component):
             "PS_last_timestep",
         )
         m.addConstr(
-            v.E_PS_deltaTot_ == v.G_PS_delta_S.sum() / sc.params.eta_PP_SM.min(),
-            "PS_delta",
+            v.E_PS_deltaTot_ == v.G_PS_delta_S.sum() / sc.params.eta_PP_SM.min(), "PS_delta"
         )
 
         def get_output(t, s):

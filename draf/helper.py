@@ -124,11 +124,7 @@ def human_readable_size(size: float, decimal_places: int = 2):
     return f"{size:.{decimal_places}f} {unit}"
 
 
-def conv(
-    source_unit: str,
-    target_unit: str,
-    conversion_factor: float,
-):
+def conv(source_unit: str, target_unit: str, conversion_factor: float):
     """Documents unit conversion. It does nothing but to return the conversion factor."""
     return conversion_factor
 

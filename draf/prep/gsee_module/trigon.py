@@ -146,8 +146,7 @@ def sun_angles(datetime_index, coords, rise_set_times=None):
         azims.append(sun_azimuth)
         durations.append(duration)
     df = pd.DataFrame(
-        {"sun_alt": alts, "sun_azimuth": azims, "duration": durations},
-        index=datetime_index,
+        {"sun_alt": alts, "sun_azimuth": azims, "duration": durations}, index=datetime_index
     )
     df["sun_zenith"] = (np.pi / 2) - df.sun_alt
     # Sun altitude considered zero if slightly below horizon
@@ -211,15 +210,7 @@ def _tilt_single_tracking(sun_alt, tilt, azimuth, sun_azimuth):
 
 
 def aperture_irradiance(
-    direct,
-    diffuse,
-    coords,
-    tilt=0,
-    azimuth=0,
-    tracking=0,
-    albedo=0.3,
-    dni_only=False,
-    angles=None,
+    direct, diffuse, coords, tilt=0, azimuth=0, tracking=0, albedo=0.3, dni_only=False, angles=None
 ):
     """
     Parameters

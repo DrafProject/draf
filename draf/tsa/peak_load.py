@@ -131,12 +131,7 @@ class PeakLoadAnalyzer(DateTimeHandler):
         ax.patch.set_facecolor("firebrick")
         ax.patch.set_alpha(0.1)
         plt.tight_layout()
-        self.trimmed_peaks.plot(
-            markersize=5,
-            linewidth=3,
-            color="firebrick",
-            ax=ax,
-        )
+        self.trimmed_peaks.plot(markersize=5, linewidth=3, color="firebrick", ax=ax)
         ax.set_title(f"Zoom on {self.nPeaks:,.0f} highest peaks", fontweight="bold")
         ax.set(ylabel="$P_{el}$ [kW]", xlabel=f"Time [{self.freq_unit}]")
         hp.add_thousands_formatter(ax, x=False)

@@ -112,11 +112,7 @@ def eta_CHP_el_(fuel: str = "bio") -> ParDat:
     else:
         ValueError("Only biogas implemented")
     return ParDat(
-        name="eta_CHP_el_",
-        data=data,
-        doc=f"Electric efficiency",
-        src=src,
-        unit="kW_el/kW",
+        name="eta_CHP_el_", data=data, doc=f"Electric efficiency", src=src, unit="kW_el/kW"
     )
 
 
@@ -128,11 +124,7 @@ def eta_CHP_th_(fuel: str = "bio") -> ParDat:
     else:
         ValueError("Only biogas implemented")
     return ParDat(
-        name="eta_CHP_th_",
-        data=data,
-        doc=f"Thermal efficiency",
-        src=src,
-        unit="kW_th/kW",
+        name="eta_CHP_th_", data=data, doc=f"Thermal efficiency", src=src, unit="kW_th/kW"
     )
 
 

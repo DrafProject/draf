@@ -75,10 +75,6 @@ def test_human_readable_size():
 
 
 def test_topological_sort():
-    order_restriction_with_cyclic_dependency = [
-        ("A", {"B"}),
-        ("B", {"C"}),
-        ("C", {"A"}),
-    ]
+    order_restriction_with_cyclic_dependency = [("A", {"B"}), ("B", {"C"}), ("C", {"A"})]
     with pytest.raises(ValueError):
         list(hp.topological_sort(order_restriction_with_cyclic_dependency))

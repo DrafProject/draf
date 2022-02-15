@@ -51,13 +51,9 @@ class TimeSeriesPrepper:
             doc=f"Carbon emission factors (via elmada using year, freq, country, and CEF-method)",
             data=sc.match_dtindex(
                 get_emissions(
-                    year=sc.year,
-                    freq=sc.freq,
-                    country=sc.country,
-                    method=method,
-                    **kwargs,
+                    year=sc.year, freq=sc.freq, country=sc.country, method=method, **kwargs
                 )
-                / 1e3
+                * hp.conv("g", "kg", 1e-3)
             ),
         )
 

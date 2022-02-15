@@ -188,7 +188,7 @@ class CsPlotter(BasePlotter):
                     "W_pv_own",
                     "{:,.2f} MWh/a",
                     lambda df, cs: [sc.gte(sc.res.P_PV_OC_T) / 1e3 for sc in cs.scens_list],
-                ),
+                )
             )
 
         return self.base_table(data=data, gradient=gradient)
@@ -823,8 +823,7 @@ class CsPlotter(BasePlotter):
     def invest_table(self, gradient: bool = False) -> pdStyler:
         cs = self.cs
         l = dict(
-            C_TOT_inv_="Investment costs [k€]",
-            C_TOT_invAnn_="Annualized investment costs [k€/a]",
+            C_TOT_inv_="Investment costs [k€]", C_TOT_invAnn_="Annualized investment costs [k€/a]"
         )
         df = pd.DataFrame(
             {
@@ -1011,31 +1010,16 @@ def get_divider_nums(df):
 
 
 def get_divider(column_loc):
-    return {
-        "selector": f".col{column_loc}",
-        "props": [
-            ("border-left", "1px solid black"),
-        ],
-    }
+    return {"selector": f".col{column_loc}", "props": [("border-left", "1px solid black")]}
 
 
 def get_multiColumnHeader_style(df):
-    cols = {
-        "selector": "th.col_heading",
-        "props": [("text-align", "center")],
-    }
+    cols = {"selector": "th.col_heading", "props": [("text-align", "center")]}
     return [cols] + [get_divider(i) for i in get_divider_nums(df)]
 
 
 def get_leftAlignedIndex_style():
-    return [
-        dict(
-            selector="th.row_heading",
-            props=[
-                ("text-align", "left"),
-            ],
-        )
-    ]
+    return [dict(selector="th.row_heading", props=[("text-align", "left")])]
 
 
 def get_pareto_title(pareto: pd.DataFrame, units) -> str:
