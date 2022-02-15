@@ -999,8 +999,8 @@ class PP(Component):
     allow_new: bool = False
 
     def param_func(self, sc: Scenario):
-        sc.param("c_PP_SU_", data=0.1, doc="Costs per start up", unit="€/SU")
-        sc.param("c_PP_SC_", data=0.1, doc="Costs per sort change", unit="€/change")
+        sc.param("c_PP_SU_", data=10, doc="Costs per start up", unit="€/SU")
+        sc.param("c_PP_SC_", data=10, doc="Costs per sort change", unit="€/change")
         sc.param("y_PP_avail_TM", fill=1, doc="If avail")
         sc.param("y_PP_compat_SM", fill=1, doc="If machine and sort is compatible")
         sc.param("P_PP_CAPx_M", fill=2800, doc="", unit="kW_el")
@@ -1060,7 +1060,10 @@ class PP(Component):
             ),
             "PP_start_up_2",
         )
-        m.addConstr((v.C_PP_SC_ == v.Y_PP_SC_TSM.sum() * p.c_PP_SC_), "PP_sort_change")
+        m.addConstr(
+            (v.C_PP_SC_ == v.Y_PP_SC_TSM.sum() * p.c_PP_SC_),
+            "PP_sort_change",
+        )
         m.addConstrs(
             (
                 v.Y_PP_SC_TSM[t, s, m] >= v.Y_PP_op_TSM[t, s, m] - v.Y_PP_op_TSM[t - 1, s, m]
@@ -1094,12 +1097,7 @@ class PS(Component):
         sc.param("k_PS_min_S", fill=0.0, doc="Share of minimal required storage filling level")
         sc.param("k_PS_ini_S", fill=1.0, doc="Initial storage filling level")
         sc.var("G_PS_TS", doc="Storage filling level", unit="t")
-        sc.var(
-            "G_PS_delta_S",
-            doc="Final time step deviation from init",
-            unit="t",
-            lb=0,  # -GRB.INFINITY,
-        )
+        sc.var("G_PS_delta_S", doc="Final time step deviation from init", unit="t", lb=0)
         sc.var("E_PS_deltaTot_", doc="Energy equivalent", unit="kWh_el")
 
         if sc.consider_invest:
