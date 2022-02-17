@@ -55,9 +55,9 @@ class Scenarios(DrafBaseClass):
         self.__dict__[new_scen_id] = sc
 
     def get_by_name(self, name: str) -> "Scenario":
-        for sc in self.values():
+        for sc in self.get_all().values():
             if sc.name == name:
-                return getattr(self, name)
+                return sc
         else:
             return None
 
