@@ -119,7 +119,7 @@ def get_el_SLP(
     day_types = [_get_day_type(day) for day in days]
 
     dt_index = hp.make_datetimeindex(year=year, freq="15min")
-    ser = pd.Series(index=dt_index)
+    ser = pd.Series(index=dt_index, dtype="float64")
 
     for day, season, day_type in zip(days, seasons, day_types):
         ser.loc[day.strftime("%Y-%m-%d")] = df[season, day_type].values

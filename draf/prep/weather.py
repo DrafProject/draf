@@ -47,11 +47,11 @@ def get_data_for_gsee(stations_id_air: int, stations_id_solar: int, year: int):
     """
     at = get_df_from_DWD("air_temperature", stations_id_air)
     at.index = pd.to_datetime(at["MESS_DATUM"], format="%Y%m%d%H")
-    at = at[str(year)]
+    at = at.loc[str(year)]
 
     sol = get_df_from_DWD("solar", stations_id_solar)
     sol.index = pd.to_datetime(sol["MESS_DATUM_WOZ"], format="%Y%m%d%H:%M")
-    sol = sol[str(year)]
+    sol = sol.loc[str(year)]
 
     # fill values of -999 which indicate nans
     for k in ["FG_LBERG", "FD_LBERG"]:

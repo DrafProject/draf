@@ -115,7 +115,8 @@ class DemandAnalyzer(DateTimeHandler):
         sns.despine()
 
     def averages_plot(self):
-        timeframes = ["quarter", "month", "week"]
+        timeframes = ["Quarters", "Months", "Weeks"]
+        resamplers = ["Q", "M", "W"]
         fig, axes = plt.subplots(
             ncols=len(timeframes),
             figsize=(10, 1.6),
@@ -125,13 +126,14 @@ class DemandAnalyzer(DateTimeHandler):
         fig.suptitle("Averages", fontweight="bold")
         plt.tight_layout()
 
-        for timeframe, ax in zip(timeframes, axes):
+        for resampler, timeframe, ax in zip(resamplers, timeframes, axes):
             ser = self.dated(self.p_el)
-            ser = ser.groupby(getattr(ser.index, timeframe)).mean()
+            ser = ser.resample(resampler).mean()
+            ser = ser.set_axis(range(1, len(ser) + 1))
             ser.plot.bar(width=0.8, ax=ax, color="darkgray")
             ax.set_ylabel("$P_{el}$ [kW]")
             ax.tick_params(axis="x", labelrotation=0)
-            ax.set_title(f"{timeframe.capitalize()}s")
+            ax.set_title(timeframe)
             for i, label in enumerate(ax.xaxis.get_ticklabels()[:-1]):
                 if i % 4 != 0:
                     label.set_visible(False)

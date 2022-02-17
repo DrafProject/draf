@@ -39,7 +39,7 @@ def test__activate_vars(sc):
 def test_match_dtindex(cs):
     cs.set_time_horizon(start="Jan-02 00", steps=24 * 2)
     sc = cs.add_REF_scen()
-    ser = pd.Series(index=range(8760))
+    ser = pd.Series(index=range(8760), dtype="float64")
     df = ser.to_frame()
     for input in (ser, df):
         new = sc.match_dtindex(input)

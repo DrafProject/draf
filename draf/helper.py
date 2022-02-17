@@ -233,7 +233,7 @@ def copy_doc(source: Callable, start: Optional[str] = None) -> Callable:
 def ser_to_df_for_latex_table(ser: pd.Series, ncols: int) -> pd.DataFrame:
     nrows = len(ser) // ncols
     data = [ser[nrows * col : nrows * (col + 1)].reset_index() for col in range(ncols)]
-    return pd.concat(data, 1)
+    return pd.concat(data, axis=1)
 
 
 def wrap_and_border(text: str, width: int) -> str:
