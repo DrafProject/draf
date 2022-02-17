@@ -14,7 +14,7 @@ class Etypes:
     # SORTING_START
     A = Alias(en="Area", de="Fläche")
     C = Alias(en="Costs", de="Kosten", units=["k€/a", "k€"])
-    c = Alias(en="Specific costs", de="Spezifische Kosten", units=["€/kW", "€/kWh","€/kW_th", "€/kWh_el","€/kW_el", "€/kW_el/a", "€/kW_peak", "€/tCO2eq", "€/SU", "€/t"])
+    c = Alias(en="Specific costs", de="Spezifische Kosten", units=["€/kW", "€/kWh","€/kW_th", "€/kWh_el","€/kW_el", "€/kW_el/a", "€/kW_peak", "€/tCO2eq", "€/SU", "€/t", "€/change"])
     CE = Alias(en="Carbon emissions", de="Kohlenstoff-vergleichs-Emissionen", units=["kgCO2eq/a"])
     ce = Alias(en="Specific carbon emissions", de="Spezifische Kohlenstoff-Emissionen", units=["kgCO2eq/kWh_el", "kgCO2eq/kWh"])
     cop = Alias(en="Coefficient of performance", de="Leistungszahl")

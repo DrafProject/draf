@@ -526,7 +526,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 return pd.DataFrame(d)
             else:
                 return pd.Series(d)
-        except KeyError:
+        except (KeyError, AttributeError):
             return pd.NA
 
     def get_diff(self, ent_name):

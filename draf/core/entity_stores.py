@@ -12,6 +12,12 @@ logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
 
 
+def make_table(l: List[Tuple], lead_text: str = "", table_prefix="  "):
+    headers, col_data = zip(*l)
+    rows = list(zip(*col_data))
+    return lead_text + textwrap.indent(text=tabulate(rows, headers=headers), prefix=table_prefix)
+
+
 class Collectors(DrafBaseClass):
     """Stores collectors."""
 
@@ -28,24 +34,32 @@ class Collectors(DrafBaseClass):
             ("Unit", [meta[name]["unit"] for name in bals.keys()]),
             ("Doc", [meta[name]["doc"] for name in bals.keys()]),
         ]
-        headers, col_data = zip(*l)
-        rows = list(zip(*col_data))
-        return "<Collectors object> preview:\n" + textwrap.indent(
-            text=tabulate(rows, headers=headers), prefix="  "
-        )
+        return make_table(l, lead_text="<Collectors object> preview:\n")
 
 
 class Scenarios(DrafBaseClass):
     """Stores scenarios."""
 
     def __repr__(self):
-        layout = "{bullet}{name:<10} | {doc}\n"
-        return self._build_repr(layout, which_metadata=["doc"])
+        all = self.get_all()
+        l = [
+            ("Id", list(all.keys())),
+            ("Name", [sc.name for sc in all.values()]),
+            ("Doc", [sc.doc for sc in all.values()]),
+        ]
+        return make_table(l, lead_text="<Scenarios object> preview:\n")
 
     def rename(self, old_scen_id: str, new_scen_id: str) -> None:
         sc = self.__dict__.pop(old_scen_id)
         sc.id = new_scen_id
         self.__dict__[new_scen_id] = sc
+
+    def get_by_name(self, name: str) -> "Scenario":
+        for sc in self.values():
+            if sc.name == name:
+                return getattr(self, name)
+        else:
+            return None
 
 
 class Dimensions(DrafBaseClass):
@@ -55,8 +69,14 @@ class Dimensions(DrafBaseClass):
         self._meta: Dict[str, Dict] = dict()
 
     def __repr__(self):
-        layout = "{bullet}{name:<5} {unit:>10}   {doc}\n"
-        return self._build_repr(layout, ["doc", "unit"])
+        bals = self.get_all()
+        meta = self._meta
+        l = [
+            ("Name", list(bals.keys())),
+            ("Doc", [meta[name]["doc"] for name in bals.keys()]),
+            ("Unit", [meta[name]["unit"] for name in bals.keys()]),
+        ]
+        return make_table(l, lead_text="<Dimensions object> preview:\n")
 
 
 class EntityStore(DrafBaseClass):

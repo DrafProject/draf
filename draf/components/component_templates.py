@@ -209,7 +209,7 @@ class EG(Component):
                 data=["7000-7500", "7500-8000", ">8000"],
                 doc="Full load hour sections for indensive grid use",
             )
-            sc.var("y_EG_FLH_G", doc="If full load hour section applies", vtype=GRB.BINARY)
+            sc.var("Y_EG_FLH_G", doc="If full load hour section applies", vtype=GRB.BINARY)
             sc.param("t_EG_minFLH_G", data=[7000, 7500, 8000], unit="h")
             sc.param(
                 "k_EG_FLH_G",
@@ -235,16 +235,16 @@ class EG(Component):
             m.addConstrs(
                 (
                     v.P_EG_buy_T.sum() * p.k__dT_ * p.k__PartYearComp_
-                    >= p.t_EG_minFLH_G[g] * v.y_EG_FLH_G[g] * v.P_EG_buyPeak_
+                    >= p.t_EG_minFLH_G[g] * v.Y_EG_FLH_G[g] * v.P_EG_buyPeak_
                     for g in d.G
                 ),
                 "EG_intensive_grid_use",
             )
-            m.addConstr(v.y_EG_FLH_G.sum() <= 1, "DEF_FLH_2")
+            m.addConstr(v.Y_EG_FLH_G.sum() <= 1, "DEF_FLH_2")
 
         c.P_EL_source_T["EG"] = lambda t: v.P_EG_buy_T[t]
         c.P_EL_sink_T["EG"] = lambda t: v.P_EG_sell_T[t]
-        igu_factor = (1 - v.y_EG_FLH_G.prod(p.k_EG_FLH_G)) if self.consider_intensiveGridUse else 1
+        igu_factor = (1 - v.Y_EG_FLH_G.prod(p.k_EG_FLH_G)) if self.consider_intensiveGridUse else 1
         c.C_TOT_op_["EG_peak"] = (
             v.P_EG_buyPeak_ * igu_factor * p.c_EG_buyPeak_ * conv("€", "k€", 1e-3)
         )
@@ -469,7 +469,12 @@ class HP(Component):
             "T_HP_Eva_E", data=p.T_cDem_in_N - 5, doc="Evaporation side temperature", unit="°C"
         )
         sc.param("n_HP_", data=self.n, doc="Number of existing heat pumps")
-        sc.param("eta_HP_", data=0.5, doc="Ratio of reaching the ideal COP (exergy efficiency)")
+        sc.param(
+            "eta_HP_",
+            data=0.5,
+            doc="Ratio of reaching the ideal COP (exergy efficiency)",
+            src="@Arat_2017",
+        )
         sc.param("dQ_HP_CAPx_", data=self.dQ_CAPx, doc="Existing heating capacity", unit="kW_th")
         sc.param(
             "dQ_HP_max_", data=1e5, doc="Big-M number (upper bound for CAPn + CAPx)", unit="kW_th"
@@ -979,7 +984,7 @@ class PP(Component):
     def param_func(self, sc: Scenario):
         sc.param("c_PP_SU_", data=10, doc="Costs per start up", unit="€/SU")
         sc.param("c_PP_SC_", data=10, doc="Costs per sort change", unit="€/change")
-        sc.param("y_PP_avail_TM", fill=1, doc="If avail")
+        sc.param("y_PP_avail_TM", fill=1, doc="If machine is available at time step")
         sc.param("y_PP_compat_SM", fill=1, doc="If machine and sort is compatible")
         sc.param("P_PP_CAPx_M", fill=2800, doc="", unit="kW_el")
         sc.param(
@@ -992,7 +997,7 @@ class PP(Component):
         sc.var("C_PP_SC_", doc="Total cost of sort change", unit="k€")
         sc.var("Y_PP_op_TSM", doc="If machine is in operation", vtype=GRB.BINARY)
         sc.var("Y_PP_SU_TM", doc="If machine just started up", vtype=GRB.BINARY)
-        sc.var("Y_PP_SC_TSM", doc="If sort hast just changed", vtype=GRB.BINARY)
+        sc.var("Y_PP_SC_TSM", doc="If sort has just changed", vtype=GRB.BINARY)
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         T, S, M = d.T, d.S, d.M
@@ -1054,10 +1059,6 @@ class PP(Component):
             "PP_sort_change_2",
         )
         m.addConstrs(
-            (v.dG_PP_TSM[t, s, m] <= v.Y_PP_op_TSM[t, s, m] * 1e8 for t in T for s in S for m in M),
-            "PP_bigM",
-        )
-        m.addConstrs(
             (v.Y_PP_op_TSM.sum(t, "*", m) <= 1 for t in T for m in M),
             "PP_not_more_than_one_sort_per_machine",
         )
@@ -1077,7 +1078,7 @@ class PS(Component):
         sc.param("k_PS_min_S", fill=0.0, doc="Share of minimal required storage filling level")
         sc.param("k_PS_ini_S", fill=1.0, doc="Initial storage filling level")
         sc.var("G_PS_TS", doc="Storage filling level", unit="t")
-        sc.var("G_PS_delta_S", doc="Final time step deviation from init", unit="t", lb=0)
+        sc.var("G_PS_delta_S", doc="Final time step deviation from init", unit="t")
         sc.var("E_PS_delta_", doc="Energy equivalent", unit="kWh_el")
 
         if sc.consider_invest:
@@ -1111,7 +1112,7 @@ class PS(Component):
 
         c.dG_PROD_TS["PS"] = get_output
         c.C_TOT_op_["PS_deviation"] = (
-            v.E_PS_delta_ * sc.params.c_EG_T.mean() * conv("€", "k€", 1e-3)
+            v.E_PS_delta_ * 3 * (sc.params.c_EG_T.mean() + p.c_EG_addon_) * conv("€", "k€", 1e-3)
         )
 
         if sc.consider_invest:

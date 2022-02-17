@@ -9,6 +9,7 @@ from draf.prep.par_dat import ParDat, Source
 
 class SRC:
     # SORTING_START
+    Arat_2017 =        Source(url="https://doi.org/10.1016/j.energy.2016.11.073", doc="Fig. 3", bib=r"@article{Arat_2017, doi={10.1016/j.energy.2016.11.073}, url={https://doi.org/10.1016/j.energy.2016.11.073}, year={2017}, month=jan, publisher={Elsevier {BV}}, volume={119}, pages={1159--1170}, author={Halit Arat and Oguz Arslan}, title={Exergoeconomic analysis of district heating system boosted by the geothermal heat pump}, journal={Energy}}")
     ASUE_2011 =        Source(url="https://perma.cc/KHG2-WPPX", doc="p.12", bib=r"@www{ASUE_2011, author={ASUE}, title={{BHKW-Kenndaten 2011}}, url={https://perma.cc/KHG2-WPPX}, urldate={03.09.2021}}")
     BMWI_2020 =        Source(url="https://www.bmwi-energiewende.de/EWD/Redaktion/Newsletter/2020/11/Meldung/News1.html", bib=r"@www{BMWI_2020, author={BMWI}, title={{EEG-Umlage sinkt 2021}}, url={https://www.bmwi-energiewende.de/EWD/Redaktion/Newsletter/2020/11/Meldung/News1.html}, urldate={03.09.2021}}")
     Bracco_2016 =      Source(url="https://doi.org/10.1016/j.energy.2016.01.050", bib=r"@article{Bracco_2016, author={Bracco, Stefano and Dentici, Gabriele and Siri, Silvia}, year={2016}, title={{DESOD: a mathematical programming tool to optimally design a distributed energy system}}, keywords={Cogeneration;Distributed generation;Optimal design;Renewables;Storage;Trigeneration}, pages={298--309}, volume={100}, issn={03605442}, journal={{Energy}}, doi={10.1016/j.energy.2016.01.050}}")
