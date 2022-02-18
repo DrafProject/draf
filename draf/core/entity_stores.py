@@ -17,6 +17,7 @@ def make_table(l: List[Tuple], lead_text: str = "", table_prefix="  "):
     rows = list(zip(*col_data))
     return lead_text + textwrap.indent(text=tabulate(rows, headers=headers), prefix=table_prefix)
 
+
 class Collectors(DrafBaseClass):
     """Stores collectors."""
 

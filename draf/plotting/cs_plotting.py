@@ -8,12 +8,13 @@ import plotly as py
 import plotly.figure_factory as ff
 import plotly.graph_objs as go
 import seaborn as sns
-from IPython.display import display
+from IPython.core.display import HTML, display
 from ipywidgets import interact, widgets
 from pandas.io.formats.style import Styler as pdStyler
 
 from draf import helper as hp
 from draf.plotting.base_plotter import BasePlotter
+from draf.plotting.plotting_util import make_clickable_src
 from draf.plotting.scen_plotting import COLORS, ScenPlotter
 
 logger = logging.getLogger(__name__)
@@ -681,9 +682,21 @@ class CsPlotter(BasePlotter):
 
         return go.Figure(data=data, layout=layout)
 
+    def ref_table(self, verbose:bool=False):
+        return self.table(
+            show_src=True,
+            show_comp=verbose,
+            show_desc=verbose,
+            show_etype=verbose,
+            show_dims=verbose,
+            clickable_urls=True,
+            only_ref=True,
+        )
+
     def table(
         self,
         what: str = "p",
+        show_mean: bool = False,
         show_unit: bool = True,
         show_doc: bool = True,
         show_src: bool = False,
@@ -693,8 +706,10 @@ class CsPlotter(BasePlotter):
         show_dims: bool = False,
         gradient: bool = False,
         filter_func: Optional[Callable] = None,
+        only_ref: bool = False,
         precision: int = 0,
         caption: bool = False,
+        clickable_urls: bool = False,
     ) -> pdStyler:
         """Creates a table with all scalars.
 
@@ -703,29 +718,33 @@ class CsPlotter(BasePlotter):
             show_unit: If units are shown.
             show_doc: If entity docs are shown.
         """
+        # TODO: optionally add non-scalar params with mean values
+        # FIXME: prevent clickable_urls from switching off highlight_diff
         cs = self.cs
-
-        tmp_list = [
-            pd.Series(sc.get_var_par_dic(what)[""], name=name) for name, sc in cs.scens_dic.items()
-        ]
-
+        d = {cs.REF_scen.id: cs.REF_scen} if only_ref else cs.scens_dic
+        tmp_list = [pd.Series(sc.get_var_par_dic(what)[""], name=name) for name, sc in d.items()]
         df = pd.concat(tmp_list, axis=1)
 
         if filter_func is not None:
             df = df.loc[df.index.map(filter_func)]
 
+        sc = cs.any_scen
         if show_unit:
-            df["Unit"] = [cs.any_scen.get_unit(ent_name) for ent_name in df.index]
+            df["Unit"] = [sc.get_unit(ent_name) for ent_name in df.index]
         if show_etype:
             df["Etype"] = [hp.get_etype(ent_name) for ent_name in df.index]
         if show_comp:
             df["Comp"] = [hp.get_component(ent_name) for ent_name in df.index]
         if show_desc:
             df["Desc"] = [hp.get_desc(ent_name) for ent_name in df.index]
+        if show_dims:
+            df["Dims"] = [hp.get_dims(ent_name) for ent_name in df.index]
         if show_doc:
-            df["Doc"] = [cs.any_scen.get_doc(ent_name) for ent_name in df.index]
+            df["Doc"] = [sc.get_doc(ent_name) for ent_name in df.index]
         if show_src:
-            df["Src"] = [cs.any_scen.get_src(ent_name) for ent_name in df.index]
+            df["Src"] = [sc.get_src(ent_name) for ent_name in df.index]
+            if clickable_urls:
+                df["Src"] = df["Src"].apply(make_clickable_src)
         df.index.name = what
 
         def highlight_diff1(s):
@@ -754,7 +773,10 @@ class CsPlotter(BasePlotter):
         if gradient:
             styled_df = styled_df.background_gradient(cmap="OrRd", axis=1)
 
-        return styled_df
+        if clickable_urls:
+            return HTML(styled_df.data.to_html(render_links=True, escape=False))
+        else:
+            return styled_df
 
     @hp.copy_doc(ScenPlotter.describe, start="Args:")
     def describe(self, **kwargs) -> None:
