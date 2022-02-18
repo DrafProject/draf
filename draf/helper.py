@@ -408,3 +408,10 @@ def delete_cache(filter_str: str = "*") -> None:
 
 def confirm_deletion(nfiles: int) -> bool:
     return input(f"Do you really want to delete these {nfiles} files? (y/n)") == "y"
+
+
+def get_mean(data: Union[int, float, pd.Series]) -> float:
+    try:
+        return float(data)
+    except TypeError:
+        return data.mean()

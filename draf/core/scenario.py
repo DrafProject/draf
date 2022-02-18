@@ -7,6 +7,7 @@ import logging
 import math
 import pickle
 import time
+from optparse import Option
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
@@ -735,6 +736,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def get_src(self, ent_name: str) -> Optional[str]:
         return self.get_meta(ent_name=ent_name, meta_type="src")
+
+    def get_src_with_href(self, ent_name: str) -> Optional[str]:
+        s = self.get_src(ent_name)
 
     def get_meta(self, ent_name: str, meta_type: str) -> Optional[str]:
         """Returns meta-information such as doc or unit for a given entity.

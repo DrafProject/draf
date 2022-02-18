@@ -17,7 +17,6 @@ def make_table(l: List[Tuple], lead_text: str = "", table_prefix="  "):
     rows = list(zip(*col_data))
     return lead_text + textwrap.indent(text=tabulate(rows, headers=headers), prefix=table_prefix)
 
-
 class Collectors(DrafBaseClass):
     """Stores collectors."""
 
@@ -25,14 +24,14 @@ class Collectors(DrafBaseClass):
         self._meta: Dict[str, Dict] = dict()
 
     def __repr__(self):
-        bals = self.get_all()
+        data = self.get_all()
         meta = self._meta
         l = [
-            ("Name", list(bals.keys())),
-            ("N", list(map(len, bals.values()))),
-            ("Content", [textwrap.shorten(", ".join(v.keys()), 50) for v in bals.values()]),
-            ("Unit", [meta[name]["unit"] for name in bals.keys()]),
-            ("Doc", [meta[name]["doc"] for name in bals.keys()]),
+            ("Name", list(data.keys())),
+            ("N", list(map(len, data.values()))),
+            ("Content", [textwrap.shorten(", ".join(v.keys()), 50) for v in data.values()]),
+            ("Unit", [meta[name]["unit"] for name in data.keys()]),
+            ("Doc", [meta[name]["doc"] for name in data.keys()]),
         ]
         return make_table(l, lead_text="<Collectors object> preview:\n")
 
@@ -69,12 +68,12 @@ class Dimensions(DrafBaseClass):
         self._meta: Dict[str, Dict] = dict()
 
     def __repr__(self):
-        bals = self.get_all()
+        data = self.get_all()
         meta = self._meta
         l = [
-            ("Name", list(bals.keys())),
-            ("Doc", [meta[name]["doc"] for name in bals.keys()]),
-            ("Unit", [meta[name]["unit"] for name in bals.keys()]),
+            ("Name", list(data.keys())),
+            ("Doc", [meta[name]["doc"] for name in data.keys()]),
+            ("Unit", [meta[name]["unit"] for name in data.keys()]),
         ]
         return make_table(l, lead_text="<Dimensions object> preview:\n")
 
@@ -166,6 +165,19 @@ class Params(EntityStore):
         super().__init__()
         self._meta: Dict[str, Dict] = {}
 
+    def __repr__(self):
+        data = self.get_all()
+        meta = self._meta
+        l = [
+            ("Name", list(data.keys())),
+            ("Dims", [hp.get_dims(k) for k in data.keys()]),
+            ("Value", [f"{hp.get_mean(i):.3e}" for i in data.values()]),
+            ("Unit", [meta[k]["unit"] for k in data.keys()]),
+            ("Doc", [textwrap.fill(meta[k]["doc"], width=50) for k in data.keys()]),
+            ("Source", [textwrap.shorten(meta[k]["src"], width=17) for k in data.keys()]),
+        ]
+        return make_table(l, lead_text=f"<Params object> preview:\n")
+
     def _set_meta(self, ent_name: str, meta_type: str, value: str) -> None:
         self._meta.setdefault(ent_name, {})[meta_type] = value
 
@@ -202,7 +214,19 @@ class Results(EntityStore):
         super().__init__()
         self._get_results_from_variables(sc=sc)
 
-    # TODO: Move to _get_results_from_variables, _from_gurobipy, _from_pyomo to Scenario for
+    def __repr__(self):
+        data = self.get_all()
+        meta = self._meta
+        l = [
+            ("Name", list(data.keys())),
+            ("Dims", [hp.get_dims(k) for k in data.keys()]),
+            ("Value", [f"{hp.get_mean(i):.3e}" for i in data.values()]),
+            ("Unit", [meta[k]["unit"] for k in data.keys()]),
+            ("Doc", [textwrap.fill(meta[k]["doc"], width=50) for k in data.keys()]),
+        ]
+        return make_table(l, lead_text="<Results object> preview:\n")
+
+    # TODO: Move _get_results_from_variables, _from_gurobipy, _from_pyomo to Scenario for
     # better type hinting
 
     def _get_results_from_variables(self, sc: "Scenario") -> None:
