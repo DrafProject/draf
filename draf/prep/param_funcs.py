@@ -51,9 +51,9 @@ def c_CHP_inv_(estimated_size=400, fuel_type="bio") -> ParDat:
     assert 0 <= estimated_size <= 2500
 
     if fuel_type == "ng":
-        value = 9332.6 * estimated_size ** -0.461
+        value = 9332.6 * estimated_size**-0.461
     elif fuel_type == "bio":
-        value = 15648 * estimated_size ** -0.5361
+        value = 15648 * estimated_size**-0.5361
     else:
         raise ValueError("fuel_type must be in ['bio', 'ng'].")
 
@@ -70,7 +70,7 @@ def c_HP_inv_(estimated_size=100) -> ParDat:
         1520.7 * estimated_size ** -.363
     """
     assert 0 < estimated_size < 200
-    value = 1520.7 * estimated_size ** -0.363
+    value = 1520.7 * estimated_size**-0.363
     return ParDat(name="c_HP_inv_", data=value, doc="CAPEX", src="@Wolf_2017", unit="€/kW_el")
 
 
@@ -90,7 +90,7 @@ def c_TES_inv_(estimated_size=100, temp_spread=40) -> ParDat:
     kJ_per_kWh = 3600  # kJ/kWh
     density = 999.975  # kg/m³
     kWh_per_m3 = specific_heat / kJ_per_kWh * temp_spread * density
-    price_per_m3 = 8222.6 * estimated_size ** -0.394
+    price_per_m3 = 8222.6 * estimated_size**-0.394
     value = price_per_m3 / kWh_per_m3
     return ParDat(name="c_TES_inv_", data=value, doc="CAPEX", src="@FFE_2016", unit="€/kW_th")
 

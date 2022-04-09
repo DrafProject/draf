@@ -31,6 +31,7 @@ logger.setLevel(level=logging.WARN)
 
 
 def _load_pickle_object(fp) -> Any:
+    fp = Path(fp).expanduser()
     with open(fp, "rb") as f:
         obj = pickle.load(f)
     return obj
@@ -90,8 +91,8 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         self.coords = coords
         self.scens = Scenarios()
         self.plot = CsPlotter(cs=self)
-        self.dims = Dimensions()
-        self.params = Params()
+        # self.dims = Dimensions()
+
         self.obj_vars = obj_vars
         self.mdl_language = mdl_language
 
@@ -258,6 +259,9 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 obj_vars=self.obj_vars,
             )
         else:
+            if components is not None:
+                raise RuntimeError("Components can only be set if based_on='None'")
+
             sc = getattr(self.scens, based_on)._special_copy()
             sc.id = id
             sc.name = name
@@ -270,7 +274,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         self,
         scen_vars: Optional[List[Tuple[str, str, List]]] = None,
         nParetoPoints: int = 0,
-        del_REF: bool = False,
+        remove_base: bool = False,
         based_on: str = "REF",
     ) -> CaseStudy:
         """Add scenarios from a list of tuples containing a long and short entity name and its
@@ -293,7 +297,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 possible combination is created as a scenario, in this example 6 scenarios are
                 created.
             nParetoPoints: Number of desired Pareto-point for each energy system configuration.
-            del_REF: If the reference scenario is deleted after the creation of the scenarios.
+            remove_base: If the base scenario is removed after the creation of the scenarios.
             based_on: ID string of the scenario used as base-scenario for all created scenarios.
 
         Note:
@@ -338,7 +342,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                     sc.update_params(**{ent_name: value})
                     logger.info(f"Updated parameter {ent_name} on scenario {sc.id}.")
 
-        if del_REF:
+        if remove_base:
             delattr(self.scens, based_on)
 
         return self
@@ -507,7 +511,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
 
     def get_entity_dict(self, ent_name: str) -> Dict:
         """Returns the data of an entity for all scenarios."""
-        return {sc.id: sc.get_entity(ent_name) for sc in self.scens_list}
+        return {sc.id: sc.get_ent(ent_name) for sc in self.scens_list}
 
     def get_collector_values(self, collector_name: str):
         return pd.DataFrame(
@@ -527,7 +531,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             else:
                 return pd.Series(d)
         except (KeyError, AttributeError):
-            return pd.NA
+            return np.nan
 
     def get_diff(self, ent_name):
         try:
@@ -537,7 +541,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             }
             return pd.Series(d)
         except KeyError:
-            return pd.NA
+            return np.nan
 
     def import_scens(
         self, other_cs: CaseStudy, exclude: List[str] = None, include: List[str] = None

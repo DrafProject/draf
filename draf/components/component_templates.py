@@ -310,13 +310,13 @@ class BES(Component):
         sc.param("k_BES_ini_", data=0, doc="Initial and final energy filling share")
         sc.param(
             "eta_BES_ch_",
-            data=db.eta_BES_cycle_.data ** 0.5,
+            data=db.eta_BES_cycle_.data**0.5,
             doc="Charging efficiency",
             src="@Carroquino_2021",
         )
         sc.param(
             "eta_BES_dis_",
-            data=db.eta_BES_cycle_.data ** 0.5,
+            data=db.eta_BES_cycle_.data**0.5,
             doc="Discharging efficiency",
             src="@Carroquino_2021",
         )
@@ -474,7 +474,7 @@ class HP(Component):
             data=0.5,
             doc="Ratio of reaching the ideal COP (exergy efficiency)",
             src="@Arat_2017",
-        )
+        )  # Cox_2022 used 0.45 (https://doi.org/10.1016/j.apenergy.2021.118499)
         sc.param("dQ_HP_CAPx_", data=self.dQ_CAPx, doc="Existing heating capacity", unit="kW_th")
         sc.param(
             "dQ_HP_max_", data=1e5, doc="Big-M number (upper bound for CAPn + CAPx)", unit="kW_th"
@@ -693,7 +693,7 @@ class HOB(Component):
     """Heat-only boiler"""
 
     dQ_CAPx: float = 0
-    allow_new = True
+    allow_new: bool = True
 
     def param_func(self, sc: Scenario):
         sc.param("dQ_HOB_CAPx_", data=self.dQ_CAPx, doc="Existing capacity", unit="kW_th")
@@ -728,7 +728,7 @@ class HOB(Component):
 class TES(Component):
     """Thermal energy storage"""
 
-    allow_new = True
+    allow_new: bool = True
 
     def param_func(self, sc: Scenario):
         d = sc.dims
@@ -840,13 +840,13 @@ class BEV(Component):
         )
         sc.param(
             "eta_BEV_ch_",
-            data=db.eta_BES_cycle_.data ** 0.5,
+            data=db.eta_BES_cycle_.data**0.5,
             doc="Charging efficiency",
             src="@Carroquino_2021",
         )
         sc.param(
             "eta_BEV_dis_",
-            data=db.eta_BES_cycle_.data ** 0.5,
+            data=db.eta_BES_cycle_.data**0.5,
             doc="Discharging efficiency",
             src="@Carroquino_2021",
         )

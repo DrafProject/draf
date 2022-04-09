@@ -62,7 +62,7 @@ class DataBase:
     k_CHP_RMI_ = ParDat(name="k_CHP_RMI_", data=0.18, doc=Descs.RMI.en, src="@Weber_2008")
     k_CM_RMI_ = ParDat(name="k_CM_RMI_", data=0.01 + 0.015, doc=Descs.RMI.en, src="@VDI2067")
     k_HOB_RMI_ = ParDat(name="k_HOB_RMI_", data=0.18, doc=Descs.RMI.en, src="@Weber_2008")
-    k_HP_RMI_ = ParDat(name="k_HP_RMI_", data=0.01 + 0.015, doc=Descs.RMI.en, src="@VDI2067")
+    k_HP_RMI_ = ParDat(name="k_HP_RMI_", data=0.01 + 0.015, doc=Descs.RMI.en, src="@VDI2067")  # 5% assumed by Cox_2022 (https://doi.org/10.1016/j.apenergy.2021.118499)
     k_PV_RMI_ = ParDat(name="k_PV_RMI_", data=0.02, doc=Descs.RMI.en, src="@ISE_2018")
     k_TES_RMI_ = ParDat(name="k_TES_RMI_", data=0.001, doc=Descs.RMI.en, src="@FFE_2016")
     N_BES_ = ParDat(name="N_BES_", data=20, doc=Etypes.N.en, src="@Juelch_2016", unit="a")

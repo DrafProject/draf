@@ -229,14 +229,17 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         }
 
         for param, value in defaults.items():
-            self.mdl.setParam(param, value, verbose=False)
+            self.mdl.setParam(param, value)
 
     def update_par_dic(self) -> None:
         self._par_dic = self.params._to_dims_dic()
 
     def get_total_energy(self, data: pd.Series) -> float:
         """Get the total energy of a power entity."""
-        return data.sum() * self.step_width
+        try:
+            return data.sum() * self.step_width
+        except AttributeError as e:
+            return np.nan
 
     gte = get_total_energy
 
@@ -289,6 +292,13 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         """A generator that yields Name, Data tuples of all entities."""
         for k, v in self._all_ents_dict.items():
             yield k, v
+
+    def get_ent(self, ent: str) -> Union[float, pd.Series]:
+        """Get entity-data by its name and NAN if entity is not available."""
+        try:
+            return self.get_entity(ent)
+        except (KeyError, AttributeError):
+            return np.nan
 
     def get_entity(self, ent: str) -> Union[float, pd.Series]:
         """Get entity-data by its name."""
@@ -532,7 +542,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         if solver_params is not None:
             solver_params_dic.update(solver_params)
         for k, v in solver_params_dic.items():
-            self.mdl.setParam(k, v, verbose=False)
+            self.mdl.setParam(k, v)
 
         self.mdl.optimize()
         self._update_time_param("t__solve_", "Time to solve the model", self._get_time_diff())

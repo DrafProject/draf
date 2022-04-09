@@ -10,12 +10,13 @@ dependencies:  # NOTE: here '=' (single)
   - jupyter
   - matplotlib
   - numpy
+  - numpy-financial
   - pandas
   - pip
   - plotly
   - pvlib-python >= 0.6.3  # dependency of gsee_module
   - pyomo
-  - python
+  - python = 3.9
   - seaborn
   - pip:  # NOTE: here '==' (double)
     - elmada

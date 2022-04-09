@@ -3,6 +3,8 @@ from collections import OrderedDict
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
+import numpy as np
+import numpy_financial as npf
 import pandas as pd
 import plotly as py
 import plotly.figure_factory as ff
@@ -61,7 +63,7 @@ class CsPlotter(BasePlotter):
             # for icons see https://fontawesome.com/v4.7/icons/
         )
 
-        @interact(table=ui, gradient=False)
+        @interact(table=ui, gradient=True)
         def f(table, gradient):
             kw = dict()
             if table in ("p_table", "v_table"):
@@ -70,7 +72,11 @@ class CsPlotter(BasePlotter):
             else:
                 func = table
             kw.update(gradient=gradient)
-            display(getattr(cs.plot, func)(**kw))
+            try:
+                display(getattr(cs.plot, func)(**kw))
+            except (AttributeError, KeyError) as e:
+                display(HTML("<h2>⚠️ No data</h2>"))
+                print(e)
 
     def pareto_table(self, gradient: bool = False) -> pdStyler:
         cs = self.cs
@@ -83,28 +89,44 @@ class CsPlotter(BasePlotter):
             styled_df = styled_df.background_gradient(cmap="OrRd")
         return styled_df
 
-    def yields_table(self, gradient: bool = False) -> pdStyler:
+    def _get_internal_rates_of_return(self, base_years: int = 15) -> pd.Series:
+        cs = self.cs
+        c_inv = cs.get_ent("C_TOT_inv_")
+        c_op = cs.get_diff("C_TOT_op_")
+        data = [npf.irr([-inv] + base_years * [op]) for inv, op in zip(c_inv.values, c_op.values)]
+        return pd.Series(data, c_inv.index)
+
+    @staticmethod
+    def _get_discounted_payback_period(rate: float, payback_period: pd.Series) -> pd.Series:
+        data = np.log(1 / (1 - (rate * payback_period.values))) / np.log(1 + rate)
+        # https://github.com/epri-dev/StorageVET/blob/576a01dec9effa174c944c56a88f748da5072bff/storagevet/Finances.py#L610
+        return pd.Series(data, payback_period.index)
+
+    def yields_table(self, gradient: bool = False, nyears_for_irr: int = 15) -> pdStyler:
         """Returns a styled pandas table with cost and carbon savings, and avoidance cost."""
         cs = self.cs
         df = pd.DataFrame(
             {
-                ("Absolute", "Costs"): cs.get_ent("C_TOT_"),
-                ("Absolute", "Emissions"): cs.get_ent("CE_TOT_") / 1e3,
-                ("Abolute savings", "Costs"): cs.get_diff("C_TOT_"),
-                ("Abolute savings", "Emissions"): cs.get_diff("CE_TOT_") / 1e3,
+                ("Total annualized", "Costs"): cs.get_ent("C_TOT_"),
+                ("Total annualized", "Emissions"): cs.get_ent("CE_TOT_") / 1e3,
+                ("Absolute savings", "Costs"): cs.get_diff("C_TOT_"),
+                ("Absolute savings", "Emissions"): cs.get_diff("CE_TOT_") / 1e3,
                 ("Relative savings", "Costs"): cs.get_diff("C_TOT_")
                 / cs.REF_scen.get_entity("C_TOT_"),
                 ("Relative savings", "Emissions"): cs.get_diff("CE_TOT_")
                 / cs.REF_scen.get_entity("CE_TOT_"),
-                ("Annual costs", "C_invAnn"): cs.get_ent("C_TOT_invAnn_"),
-                ("Annual costs", "C_op"): cs.get_ent("C_TOT_op_"),
-                ("", "Emission avoidance costs"): -cs.get_diff("C_TOT_")
-                / cs.get_diff("CE_TOT_")
-                * 1e6,
                 ("", "C_inv"): cs.get_ent("C_TOT_inv_"),
-                ("", "Payback time"): cs.get_ent("C_TOT_inv_") / cs.get_diff("C_TOT_op_"),
+                ("", "C_invAnn"): cs.get_ent("C_TOT_invAnn_"),
+                ("", "C_op"): cs.get_ent("C_TOT_op_"),
+                ("", "EAC"): -cs.get_diff("C_TOT_") / cs.get_diff("CE_TOT_") * 1e6,
+                ("", "PP"): cs.get_ent("C_TOT_inv_") / cs.get_diff("C_TOT_op_"),
             }
         )
+
+        df[("", "DPP")] = self._get_discounted_payback_period(
+            rate=cs.REF_scen.params.k__r_, payback_period=df[("", "PP")]
+        )
+        df[("", "IRR")] = self._get_internal_rates_of_return(nyears_for_irr)
 
         def color_negative_red(val):
             color = "red" if val < 0 else "black"
@@ -114,31 +136,47 @@ class CsPlotter(BasePlotter):
 
         if gradient:
             styled_df = (
-                df.style.background_gradient(subset=["Absolute"], cmap="Greens")
-                .background_gradient(subset=["Abolute savings"], cmap="Reds")
+                df.style.background_gradient(subset=["Total annualized"], cmap="Greens")
+                .background_gradient(subset=["Absolute savings"], cmap="Reds")
                 .background_gradient(subset=["Relative savings"], cmap="Blues")
-                .background_gradient(subset=["Annual costs"], cmap="Purples")
-                .background_gradient(subset=[""], cmap="Greys")
+                .background_gradient(subset=[""], cmap="Purples")
             )
 
         else:
             styled_df = df.style.applymap(color_negative_red)
 
-        return styled_df.format(
-            {
-                ("Absolute", "Costs"): "{:,.0f} k€",
-                ("Absolute", "Emissions"): "{:,.0f} t",
-                ("Abolute savings", "Costs"): "{:,.0f} k€",
-                ("Abolute savings", "Emissions"): "{:,.0f} t",
-                ("Relative savings", "Costs"): "{:,.2%}",
-                ("Relative savings", "Emissions"): "{:,.2%}",
-                ("", "Emission avoidance costs"): "{:,.0f} €/t",
-                ("", "C_inv"): "{:,.0f} k€",
-                ("Annual costs", "C_invAnn"): "{:,.0f} k€/a",
-                ("Annual costs", "C_op"): "{:,.0f} k€/a",
-                ("", "Payback time"): "{:,.1f} a",
-            }
-        ).set_table_styles(get_leftAlignedIndex_style() + get_multiColumnHeader_style(df))
+        return (
+            styled_df.format(
+                {
+                    ("Total annualized", "Costs"): "{:,.0f} k€",
+                    ("Total annualized", "Emissions"): "{:,.0f} t",
+                    ("Absolute savings", "Costs"): "{:,.0f} k€",
+                    ("Absolute savings", "Emissions"): "{:,.0f} t",
+                    ("Relative savings", "Costs"): "{:,.2%}",
+                    ("Relative savings", "Emissions"): "{:,.2%}",
+                    ("", "C_inv"): "{:,.0f} k€",
+                    ("", "C_invAnn"): "{:,.0f} k€/a",
+                    ("", "C_op"): "{:,.0f} k€/a",
+                    ("", "EAC"): "{:,.0f} €/t",
+                    ("", "PP"): "{:,.1f} a",
+                    ("", "DPP"): "{:,.1f} a",
+                    ("", "IRR"): "{:,.1%}",
+                }
+            )
+            .set_table_styles(get_leftAlignedIndex_style() + get_multiColumnHeader_style(df))
+            .set_caption(
+                "<u>Legend</u>:"
+                ", <b>C_inv</b>: Investment Costs"
+                ", <b>C_invAnn</b>: Annualized Investment Costs"
+                ", <b>C_op</b>: Operating Costs"
+                ", <b>EAC</b>: Emissions Avoidance Costs"
+                ", <b>PP</b>: Payback Period"
+                ", <b>DPP</b>: Discounted Payback Period"
+                f", <b>IRR</b>: Internal Rate of Return for {nyears_for_irr} years"
+                "</br>"
+                f"<u>Note</u>: <b>{cs.REF_scen.params.k__r_:.1%}</b> discount rate assumed."
+            )
+        )
 
     def bes_table(self, gradient: bool = False) -> pdStyler:
         data = [
@@ -146,7 +184,7 @@ class CsPlotter(BasePlotter):
             (
                 "W_out",
                 "{:,.0f} MWh/a",
-                lambda df, cs: [sc.gte(sc.res.P_BES_out_T) / 1e3 for sc in cs.scens_list],
+                lambda df, cs: [sc.gte(sc.get_ent("P_BES_out_T")) / 1e3 for sc in cs.scens_list],
             ),
             ("Charging_cycles", "{:,.0f}", lambda df, cs: df["W_out"] / (df["CAPn"] / 1e3)),
         ]
@@ -327,7 +365,7 @@ class CsPlotter(BasePlotter):
                 ax.set(title=get_pareto_title(pareto, units))
             for sc_name in list(pareto.index):
                 ax.annotate(
-                    s=sc_name,
+                    sc_name,
                     xy=(pareto["CE_TOT_"][sc_name], pareto["C_TOT_"][sc_name]),
                     rotation=45,
                     ha="left",
@@ -682,7 +720,7 @@ class CsPlotter(BasePlotter):
 
         return go.Figure(data=data, layout=layout)
 
-    def ref_table(self, verbose:bool=False):
+    def ref_table(self, verbose: bool = False):
         return self.table(
             show_src=True,
             show_comp=verbose,
@@ -957,6 +995,7 @@ class CsPlotter(BasePlotter):
         return pd.Series(d)
 
     def correlations(self, ent1: str, ent2: str):
+        """Plots the Pearson correlation coefficient of the the given entities for each scenario."""
         fig, ax = plt.subplots(figsize=(6, 3))
         ser = self._get_correlations(ent1=ent1, ent2=ent2)
         ser.plot.barh(ax=ax, width=0.85)
