@@ -26,6 +26,7 @@ setup(
         "numpy",
         "pandas",
         "pyomo>=5.7",
+        "ray",
         "seaborn",
         "tabulate",
         "tqdm",
@@ -59,6 +60,7 @@ setup(
     keywords=[
         "energy systems",
         "optimization",
+        "decarbonization",
         "mathematical programming",
         "demand response",
         "energy hubs",

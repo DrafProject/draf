@@ -24,9 +24,11 @@ logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
 
 COLORS = {
-    "E": "hsla(120, 50%, 70%, 0.7)",
-    "F": "hsla(240, 50%, 70%, 0.7)",
-    "Q": "hsla(10, 50%, 70%, 0.7)",
+    "E": "hsla(120, 50%, 70%, 0.7)",  # electricity
+    "F": "hsla(240, 50%, 70%, 0.7)",  # fuel
+    "Q": "hsla(10, 50%, 70%, 0.7)",  #  high temperature thermal energy
+    "C": "hsla(209, 57%, 84%, 0.7)",  # low temperature thermal energy
+    "M": "hsla(24, 100%, 80%, 0.7)",  # medium temperature thermal energy
 }
 
 
@@ -122,7 +124,7 @@ class ScenPlotter(BasePlotter):
             )
             .update_yaxes(title="")
             .update_xaxes(title="")
-        )
+        ).update_layout(margin={"l": 0, "r": 0, "t": 20, "b": 0})
 
     def heatmap_py(
         self,
@@ -576,7 +578,7 @@ class ScenPlotter(BasePlotter):
         link_color = [COLORS[x] for x in df["type"].values.tolist()] if COLORS is not None else None
         data = dict(
             type="sankey",
-            arrangement="snap",
+            arrangement="freeform",
             orientation="h",
             valueformat=".2f",
             valuesuffix="MWh",

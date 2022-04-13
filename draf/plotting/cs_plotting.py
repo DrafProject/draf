@@ -119,7 +119,9 @@ class CsPlotter(BasePlotter):
                 ("", "C_invAnn"): cs.get_ent("C_TOT_invAnn_"),
                 ("", "C_op"): cs.get_ent("C_TOT_op_"),
                 ("", "EAC"): -cs.get_diff("C_TOT_") / cs.get_diff("CE_TOT_") * 1e6,
-                ("", "PP"): cs.get_ent("C_TOT_inv_") / cs.get_diff("C_TOT_op_"),
+                ("", "PP"): (cs.get_ent("C_TOT_inv_") / cs.get_diff("C_TOT_op_")).replace(
+                    np.inf, np.nan  # infinity is not supported by background gradient
+                ),
             }
         )
 
@@ -131,8 +133,6 @@ class CsPlotter(BasePlotter):
         def color_negative_red(val):
             color = "red" if val < 0 else "black"
             return f"color: {color}"
-
-        df = df.fillna(0)
 
         if gradient:
             styled_df = (

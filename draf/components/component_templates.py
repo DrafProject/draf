@@ -199,8 +199,8 @@ class EG(Component):
         sc.prep.ce_EG_T()
         sc.param("t_EG_minFLH_", data=0, doc="Minimal full load hours", unit="h")
         sc.var("P_EG_buy_T", doc="Purchased electrical power", unit="kW_el")
-        sc.var("P_EG_sell_T", doc="Selling electrical power", unit="kW_el")
-        sc.var("P_EG_buyPeak_", doc="Peak electrical power", unit="kW_el")
+        sc.var("P_EG_sell_T", doc="Selling electrical power", unit="kW_el", ub=20e3)
+        sc.var("P_EG_buyPeak_", doc="Peak electrical power", unit="kW_el", ub=20e3)
 
         if self.consider_intensiveGridUse:
             # FIXME: Currently not working
@@ -468,7 +468,7 @@ class HP(Component):
         sc.param(
             "T_HP_Eva_E", data=p.T_cDem_in_N - 5, doc="Evaporation side temperature", unit="°C"
         )
-        sc.param("n_HP_", data=self.n, doc="Number of existing heat pumps")
+        sc.param("n_HP_", data=self.n, doc="Maximum number of parallel operation modes")
         sc.param(
             "eta_HP_",
             data=0.5,

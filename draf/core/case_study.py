@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Un
 
 import numpy as np
 import pandas as pd
+import ray
 from tqdm.auto import tqdm
 
 from draf import helper as hp
@@ -17,11 +18,9 @@ from draf import paths
 from draf.abstract_component import Component
 from draf.core.datetime_handler import DateTimeHandler
 from draf.core.draf_base_class import DrafBaseClass
-from draf.core.entity_stores import Dimensions, Params, Scenarios
+from draf.core.entity_stores import Scenarios
 from draf.core.scenario import Scenario
-from draf.core.time_series_prepper import TimeSeriesPrepper
 from draf.plotting.cs_plotting import CsPlotter
-from draf.plotting.scen_plotting import ScenPlotter
 
 # TODO: put all logging functionality into a logger.py file.
 fmt = "%(levelname)s:%(name)s:%(funcName)s():%(lineno)i:\n    %(message)s"
@@ -91,7 +90,6 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         self.coords = coords
         self.scens = Scenarios()
         self.plot = CsPlotter(cs=self)
-        # self.dims = Dimensions()
 
         self.obj_vars = obj_vars
         self.mdl_language = mdl_language
@@ -199,7 +197,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         """
         for sc in self.scens_list:
             for k, v in kwargs.items():
-                sc.mdl.setParam(k, v, verbose=False)
+                sc.mdl.setParam(k, v)
 
         return self
 
@@ -220,6 +218,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         based_on: Optional[str] = "REF",
         based_on_last: bool = False,
         components: Optional[List[Component]] = None,
+        custom_model: Optional[Callable] = None
     ) -> Scenario:
         """Add a Scenario with a name, a describing doc-string and a link to a model.
 
@@ -257,6 +256,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 consider_invest=self.consider_invest,
                 mdl_language=self.mdl_language,
                 obj_vars=self.obj_vars,
+                custom_model=custom_model
             )
         else:
             if components is not None:
@@ -424,7 +424,10 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         return self
 
     def improve_pareto_norm_factors(
-        self, model_func: Callable, adjust_factor: float = 1.0, basis_scen_id: str = "REF"
+        self,
+        model_func: Optional[Callable] = None,
+        adjust_factor: float = 1.0,
+        basis_scen_id: str = "REF",
     ) -> CaseStudy:
         """Solves the given model for both extreme points (alpha=0 and alpha=1) in order to
         determine good pareto norm factors k_PTO_C_ and k_PTO_CE_, which are then set for all scenarios.
@@ -479,33 +482,57 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
 
         return self
 
+    def _optimize_parallel(
+        self, scens: Optional[Iterable] = None, optimize_kwargs: Optional[Dict] = None
+    ):
+    
+        @ray.remote
+        def optimize_scenario(sc):
+            sc.optimize(**optimize_kwargs)
+            print(f"Finished scenario {sc.id}")
+            # This return value must be pickelable
+            return sc.res
+
+        def parallelizer(operation, input):
+            return ray.get([operation.remote(i) for i in input])
+
+        ray.init()
+
+        print(f"Optimize {len(scens)} scenarios in parallel.")
+        results = parallelizer(optimize_scenario, scens)
+        for sc, res in zip(scens, results):
+            setattr(sc, "res", res)
+
+        print(f"Finished Optimizing {len(scens)} scenarios in parallel.")
+
     @hp.copy_doc(Scenario.optimize)
     def optimize(
-        self,
-        scens: Optional[Iterable] = None,
-        postprocess_func: Optional[Callable] = None,
-        **optimize_kwargs,
+        self, parallel: bool = False, scens: Optional[Iterable] = None, **optimize_kwargs
     ) -> CaseStudy:
         """Optimize multiple scenarios at once."""
         if scens is None:
             scens = self.scens_list
 
-        # Since lists are dynamic, the current status has to be frozen in a inmutable tuple to
-        # avoid the interactive status bar description being modified later as further scenarios
-        # are added.
-        scens = tuple(scens)
+        if parallel:
+            self._optimize_parallel(scens=scens, optimize_kwargs=optimize_kwargs)
 
-        pbar = tqdm(scens)
-        for sc in pbar:
-            pbar.set_description(f"Solve {sc.id}")
-            sc.optimize(postprocess_func=postprocess_func, **optimize_kwargs)
+        else:
+            # Since lists are mutable, the current status has to be frozen in a inmutable tuple to
+            # avoid the interactive status bar description being modified later as further scenarios
+            # are added.
+            scens = tuple(scens)
 
-        if all([sc._is_optimal for sc in scens]):
-            mean = np.array([sc.params.t__solve_ for sc in scens]).mean()
-            print(
-                f"Successfully solved {len(scens)} scenarios with an average solving time "
-                f"of {mean:.3} seconds."
-            )
+            pbar = tqdm(scens)
+            for sc in pbar:
+                pbar.set_description(f"Solve {sc.id}")
+                sc.optimize(**optimize_kwargs)
+
+            if all([sc._is_optimal for sc in scens]):
+                mean = np.array([sc.params.t__solve_ for sc in scens]).mean()
+                print(
+                    f"Successfully solved {len(scens)} scenarios with an average solving time "
+                    f"of {mean:.3} seconds."
+                )
 
         return self
 

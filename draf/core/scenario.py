@@ -57,6 +57,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         coords: Optional[Tuple[float, float]] = None,
         cs_name: str = "no_case_study",
         components: Optional[List[Union[Component, type]]] = None,
+        custom_model: Optional[Callable] = None,
         consider_invest: bool = False,
         mdl_language="gp",
         obj_vars=("C_TOT_", "CE_TOT_"),
@@ -69,6 +70,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.coords = coords
         self.cs_name = cs_name
         self.mdl_language = mdl_language
+        self.custom_model = custom_model
 
         self.dims = Dimensions()
         self.params = Params()
@@ -76,6 +78,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.prep = TimeSeriesPrepper(sc=self)
         self.vars = Vars()
         self.collectors = Collectors()
+        self.obj_vars = obj_vars
 
         if dtindex is None and dtindex_custom is None and t1 is None and t2 is None:
             self._set_dtindex(year=year, freq=freq)
@@ -221,9 +224,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def _set_default_solver_params(self) -> None:
         defaults = {
-            "LogFile": str(self._res_fp / "gurobi.log"),
-            "LogToConsole": 1,
+            "LogToConsole": 0,
             "OutputFlag": 1,
+            "LogFile": str(self._res_fp / "gurobi.log"),
             "MIPGap": 0.1,
             "MIPFocus": 1,
         }
@@ -351,12 +354,13 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         custom_model_func_loc: int = 0,
         speed_up: bool = True,
     ) -> Scenario:
-        """Instantiates an optimization model and sets the custom_model_func on top of the given
-        parameters and meta-informations for variables.
+        """Instantiates an optimization model on top of the given parameters and
+         meta-informations for variables. Models of components are automatically fetched.
 
         Args:
-            custom_model_func: A functions that takes the arguments sc, m, d, p, v and populates
-                the parameters and variable meta data.
+            custom_model_func: A model func that is additionally executed. A model func is a
+                functions that takes the arguments sc, m, d, p, v and populates the parameters
+                and variable meta data.
             custom_model_func_loc: Location of the custom_model_func. Determines when given
                 custom_model_func is executed compared to the model_funcs of the components.
             speed_up: If speed increases should be exploited by converting the parameter objects to
@@ -378,12 +382,16 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         logger.info(f"Set model for scenario {self.id}.")
 
+        # Put all model functions in the correct order
         model_func_list = []
         if hasattr(self, "components"):
             model_func_list += [comp.model_func for comp in self.components]
         if custom_model_func is not None:
             model_func_list.insert(custom_model_func_loc, custom_model_func)
+        if self.custom_model is not None:
+            model_func_list.append(self.custom_model)
 
+        # Execute all model functions
         for model_func in model_func_list:
             model_func(sc=self, m=self.mdl, d=self.dims, p=params, v=self.vars, c=self.collectors)
 
@@ -648,11 +656,21 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.mdl.write(str(fp))
         logger.info(f"written to {fp}")
 
-    def save(self) -> None:
+    def save_results(self) -> None:
+        """Saves the scenario results to a pickle-file."""
+        fp = self._res_fp / f"{self.id}.p"
+        with open(fp, "wb") as f:
+            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+        logger.info(f"Saved scenario results to {fp}")
+
+
+    def save(self, name:Optional[str]=None) -> None:
         """Saves the scenario to a pickle-file."""
         date_time = self._get_now_string()
 
-        fp = self._res_fp / f"{date_time}_{self.id}.p"
+        name = f"{date_time}_{self.id}.p" if name is None else f"{name}.p"
+
+        fp = self._res_fp / name
 
         try:
             with open(fp, "wb") as f:
@@ -996,13 +1014,13 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         templates = {
             "P_EL_source_T": "E {k} el_hub {v}",
             "P_EL_sink_T": "E el_hub {k} {v}",
-            "dQ_cooling_source_TN": "Q {k} cool_hub {v}",
-            "dQ_cooling_sink_TN": "Q cool_hub {k} {v}",
+            "dQ_cooling_source_TN": "C {k} cool_hub {v}",
+            "dQ_cooling_sink_TN": "C cool_hub {k} {v}",
             "dQ_heating_source_TH": "Q {k} heat_hub {v}",
             "dQ_heating_sink_TH": "Q heat_hub {k} {v}",
             "F_fuel_F": "F FUEL {k} {v}",
-            "dQ_amb_source_": "Q {k} ambient {v}",
-            "dQ_amb_sink_": "Q ambient {k} {v}",
+            "dQ_amb_source_": "M ambient {k} {v}",
+            "dQ_amb_sink_": "M {k} ambient {v}",
         }
         header = ["type source target value"]
         rows = [
