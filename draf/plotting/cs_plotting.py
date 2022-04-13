@@ -327,8 +327,8 @@ class CsPlotter(BasePlotter):
             return [c for sc in scens_list for i, c in c_dict.items() if i in sc.doc]
 
         colors = "black" if c_dict is None else get_colors(c_dict)
-        ylabel = f"Annualized costs [{units['C_TOT_']}]"
-        xlabel = f"Carbon emissions [{units['CE_TOT_']}]"
+        ylabel = f"Annualized costs ({units['C_TOT_']})"
+        xlabel = f"Carbon emissions ({units['CE_TOT_']})"
 
         if use_plotly:
             hwr_ = "<b>id:</b> {}<br><b>name:</b> {}<br><b>doc:</b> {}<br>"
@@ -454,8 +454,8 @@ class CsPlotter(BasePlotter):
         layout = go.Layout(
             hovermode="closest",
             title=title if do_title else "",
-            xaxis=dict(title=f"Carbon emissions [{ce_unit}]"),
-            yaxis=dict(title=f"Costs [{c_unit}]"),
+            xaxis=dict(title=f"Carbon emissions ({ce_unit})"),
+            yaxis=dict(title=f"Costs ({c_unit})"),
         )
 
         if self.optimize_layout_for_reveal_slides:
@@ -547,7 +547,7 @@ class CsPlotter(BasePlotter):
                         f" {sc.doc}<br>{grey(' ⤷ Entity:')} <b>{ent}</b>{title_addon_if_select} ◦"
                         f" {sc.get_doc(ent)}<br>{grey('    ⤷ Stats:')} ∑ <b>{data.sum():,.2f}</b> ◦"
                         f" Ø <b>{data.mean():,.2f}</b> ◦ min <b>{data.min():,.2f}</b> ◦ max"
-                        f" <b>{data.max():,.2f}</b>  [<b>{unit}</b>]</span>"
+                        f" <b>{data.max():,.2f}</b>  (<b>{unit}</b>)</span>"
                     )
 
         return fig
@@ -883,7 +883,7 @@ class CsPlotter(BasePlotter):
     def invest_table(self, gradient: bool = False) -> pdStyler:
         cs = self.cs
         l = dict(
-            C_TOT_inv_="Investment costs [k€]", C_TOT_invAnn_="Annualized investment costs [k€/a]"
+            C_TOT_inv_="Investment costs (k€)", C_TOT_invAnn_="Annualized investment costs (k€/a)"
         )
         df = pd.DataFrame(
             {
@@ -905,10 +905,10 @@ class CsPlotter(BasePlotter):
         cs = self.cs
         if annualized:
             ent_name = "C_TOT_invAnn_"
-            title = "Annualized Investment cost [k€]"
+            title = "Annualized Investment cost (k€)"
         else:
             ent_name = "C_TOT_inv_"
-            title = "Investment cost [k€]"
+            title = "Investment cost (k€)"
 
         df = pd.DataFrame({n: sc.collector_values[ent_name] for n, sc in cs.scens_dic.items()}).T
 
@@ -920,7 +920,7 @@ class CsPlotter(BasePlotter):
         )
         return fig
 
-    def capas(self, include_capx: bool = True) -> go.Figure:
+    def capas(self, include_capx: bool = True, subplot_x_anchors=(0.79, 0.91)) -> go.Figure:
         """Annotated heatmap of existing and new capacities and a barchart of according C_inv
          and C_op.
 
@@ -940,23 +940,31 @@ class CsPlotter(BasePlotter):
         fig = _get_capa_heatmap(df)
 
         ser = pd.Series(cs.get_ent("C_TOT_inv_"))
+        unit1 = cs.REF_scen.get_unit("C_TOT_inv_")
+        ser, unit1 = hp.auto_fmt(ser, unit1)
         fig.add_trace(
             go.Bar(y=ser.index.tolist(), x=ser.values, xaxis="x2", yaxis="y2", orientation="h")
         )
 
         ser = pd.Series(cs.get_ent("C_TOT_op_"))
+        unit2 = cs.REF_scen.get_unit("C_TOT_op_")
+        ser, unit2 = hp.auto_fmt(ser, unit2)
         fig.add_trace(
             go.Bar(y=ser.index.tolist(), x=ser.values, xaxis="x3", yaxis="y3", orientation="h")
         )
 
-        unit = cs.REF_scen.get_unit("C_TOT_inv_")
+        margin = 0.01
+        domain1 = (0, subplot_x_anchors[0]-margin)
+        domain2 = (subplot_x_anchors[0]+margin, subplot_x_anchors[1] - margin )
+        domain3 = (subplot_x_anchors[1] + margin, 1)
+
         capx_adder = " (decision variables in <b>bold</b>)" if include_capx else ""
         fig.update_layout(
             margin=dict(t=5, l=5, r=5, b=5),
-            xaxis=dict(domain=[0, 0.78], title=f"Capacity [kW or kWh] of component{capx_adder}"),
-            xaxis2=dict(domain=[0.80, 0.90], anchor="y2", title=f"C_inv [{unit}]", side="top"),
+            xaxis=dict(domain=domain1, title=f"Capacity (kW or kWh) of component{capx_adder}"),
+            xaxis2=dict(domain=domain2, anchor="y2", title=f"C_inv ({unit1})", side="top"),
             yaxis2=dict(anchor="x2", showticklabels=False),
-            xaxis3=dict(domain=[0.92, 1], anchor="y3", title=f"C_op [{unit}]", side="top"),
+            xaxis3=dict(domain=domain3, anchor="y3", title=f"C_op ({unit2})", side="top"),
             yaxis3=dict(anchor="x3", showticklabels=False),
             showlegend=False,
         )

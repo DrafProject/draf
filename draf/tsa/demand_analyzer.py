@@ -107,7 +107,7 @@ class DemandAnalyzer(DateTimeHandler):
             ndays = df.shape[1]
             ax_tuple[0].set_title(f"{ndays} x\n{weekday}")
             for ax in ax_tuple:
-                ax.set_ylabel("$P_{el}$ [kW]")
+                ax.set_ylabel("$P_{el}$ (kW)")
                 ax.get_xaxis().set_visible(False)
                 hp.add_thousands_formatter(ax, x=False)
 
@@ -131,7 +131,7 @@ class DemandAnalyzer(DateTimeHandler):
             ser = ser.resample(resampler).mean()
             ser = ser.set_axis(range(1, len(ser) + 1))
             ser.plot.bar(width=0.8, ax=ax, color="darkgray")
-            ax.set_ylabel("$P_{el}$ [kW]")
+            ax.set_ylabel("$P_{el}$ (kW)")
             ax.tick_params(axis="x", labelrotation=0)
             ax.set_title(timeframe)
             for i, label in enumerate(ax.xaxis.get_ticklabels()[:-1]):
@@ -145,7 +145,7 @@ class DemandAnalyzer(DateTimeHandler):
         plt.tight_layout()
         data = self.dated(self.p_el)
         data.plot(linewidth=0.6, ax=ax, color="darkgray")
-        ax.set_ylabel("$P_{el}$ [kW]")
+        ax.set_ylabel("$P_{el}$ (kW)")
         hp.add_thousands_formatter(ax, x=False)
         ax.set_ylim(bottom=0)
         sns.despine()
@@ -157,8 +157,8 @@ class DemandAnalyzer(DateTimeHandler):
         data = self.p_el.sort_values(ascending=False).reset_index(drop=True)
         data.plot(linewidth=1.5, ax=ax, color="darkgray")
         ax.set_title("Ordered annual duration curve", fontdict=dict(fontweight="bold"))
-        ax.set_ylabel("$P_{el}$ [kW]")
-        ax.set_xlabel(f"Time steps [{self.freq_unit}]")
+        ax.set_ylabel("$P_{el}$ (kW)")
+        ax.set_xlabel(f"Time steps ({self.freq_unit})")
         hp.add_thousands_formatter(ax)
         ax.set_ylim(bottom=0)
         sns.despine()
@@ -167,7 +167,7 @@ class DemandAnalyzer(DateTimeHandler):
         fig, ax = plt.subplots(figsize=(10, 2.5))
         plt.tight_layout()
         ax = sns.violinplot(y=self.p_el, cut=0, width=0.4, scale="width", color="lightblue", ax=ax)
-        ax.set_ylabel("$P_{el}$ [kW]")
+        ax.set_ylabel("$P_{el}$ (kW)")
         ax.set_xlim(-0.5, 0.85)
         ax.set_ylim(bottom=0)
         ax.set_title(self.get_stats(), fontdict=dict(fontweight="bold"), fontfamily="monospace")

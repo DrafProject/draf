@@ -944,7 +944,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             string = f"{ent_name} = {ent_value}{unit_0d}\n"
 
         else:
-            unit_nd = f" [{unit}]" if show_units else ""
+            unit_nd = f" ({unit})" if show_units else ""
             if only_header and isinstance(ent_value, pd.Series):
                 data = ent_value.head(4)
 

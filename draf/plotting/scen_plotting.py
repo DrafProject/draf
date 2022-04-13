@@ -140,14 +140,14 @@ class ScenPlotter(BasePlotter):
 
         if ent_name is not None and timeseries is None:
             timeseries = self.sc.get_entity(ent=ent_name)
-            colorbar_label = f"{colorbar_label} [{self.sc.get_unit(ent_name)}]"
+            colorbar_label = f"{colorbar_label} ({self.sc.get_unit(ent_name)})"
             if title is None:
                 title = f"{ent_name}: {self.sc.get_doc(ent_name)}"
 
         layout = go.Layout(
             title=title,
             xaxis=dict(title=f"Days of {self.sc.year}"),
-            yaxis=dict(title=f"Time steps of a day [{self.sc.freq_unit}]"),
+            yaxis=dict(title=f"Time steps of a day ({self.sc.freq_unit})"),
             margin=dict(b=5, l=5, r=5, t=None if title else 5),
         )
 
@@ -178,8 +178,8 @@ class ScenPlotter(BasePlotter):
 
         if ent_name is not None:
             ser = self.sc.get_entity(ent=ent_name)
-            colorbar_label = f"{ent_name} [{self.sc.get_unit(ent_name)}]"
-            title = f"{ent_name}: {self.sc.get_doc(ent_name)} [{self.sc.get_unit(ent_name)}]"
+            colorbar_label = f"{ent_name} ({self.sc.get_unit(ent_name)})"
+            title = f"{ent_name}: {self.sc.get_doc(ent_name)} ({self.sc.get_unit(ent_name)})"
 
         elif isinstance(timeseries, (np.ndarray, pd.Series)):
             ser = timeseries
@@ -211,8 +211,8 @@ class ScenPlotter(BasePlotter):
         )
 
         fig.update_yaxes(title_text=colorbar_label, row=1, col=1)
-        fig.update_xaxes(title_text=f"Time [{self.sc.freq_unit}]", row=1, col=1)
-        fig.update_yaxes(title_text=f"Time [{self.sc.freq_unit}]", row=2, col=1)
+        fig.update_xaxes(title_text=f"Time ({self.sc.freq_unit})", row=1, col=1)
+        fig.update_yaxes(title_text=f"Time ({self.sc.freq_unit})", row=2, col=1)
         fig.update_xaxes(title_text=f"Days of {self.sc.year}", row=2, col=1)
 
         fig.append_trace(trace1, 1, 1)
@@ -263,7 +263,7 @@ class ScenPlotter(BasePlotter):
 
         elif ent_name is not None:
             series = self.sc.get_entity(ent=ent_name)
-            colorbar_label = f"{colorbar_label} [{self.sc.get_unit(ent_name)}]"
+            colorbar_label = f"{colorbar_label} ({self.sc.get_unit(ent_name)})"
             if title is None:
                 title = f"{ent_name}: {self.sc.get_doc(ent_name)}"
 
@@ -418,7 +418,7 @@ class ScenPlotter(BasePlotter):
                 desc = getattr(etype_obj, "en", None)
                 unit = getattr(etype_obj, "units", " ")[0]
                 if desc is not None:
-                    return f"{desc} [{unit}]"
+                    return f"{desc} ({unit})"
             except AttributeError:
                 return ""
 
@@ -779,8 +779,8 @@ class ScenPlotter(BasePlotter):
         )
 
         ax.set(yticks=hours)
-        ax.set_ylabel(f"Time [{self.sc.freq_unit}]")
-        ax.set_xlabel("Time [Days]", labelpad=10)
+        ax.set_ylabel(f"Time ({self.sc.freq_unit})")
+        ax.set_xlabel("Time (Days)", labelpad=10)
         ax.xaxis_date()
         ax.set_xticklabels(ax.get_xticklabels(), rotation=0, ha="center", rotation_mode="anchor")
         date_format = mdates.DateFormatter("%b")
