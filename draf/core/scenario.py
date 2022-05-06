@@ -663,8 +663,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
         logger.info(f"Saved scenario results to {fp}")
 
-
-    def save(self, name:Optional[str]=None) -> None:
+    def save(self, name: Optional[str] = None) -> None:
         """Saves the scenario to a pickle-file."""
         date_time = self._get_now_string()
 

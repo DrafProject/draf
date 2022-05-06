@@ -119,7 +119,8 @@ class CsPlotter(BasePlotter):
                 ("", "C_invAnn"): cs.get_ent("C_TOT_invAnn_"),
                 ("", "C_op"): cs.get_ent("C_TOT_op_"),
                 ("", "EAC"): -cs.get_diff("C_TOT_") / cs.get_diff("CE_TOT_") * 1e6,
-                ("", "PP"): (cs.get_ent("C_TOT_inv_") / cs.get_diff("C_TOT_op_")).replace(
+                ("", "PP"): cs.get_ent("C_TOT_inv_")
+                / ((cs.get_diff("C_TOT_op_") + cs.get_diff("C_TOT_RMI_"))).replace(
                     np.inf, np.nan  # infinity is not supported by background gradient
                 ),
             }
@@ -943,25 +944,39 @@ class CsPlotter(BasePlotter):
         unit1 = cs.REF_scen.get_unit("C_TOT_inv_")
         ser, unit1 = hp.auto_fmt(ser, unit1)
         fig.add_trace(
-            go.Bar(y=ser.index.tolist(), x=ser.values, xaxis="x2", yaxis="y2", orientation="h")
+            go.Bar(
+                y=ser.index.tolist(),
+                x=ser.values,
+                xaxis="x2",
+                yaxis="y2",
+                orientation="h",
+                marker_color="grey",
+            )
         )
 
         ser = pd.Series(cs.get_ent("C_TOT_op_"))
         unit2 = cs.REF_scen.get_unit("C_TOT_op_")
         ser, unit2 = hp.auto_fmt(ser, unit2)
         fig.add_trace(
-            go.Bar(y=ser.index.tolist(), x=ser.values, xaxis="x3", yaxis="y3", orientation="h")
+            go.Bar(
+                y=ser.index.tolist(),
+                x=ser.values,
+                xaxis="x3",
+                yaxis="y3",
+                orientation="h",
+                marker_color="grey",
+            )
         )
 
         margin = 0.01
-        domain1 = (0, subplot_x_anchors[0]-margin)
-        domain2 = (subplot_x_anchors[0]+margin, subplot_x_anchors[1] - margin )
+        domain1 = (0, subplot_x_anchors[0] - margin)
+        domain2 = (subplot_x_anchors[0] + margin, subplot_x_anchors[1] - margin)
         domain3 = (subplot_x_anchors[1] + margin, 1)
 
         capx_adder = " (decision variables in <b>bold</b>)" if include_capx else ""
         fig.update_layout(
             margin=dict(t=5, l=5, r=5, b=5),
-            xaxis=dict(domain=domain1, title=f"Capacity (kW or kWh) of component{capx_adder}"),
+            xaxis=dict(domain=domain1, title=f"Capacity of component (kW or kWh){capx_adder}"),
             xaxis2=dict(domain=domain2, anchor="y2", title=f"C_inv ({unit1})", side="top"),
             yaxis2=dict(anchor="x2", showticklabels=False),
             xaxis3=dict(domain=domain3, anchor="y3", title=f"C_op ({unit2})", side="top"),

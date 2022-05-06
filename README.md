@@ -25,7 +25,7 @@ It uses the power of ([mixed integer]) [linear programming] optimization, [`pand
     - Electricity prices via [`elmada`]
     - Carbon emission factors via [`elmada`]
     - Standard load profiles from [BDEW]
-    - PV profiles via [`gsee`] (In Germany, using weather data from [DWD])
+    - PV profiles via [`GSEE`] (In Germany, using weather data from [DWD])
   - [`DataBase`](draf/prep/data_base.py) - for scientific data such as cost or efficiency factors.
 - **Scenario generation tools:** Easily build individual scenarios or sensitivity analyses.
 - **Multi-objective mathematical optimization** with support of different model languages and solvers:
@@ -100,7 +100,9 @@ Copyright (c) 2022 Markus Fleschutz
 License: [LGPL v3]
 
 The development of `draf` was initiated by [Markus Fleschutz] in 2017 and continued in a cooperative PhD between the [MeSSO Research Group] of the [Munster Technological University], Ireland and the [Energy System Analysis Research Group] of the [Karlsruhe University of Applied Sciences], Germany.
-Thank you [Markus Bohlayer], [Adrian Bürger], and [Andre Leippi] for your valuable feedback.
+This Project was supported by the Federal Ministry for Economic Affairs and Climate Action (BMWK) on the basis of a decision by the German Bundestag and by the MTU Risam scholarship scheme.
+
+Thank you [Dr. Markus Bohlayer], [Dr. Ing. Adrian Bürger], [Andre Leippi], [Dr. Ing. Marco Braun], and [Dr. Michael D. Murphy] for your valuable feedback.
 
 <img src="doc/images/MTU_HKA_Logo.svg" width="500" alt="MTU_HKA_Logo">
 
@@ -108,23 +110,25 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 <!-- SOURCES -->
 [`elmada`]: https://github.com/DrafProject/elmada
-[`gsee`]: https://github.com/renewables-ninja/gsee
+[`GSEE`]: https://github.com/renewables-ninja/gsee
 [`GurobiPy`]: https://pypi.org/project/gurobipy
 [`matplotlib`]: https://matplotlib.org
 [`pandas`]: https://pandas.pydata.org
 [`plotly`]: https://plotly.com
 [`Pyomo`]: https://github.com/Pyomo/pyomo
 [`seaborn`]: https://seaborn.pydata.org
-[Adrian Bürger]: https://scholar.google.de/citations?user=UcLkLlEAAAAJ
 [anaconda]: https://www.anaconda.com/products/individual
 [Andre Leippi]: https://www.linkedin.com/in/andre-leippi-3187a81a7
 [BDEW]: https://www.bdew.de
+[Dr. Ing. Adrian Bürger]: https://www.linkedin.com/in/adrian-b%C3%BCrger-251205236/
+[Dr. Ing. Marco Braun]: https://www.h-ka.de/en/about-hka/organization-people/staff-search/person/marco-braun
+[Dr. Markus Bohlayer]: https://www.linkedin.com/in/markus-bohlayer
+[Dr. Michael D. Murphy]: https://www.linkedin.com/in/michael-d-murphy-16134118
 [DWD]: https://www.dwd.de
 [Energy System Analysis Research Group]: https://www.h-ka.de/en/ikku/energy-system-analysis
 [Karlsruhe University of Applied Sciences]: https://www.h-ka.de/en
 [LGPL v3]: https://www.gnu.org/licenses/lgpl-3.0.de.html
 [linear programming]: https://en.wikipedia.org/wiki/Linear_programming
-[Markus Bohlayer]: https://scholar.google.com/citations?user=hH1FQVsAAAAJ
 [Markus Fleschutz]: https://mfleschutz.github.io
 [MeSSO Research Group]: https://messo.cit.ie
 [miniconda]: https://docs.conda.io/en/latest/miniconda.html

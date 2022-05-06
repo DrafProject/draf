@@ -71,6 +71,9 @@ def c_HP_inv_(estimated_size=100) -> ParDat:
     """
     assert 0 < estimated_size < 200
     value = 1520.7 * estimated_size**-0.363
+
+    # see also Kosmadakis.2020 (https://doi.org/hsn7) for newer data
+
     return ParDat(name="c_HP_inv_", data=value, doc="CAPEX", src="@Wolf_2017", unit="€/kW_el")
 
 

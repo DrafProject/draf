@@ -218,7 +218,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         based_on: Optional[str] = "REF",
         based_on_last: bool = False,
         components: Optional[List[Component]] = None,
-        custom_model: Optional[Callable] = None
+        custom_model: Optional[Callable] = None,
     ) -> Scenario:
         """Add a Scenario with a name, a describing doc-string and a link to a model.
 
@@ -256,7 +256,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 consider_invest=self.consider_invest,
                 mdl_language=self.mdl_language,
                 obj_vars=self.obj_vars,
-                custom_model=custom_model
+                custom_model=custom_model,
             )
         else:
             if components is not None:
@@ -485,7 +485,6 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
     def _optimize_parallel(
         self, scens: Optional[Iterable] = None, optimize_kwargs: Optional[Dict] = None
     ):
-    
         @ray.remote
         def optimize_scenario(sc):
             sc.optimize(**optimize_kwargs)

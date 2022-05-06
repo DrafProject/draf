@@ -474,7 +474,9 @@ class HP(Component):
             data=0.5,
             doc="Ratio of reaching the ideal COP (exergy efficiency)",
             src="@Arat_2017",
-        )  # Cox_2022 used 0.45 (https://doi.org/10.1016/j.apenergy.2021.118499)
+            # Cox_2022 used 0.45: https://doi.org/10.1016/j.apenergy.2021.118499
+            # but roughly 0.5 in recent real operation of high temperature HP: https://www.waermepumpe.de/fileadmin/user_upload/waermepumpe/01_Verband/Webinare/Vortrag_Wilk_AIT_02062020.pdf
+        )
         sc.param("dQ_HP_CAPx_", data=self.dQ_CAPx, doc="Existing heating capacity", unit="kW_th")
         sc.param(
             "dQ_HP_max_", data=1e5, doc="Big-M number (upper bound for CAPn + CAPx)", unit="kW_th"
