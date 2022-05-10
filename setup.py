@@ -6,7 +6,7 @@ long_description = Path("README.md").read_text().strip()
 
 setup(
     name="draf",
-    version="0.1.7",
+    version="0.2.0",
     author="Markus Fleschutz",
     author_email="mfleschutz@gmail.com",
     description="Demand Response Analysis Framework",
