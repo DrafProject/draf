@@ -8,39 +8,39 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 **d**emand **r**esponse **a**nalysis **f**ramework (`draf`) is an analysis and decision support framework for local multi-energy hubs focusing on demand response.
-It uses the power of ([mixed integer]) [linear programming] optimization, [`pandas`], [`plotly`], [`matplotlib`], [`elmada`], [`gsee`] and more to help users along the energy system analysis process.
+It uses the power of ([mixed integer]) [linear programming] optimization, [`pandas`], [`Plotly`], [`Matplotlib`], [`elmada`], [`GSEE`] and more to help users along the energy system analysis process.
 
 ## Features
 
 ![`draf` process](doc/images/draf_process.svg)
 
 - **Time series analysis tools:**
-  - `DemandAnalyzer` - analyze energy demand profiles
-  - `PeakLoadAnalyzer` - analyze peak loads or run simple battery simulation
+  - `DemandAnalyzer` - Analyze energy demand profiles
+  - `PeakLoadAnalyzer` - Analyze peak loads or run simple battery simulation
 - **Easily parameterizable [component templates](draf/components/component_templates.py):**
-  - E.g. Battery energy storage (BES), Battery electric vehicle (BEV), Combined heat and power (CHP), Heat pump (HP), Power-to-heat (P2H), Photovoltaic (PV), and Thermal energy storage (TES).
+  - battery energy storage (BES), battery electric vehicle (BEV), combined heat and power (CHP), heat pump (HP), power-to-heat (P2H), photovoltaic (PV), thermal energy storage (TES), and more.
   - Sensible naming conventions for parameters and variables, see section [Naming conventions](#naming-conventions).
 - **Parameter preparation tools:**
-  - `TimeSeriesPrepper` - for time series data
+  - `TimeSeriesPrepper` - For time series data
     - Electricity prices via [`elmada`]
     - Carbon emission factors via [`elmada`]
     - Standard load profiles from [BDEW]
     - PV profiles via [`GSEE`] (In Germany, using weather data from [DWD])
-  - [`DataBase`](draf/prep/data_base.py) - for scientific data such as cost or efficiency factors.
-- **Scenario generation tools:** Easily build individual scenarios or sensitivity analyses.
+  - [`DataBase`](draf/prep/data_base.py) - For scientific data such as cost or efficiency factors
+- **Scenario generation tools:** Easily build individual scenarios or sensitivity analyses
 - **Multi-objective mathematical optimization** with support of different model languages and solvers:
   - [`Pyomo`] - A free and open-source modeling language in Python that supports multiple solvers.
   - [`GurobiPy`] - The Python interface to Gurobi, the fastest MILP solver (see [Mittelmann benchmark]).
-- **Plotting tools:** Convenient plots such as heatmaps, tables, pareto plots, etc. using [`plotly`], [`matplotlib`] and [`seaborn`].
+- **Plotting tools:** Convenient plotting of heatmaps, Sankeys, tables, pareto plots, etc. using [`Plotly`], [`Matplotlib`], and [`seaborn`].
   - Support of meta data such as `unit`, `doc`, `src`, and `dims`
   - Automatic unit conversion
 - **Export tools:**
-  - `CaseStudy` objects containing all parameters, meta data and results can be saved to files.
+  - `CaseStudy` objects including all parameters, meta data, and results can be saved to files.
   - Data can be exported to [xarray] format.
 
 ## Quick start
 
-`draf` runs on Windows, macOS and Linux.
+`draf` runs on Windows, macOS, and Linux.
 For the usage of Gurobi, a valid Gurobi license is required.
 
 1. Install [miniconda] or [anaconda]
@@ -76,6 +76,8 @@ For the usage of Gurobi, a valid Gurobi license is required.
 
 ## For users
 
+More documentation for `draf` will come in future.
+
 ### Structure
 
 A `CaseStudy` object can contain several `Scenario` instances:
@@ -85,13 +87,14 @@ A `CaseStudy` object can contain several `Scenario` instances:
 ### Naming conventions
 
 All parameter and variable names must satisfy the structure `<Type>_<Component>_<Descriptor>_<Dims>`.
-E.g. in 'P_EG_buy_T', `P` is the entity type which stands for electrical power, `EG` the component, `buy` the descriptor and `T` the dimension.
+E.g. in `P_EG_buy_T`, `P` is the entity type (here: electrical power), `EG` the component (here: Electricity Grid), `buy` the descriptor and `T` the dimension (here: time).
 Dimensions are denoted with individual capital letters, so `<Dims>` is `TE` if the entity has the dimensions `T` and `E`.
 See [conventions.py](draf/conventions.py) for examples of types, components, and descriptors.
 
 ## Contributing
 
-Contributions in any form are welcome! Please contact [Markus Fleschutz] and have a look [here](for_devs.md).
+Contributions in any form are welcome!
+Please contact [Markus Fleschutz] and have a look [here](for_devs.md).
 
 ## License and status
 
@@ -100,7 +103,7 @@ Copyright (c) 2022 Markus Fleschutz
 License: [LGPL v3]
 
 The development of `draf` was initiated by [Markus Fleschutz] in 2017 and continued in a cooperative PhD between the [MeSSO Research Group] of the [Munster Technological University], Ireland and the [Energy System Analysis Research Group] of the [Karlsruhe University of Applied Sciences], Germany.
-This Project was supported by the Federal Ministry for Economic Affairs and Climate Action (BMWK) on the basis of a decision by the German Bundestag and by the MTU Risam scholarship scheme.
+This project was supported by the MTU Rísam PhD Scholarship scheme and by the Federal Ministry for Economic Affairs and Climate Action (BMWK) on the basis of a decision by the German Bundestag.
 
 Thank you [Dr. Markus Bohlayer], [Dr. Ing. Adrian Bürger], [Andre Leippi], [Dr. Ing. Marco Braun], and [Dr. Michael D. Murphy] for your valuable feedback.
 
@@ -112,9 +115,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [`elmada`]: https://github.com/DrafProject/elmada
 [`GSEE`]: https://github.com/renewables-ninja/gsee
 [`GurobiPy`]: https://pypi.org/project/gurobipy
-[`matplotlib`]: https://matplotlib.org
+[`Matplotlib`]: https://matplotlib.org
 [`pandas`]: https://pandas.pydata.org
-[`plotly`]: https://plotly.com
+[`Plotly`]: https://plotly.com
 [`Pyomo`]: https://github.com/Pyomo/pyomo
 [`seaborn`]: https://seaborn.pydata.org
 [anaconda]: https://www.anaconda.com/products/individual

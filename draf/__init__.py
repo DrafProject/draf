@@ -12,7 +12,7 @@ __author__ = "Markus Fleschutz"
 __email__ = "mfleschutz@gmail.com"
 
 __license__ = "LGPLv3"
-__copyright__ = f"Copyright (C) 2021 {__author__}"
+__copyright__ = f"Copyright (C) 2022 {__author__}"
 
 from draf.core.case_study import CaseStudy, open_casestudy, open_latest_casestudy
 from draf.core.entity_stores import Collectors, Dimensions, Params, Results, Vars

@@ -503,6 +503,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             setattr(sc, "res", res)
 
         print(f"Finished Optimizing {len(scens)} scenarios in parallel.")
+        ray.shutdown()
 
     @hp.copy_doc(Scenario.optimize)
     def optimize(
