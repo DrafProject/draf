@@ -73,6 +73,7 @@ For the usage of Gurobi, a valid Gurobi license is required.
 
 1. Have a look at the [examples](examples).
   Start with the [`minimal`](examples/minimal.py) example.
+  For more advanced modeling have a look at the [draf_demo_case_studies].
 
 ## For users
 
@@ -127,6 +128,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [Dr. Ing. Marco Braun]: https://www.h-ka.de/en/about-hka/organization-people/staff-search/person/marco-braun
 [Dr. Markus Bohlayer]: https://www.linkedin.com/in/markus-bohlayer
 [Dr. Michael D. Murphy]: https://www.linkedin.com/in/michael-d-murphy-16134118
+[draf_demo_case_studies]: https://github.com/DrafProject/draf_demo_case_studies
 [DWD]: https://www.dwd.de
 [Energy System Analysis Research Group]: https://www.h-ka.de/en/ikku/energy-system-analysis
 [Karlsruhe University of Applied Sciences]: https://www.h-ka.de/en
