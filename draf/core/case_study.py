@@ -490,7 +490,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             sc.optimize(**optimize_kwargs)
             print(f"Finished scenario {sc.id}")
             # This return value must be pickelable
-            return sc.res
+            return sc.params, sc.res, sc.collector_values
 
         def parallelizer(operation, input):
             return ray.get([operation.remote(i) for i in input])
@@ -498,9 +498,11 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         ray.init()
 
         print(f"Optimize {len(scens)} scenarios in parallel.")
-        results = parallelizer(optimize_scenario, scens)
-        for sc, res in zip(scens, results):
+        pickled_results = parallelizer(optimize_scenario, scens)
+        for sc, (params, res, collector_values) in zip(scens, pickled_results):
+            setattr(sc, "params", params)
             setattr(sc, "res", res)
+            setattr(sc, "collector_values", collector_values)
 
         print(f"Finished Optimizing {len(scens)} scenarios in parallel.")
         ray.shutdown()
