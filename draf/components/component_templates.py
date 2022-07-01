@@ -176,6 +176,8 @@ class EG(Component):
     prepared_tariffs: Tuple = ("FLAT", "TOU", "RTP")
     selected_tariff: str = "RTP"
     consider_intensiveGridUse: bool = False
+    maxsell: float = 20e3
+    maxbuy: float = 20e3
 
     def param_func(self, sc: Scenario):
         sc.collector("P_EG_sell_T", doc="Sold electricity power", unit="kW_el")
@@ -199,8 +201,8 @@ class EG(Component):
         sc.prep.ce_EG_T()
         sc.param("t_EG_minFLH_", data=0, doc="Minimal full load hours", unit="h")
         sc.var("P_EG_buy_T", doc="Purchased electrical power", unit="kW_el")
-        sc.var("P_EG_sell_T", doc="Selling electrical power", unit="kW_el", ub=20e3)
-        sc.var("P_EG_buyPeak_", doc="Peak electrical power", unit="kW_el", ub=20e3)
+        sc.var("P_EG_sell_T", doc="Selling electrical power", unit="kW_el", ub=self.maxsell)
+        sc.var("P_EG_buyPeak_", doc="Peak electrical power", unit="kW_el", ub=self.maxbuy)
 
         if self.consider_intensiveGridUse:
             # FIXME: Currently not working
