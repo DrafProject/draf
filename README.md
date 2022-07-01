@@ -2,6 +2,7 @@
 
 <br>
 
+[![APEN](https://img.shields.io/badge/Paper-doi.org/h3s2-brightgreen)][draf demo paper]
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![python](https://img.shields.io/badge/python-3.9-blue?logo=python&logoColor=white)](https://github.com/DrafProject/draf)
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1)](https://pycqa.github.io/isort/)
@@ -9,6 +10,7 @@
 
 **d**emand **r**esponse **a**nalysis **f**ramework (`draf`) is an analysis and decision support framework for local multi-energy hubs focusing on demand response.
 It uses the power of ([mixed integer]) [linear programming] optimization, [`pandas`], [`Plotly`], [`Matplotlib`], [`elmada`], [`GSEE`] and more to help users along the energy system analysis process.
+The software is described and demonstrated in the open-access [draf demo paper].
 
 ## Features
 
@@ -97,6 +99,25 @@ See [conventions.py](draf/conventions.py) for examples of types, components, and
 Contributions in any form are welcome!
 Please contact [Markus Fleschutz] and have a look [here](for_devs.md).
 
+## Citing draf
+
+If you use `draf` for academic work please cite the [draf demo paper]:  
+
+```bibtex
+@article{Fleschutz2022,
+  author = {Markus Fleschutz and Markus Bohlayer and Marco Braun and Michael D. Murphy},
+  title = {Demand Response Analysis Framework ({DRAF}): An Open-Source Multi-Objective Decision Support Tool for Decarbonizing Local Multi-Energy Systems},
+  publisher = {{MDPI} {AG}},
+  journal = {Sustainability}
+  year = {2022},
+  volume = {14},
+  number = {13},
+  pages = {8025},
+  url = {https://doi.org/10.3390/su14138025},
+  doi = {10.3390/su14138025},
+}
+```
+
 ## License and status
 
 Copyright (c) 2022 Markus Fleschutz
@@ -128,6 +149,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [Dr. Ing. Marco Braun]: https://www.h-ka.de/en/about-hka/organization-people/staff-search/person/marco-braun
 [Dr. Markus Bohlayer]: https://www.linkedin.com/in/markus-bohlayer
 [Dr. Michael D. Murphy]: https://www.linkedin.com/in/michael-d-murphy-16134118
+[draf demo paper]: https://doi.org/10.3390/su14138025
 [draf_demo_case_studies]: https://github.com/DrafProject/draf_demo_case_studies
 [DWD]: https://www.dwd.de
 [Energy System Analysis Research Group]: https://www.h-ka.de/en/ikku/energy-system-analysis
