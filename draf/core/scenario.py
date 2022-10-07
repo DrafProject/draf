@@ -187,10 +187,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             d.update(self.res.get_all())
         return d
 
-    @property
-    def has_thermal_entities(self) -> bool:
-        return len(self.params.filtered(etype="dQ")) != 0
-
     def filter_entities(
         self,
         etype: Optional[str] = None,
