@@ -806,15 +806,18 @@ class TES(Component):
 
 
 @dataclass
-class H2H1(Component):
-    """Heat downgrading from H2 to H1"""
+class HD(Component):
+    """Heat downgrading"""
+
+    from_level: str = "90/60"
+    to_level: str = "70/40"
 
     def param_func(self, sc: Scenario):
-        sc.var("dQ_H2H1_T", doc="Heat down-grading", unit="kW_th")
+        sc.var("dQ_HD_T", doc="Heat down-grading", unit="kW_th")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
-        c.dQ_heating_sink_TH["H2H1"] = lambda t, h: v.dQ_H2H1_T[t] if h == 2 else 0
-        c.dQ_heating_source_TH["H2H1"] = lambda t, h: v.dQ_H2H1_T[t] if h == 1 else 0
+        c.dQ_heating_sink_TH["HD"] = lambda t, h: v.dQ_HD_T[t] if h == self.from_level else 0
+        c.dQ_heating_source_TH["HD"] = lambda t, h: v.dQ_HD_T[t] if h == self.to_level else 0
 
 
 @dataclass
@@ -1138,7 +1141,7 @@ order_restrictions = [
     ("P2H", {}),
     ("CHP", {}),
     ("HOB", {}),
-    ("H2H1", {}),
+    ("HD", {}),
     ("HP", {"cDem", "hDem"}),  # HP calculates COP based on thermal demand temperatures
     ("TES", {"cDem", "hDem"}),  # TESs can be defined for every thermal demand temperature level
     ("pDem", {"PP", "PS"}),
