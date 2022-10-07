@@ -7,11 +7,13 @@ import pandas as pd
 from gurobipy import GRB, Model, quicksum
 
 from draf import Collectors, Dimensions, Params, Results, Scenario, Vars
+from draf import helper as hp
 
 # from draf.model_builder import autocollectors
 from draf.abstract_component import Component
 from draf.conventions import Descs
 from draf.helper import conv, get_annuity_factor, set_component_order_by_order_restrictions
+from draf.paths import DATA_DIR
 from draf.prep import DataBase as db
 
 logger = logging.getLogger(__name__)
@@ -452,6 +454,67 @@ class PV(Component):
             c.C_TOT_inv_["PV"] = C_inv_
             c.C_TOT_invAnn_["PV"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_PV_)
             c.C_TOT_RMI_["PV"] = C_inv_ * p.k_PV_RMI_
+
+
+@dataclass
+class WT(Component):
+    """Wind turbine"""
+
+    P_CAPx: float = 0
+    allow_new: bool = True
+
+    def param_func(self, sc: Scenario):
+        sc.param("P_WT_CAPx_", data=self.P_CAPx, doc="Existing capacity", unit="kW_peak")
+        sc.param(
+            "P_WT_profile_T",
+            data=hp.read(DATA_DIR / "wind/2019_wind_kelmarsh2.csv"),
+            doc="Wind profile",
+            unit="kW_el",
+        )
+        sc.var("P_WT_FI_T", doc="Feed-in", unit="kW_el")
+        sc.var("P_WT_OC_T", doc="Own consumption", unit="kW_el")
+
+        if sc.consider_invest:
+            sc.param("P_WT_max_", data=1e5, doc="Maximum installed capacity", unit="kW_peak")
+            sc.param("z_WT_", data=int(self.allow_new), doc="If new capacity is allowed")
+            sc.param(
+                "c_WT_inv_",
+                data=1000,
+                doc="CAPEX",
+                unit="€/kW_el",
+                src="https://ens.dk/sites/ens.dk/files/Analyser/technology_data_catalogue_for_el_and_dh.pdf",
+            )
+            sc.param(
+                "k_WT_RMI_",
+                data=0.01,
+                doc=Descs.RMI.en,
+                unit="",
+                src="https://www.npro.energy/main/en/help/economic-parameters",
+            )
+            sc.param(
+                "N_WT_",
+                data=20,
+                doc="Operation life",
+                unit="a",
+                src="https://www.twi-global.com/technical-knowledge/faqs/how-long-do-wind-turbines-last",
+            )
+            sc.var("P_WT_CAPn_", doc="New capacity", unit="kW_peak")
+
+    def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
+        cap = p.P_WT_CAPx_ + v.P_WT_CAPn_ if sc.consider_invest else p.P_WT_CAPx_
+        m.addConstrs(
+            (cap * p.P_WT_profile_T[t] == v.P_WT_FI_T[t] + v.P_WT_OC_T[t] for t in d.T),
+            "WT_balance",
+        )
+        c.P_EL_source_T["WT"] = lambda t: v.P_WT_FI_T[t] + v.P_WT_OC_T[t]
+        c.P_EG_sell_T["WT"] = lambda t: v.P_WT_FI_T[t]
+
+        if sc.consider_invest:
+            m.addConstr(v.P_WT_CAPn_ <= p.z_WT_ * p.P_WT_max_, "WT_limit_capn")
+            C_inv_ = v.P_WT_CAPn_ * p.c_WT_inv_ * conv("€", "k€", 1e-3)
+            c.C_TOT_inv_["WT"] = C_inv_
+            c.C_TOT_invAnn_["WT"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_WT_)
+            c.C_TOT_RMI_["WT"] = C_inv_ * p.k_WT_RMI_
 
 
 @dataclass
@@ -1170,11 +1233,12 @@ order_restrictions = [
     ("cDem", {}),
     ("hDem", {}),
     ("eDem", {}),
-    ("EG", {"PV", "CHP"}),  # EG collects P_EG_sell_T
+    ("EG", {"PV", "CHP", "WT"}),  # EG collects P_EG_sell_T
     ("Fuel", {"HOB", "CHP"}),  # Fuel collects F_fuel_F
     ("BES", {}),
     ("BEV", {}),
     ("PV", {}),
+    ("WT", {}),
     ("P2H", {}),
     ("CHP", {}),
     ("HOB", {}),
