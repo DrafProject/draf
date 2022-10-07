@@ -15,7 +15,9 @@ logger.setLevel(level=logging.WARN)
 def make_table(l: List[Tuple], lead_text: str = "", table_prefix="  "):
     headers, col_data = zip(*l)
     rows = list(zip(*col_data))
-    return lead_text + textwrap.indent(text=tabulate(rows, headers=headers), prefix=table_prefix)
+    return lead_text + textwrap.indent(
+        text=tabulate(rows, headers=headers, floatfmt=".3n"), prefix=table_prefix
+    )
 
 
 class Collectors(DrafBaseClass):
@@ -53,6 +55,9 @@ class Scenarios(DrafBaseClass):
         sc = self.__dict__.pop(old_scen_id)
         sc.id = new_scen_id
         self.__dict__[new_scen_id] = sc
+
+    def get(self, scen_id) -> "Scenario":
+        return getattr(self, scen_id)
 
     def get_by_name(self, name: str) -> "Scenario":
         for sc in self.get_all().values():
@@ -172,9 +177,9 @@ class Params(EntityStore):
         l = [
             ("Name", list(data.keys())),
             ("Dims", [hp.get_dims(k) for k in data.keys()]),
-            ("Value", [f"{hp.get_mean(i):.3e}" for i in data.values()]),
+            ("(⌀) Value", [hp.get_mean(i) for i in data.values()]),
             ("Unit", [meta[k]["unit"] for k in data.keys()]),
-            ("Doc", [textwrap.fill(meta[k]["doc"], width=50) for k in data.keys()]),
+            ("Doc", [textwrap.fill(meta[k]["doc"], width=40) for k in data.keys()]),
             ("Source", [textwrap.shorten(meta[k]["src"], width=17) for k in data.keys()]),
         ]
         return make_table(l, lead_text=f"<Params object> preview:\n")
@@ -221,7 +226,7 @@ class Results(EntityStore):
         l = [
             ("Name", list(data.keys())),
             ("Dims", [hp.get_dims(k) for k in data.keys()]),
-            ("Value", [f"{hp.get_mean(i):.3e}" for i in data.values()]),
+            ("(⌀) Value", [hp.get_mean(i) for i in data.values()]),
             ("Unit", [meta[k]["unit"] for k in data.keys()]),
             ("Doc", [textwrap.fill(meta[k]["doc"], width=50) for k in data.keys()]),
         ]
