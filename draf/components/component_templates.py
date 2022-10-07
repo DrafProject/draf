@@ -440,7 +440,7 @@ class PV(Component):
             (cap * p.P_PV_profile_T[t] == v.P_PV_FI_T[t] + v.P_PV_OC_T[t] for t in d.T),
             "PV_balance",
         )
-        c.P_EL_source_T["PV"] = lambda t: v.P_PV_OC_T[t]
+        c.P_EL_source_T["PV"] = lambda t: v.P_PV_FI_T[t] + v.P_PV_OC_T[t]
         c.P_EG_sell_T["PV"] = lambda t: v.P_PV_FI_T[t]
         c.C_TOT_op_["PV_OC"] = (
             p.k__dT_ * p.k__PartYearComp_ * p.c_PV_OC_ * v.P_PV_OC_T.sum() * conv("€", "k€", 1e-3)
@@ -707,6 +707,7 @@ class CHP(Component):
                 "CHP_minimal_part_load_2",
             )
 
+        c.P_EL_source_T["CHP"] = lambda t: v.P_CHP_FI_T[t] + v.P_CHP_OC_T[t]
         c.dQ_heating_source_TH["CHP"] = (
             lambda t, h: v.dQ_CHP_T[t] if h == self.H_level_target else 0
         )
