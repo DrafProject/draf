@@ -429,3 +429,8 @@ def get_TES_volume(kWh: float, kWh_per_cubicmeter=65) -> float:
     cubicmeters = kWh / kWh_per_cubicmeter
     return cubicmeters
 
+
+def play_beep_sound():
+    import os
+
+    os.system("printf '\a'")  # https://stackoverflow.com/a/24634221

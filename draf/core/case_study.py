@@ -509,9 +509,22 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
 
     @hp.copy_doc(Scenario.optimize)
     def optimize(
-        self, parallel: bool = False, scens: Optional[Iterable] = None, **optimize_kwargs
+        self,
+        scens: Optional[Iterable] = None,
+        parallel: bool = False,
+        play_sound: bool = False,
+        **optimize_kwargs,
     ) -> CaseStudy:
-        """Optimize multiple scenarios at once."""
+        """Optimize multiple scenarios at once.
+
+        Args:
+            scens: List of scenario objects to optimize.
+            parallel: If the scenarios are optimized in parallel using ray.
+            play_sound: If a beep sound is played at the beginning and end of the job.
+        """
+        if play_sound:
+            hp.play_beep_sound()
+
         if scens is None:
             scens = self.scens_list
 
@@ -536,6 +549,8 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                     f"of {mean:.3} seconds."
                 )
 
+        if play_sound:
+            hp.play_beep_sound()
         return self
 
     def get_entity_dict(self, ent_name: str) -> Dict:
