@@ -122,13 +122,24 @@ class Main(Component):
 class cDem(Component):
     """Cooling demand"""
 
-    def param_func(self, sc: Scenario):
-        sc.dim("N", data=[1, 2], doc="Cooling temperature levels (inlet / outlet) in °C")
+    def dim_func(self, sc: Scenario):
+        sc.dim("N", data=["7/12", "30/35"], doc="Cooling temperature levels (inlet / outlet) in °C")
 
+    def param_func(self, sc: Scenario):
         sc.param(name="dQ_cDem_TN", fill=0, doc="Cooling demand", unit="kW_th")
-        sc.params.dQ_cDem_TN.loc[:, 1] = sc.prep.dQ_cDem_T(annual_energy=1e4).values
-        sc.param("T_cDem_in_N", data=[7, 30], doc="Cooling inlet temperature", unit="°C")
-        sc.param("T_cDem_out_N", data=[12, 35], doc="Cooling outlet temperature", unit="°C")
+        sc.params.dQ_cDem_TN.loc[:, sc.dims.N[0]] = sc.prep.dQ_cDem_T(annual_energy=1e4).values
+        sc.param(
+            "T_cDem_in_N",
+            data=[int(i.split("/")[0]) for i in sc.dims.N],
+            doc="Cooling inlet temperature",
+            unit="°C",
+        )
+        sc.param(
+            "T_cDem_out_N",
+            data=[int(i.split("/")[1]) for i in sc.dims.N],
+            doc="Cooling outlet temperature",
+            unit="°C",
+        )
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         c.dQ_cooling_source_TN["cDem"] = lambda t, n: p.dQ_cDem_TN[t, n]
@@ -138,13 +149,26 @@ class cDem(Component):
 class hDem(Component):
     """Heating demand"""
 
-    def param_func(self, sc: Scenario):
-        sc.dim("H", [1, 2], doc="Heating temperature levels (inlet / outlet) in °C")
+    def dim_func(self, sc: Scenario):
+        sc.dim(
+            "H", data=["90/60", "70/40"], doc="Heating temperature levels (inlet / outlet) in °C"
+        )
 
+    def param_func(self, sc: Scenario):
         sc.param(name="dQ_hDem_TH", fill=0, doc="Heating demand", unit="kW_th")
-        sc.params.dQ_hDem_TH.loc[:, 1] = sc.prep.dQ_hDem_T(annual_energy=1e6).values
-        sc.param("T_hDem_in_H", data=[60, 90], doc="Heating inlet temperature", unit="°C")
-        sc.param("T_hDem_out_H", data=[40, 70], doc="Heating outlet temperature", unit="°C")
+        sc.params.dQ_hDem_TH.loc[:, sc.dims.H[0]] = sc.prep.dQ_hDem_T(annual_energy=1e6).values
+        sc.param(
+            "T_hDem_in_H",
+            data=[int(i.split("/")[0]) for i in sc.dims.H],
+            doc="Heating inlet temperature",
+            unit="°C",
+        )
+        sc.param(
+            "T_hDem_out_H",
+            data=[int(i.split("/")[1]) for i in sc.dims.H],
+            doc="Heating outlet temperature",
+            unit="°C",
+        )
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         c.dQ_heating_sink_TH["hDem"] = lambda t, h: p.dQ_hDem_TH[t, h]
@@ -273,8 +297,10 @@ class Fuel(Component):
 
     c_ceTax: float = 55
 
-    def param_func(self, sc: Scenario):
+    def dim_func(self, sc: Scenario):
         sc.dim("F", ["ng", "bio"], doc="Types of fuel")
+
+    def param_func(self, sc: Scenario):
         sc.collector("F_fuel_F", doc="Fuel power", unit="kWh")
         sc.param(from_db=db.c_Fuel_F)
         sc.param("c_Fuel_ceTax_", data=self.c_ceTax, doc="Carbon tax on fuel", unit="€/tCO2eq")
@@ -441,10 +467,7 @@ class HP(Component):
     ambient_as_sink: bool = True
     ambient_as_source: bool = True
 
-    def param_func(self, sc: Scenario):
-        p = sc.params
-        d = sc.dims
-
+    def dim_func(self, sc: Scenario):
         def get_E():
             e = ["E_amb"] if self.ambient_as_source else []
             e += sc.dims.N if self.cooling_levels is None else self.cooling_levels
@@ -457,6 +480,10 @@ class HP(Component):
 
         sc.dim("E", data=get_E(), doc="Evaporation temperature levels")
         sc.dim("C", data=get_C(), doc="Condensing temperature levels")
+
+    def param_func(self, sc: Scenario):
+        p = sc.params
+
         sc.collector("dQ_amb_sink_", doc="Thermal energy flow to ambient", unit="kW_th")
         sc.collector("dQ_amb_source_", doc="Thermal energy flow from ambient", unit="kW_th")
 
@@ -578,6 +605,7 @@ class P2H(Component):
 
     dQ_CAPx: float = 0
     allow_new: bool = True
+    H_level_target: str = "90/60"
 
     def param_func(self, sc: Scenario):
         sc.param("dQ_P2H_CAPx_", data=self.dQ_CAPx, doc="Existing capacity", unit="kW_th")
@@ -597,7 +625,9 @@ class P2H(Component):
         m.addConstrs((v.dQ_P2H_T[t] == p.eta_P2H_ * v.P_P2H_T[t] for t in d.T), "P2H_balance")
         m.addConstrs((v.dQ_P2H_T[t] <= cap for t in d.T), "P2H_limit_heat_flow")
 
-        c.dQ_heating_source_TH["P2H"] = lambda t, h: v.dQ_P2H_T[t] if h == 2 else 0
+        c.dQ_heating_source_TH["P2H"] = (
+            lambda t, h: v.dQ_P2H_T[t] if h == self.H_level_target else 0
+        )
         c.P_EL_sink_T["P2H"] = lambda t: v.P_P2H_T[t]
 
         if sc.consider_invest:
@@ -614,13 +644,14 @@ class CHP(Component):
 
     P_CAPx: float = 0
     allow_new: bool = True
+    H_level_target: str = "90/60"
+    minPL: Optional[float] = 0.5
 
     def param_func(self, sc: Scenario):
         sc.param("P_CHP_CAPx_", data=self.P_CAPx, doc="Existing capacity", unit="kW_el")
         sc.param(
             "P_CHP_max_", data=1e5, doc="Big-M number (upper bound for CAPn + CAPx)", unit="kW_el"
         )
-        sc.param("z_CHP_minPL_", data=1, doc="If minimal part load is modeled.")
         sc.param(from_db=db.funcs.eta_CHP_el_(fuel="ng"))
         sc.param(from_db=db.funcs.eta_CHP_th_(fuel="ng"))
         sc.param(
@@ -636,7 +667,7 @@ class CHP(Component):
         sc.var("P_CHP_OC_T", doc="Own consumption", unit="kW_el")
         sc.var("P_CHP_T", doc="Producing power", unit="kW_el")
 
-        if sc.params.z_CHP_minPL_:
+        if self.minPL is not None:
             sc.param("k_CHP_minPL_", data=0.5, doc="Minimal allowed part load")
             sc.var("Y_CHP_T", doc="If in operation", vtype=GRB.BINARY)
 
@@ -663,7 +694,7 @@ class CHP(Component):
             "CHP_feedIn_vs_ownConsumption",
         )
 
-        if p.z_CHP_minPL_:
+        if self.minPL:
             m.addConstrs(
                 (v.P_CHP_T[t] <= v.Y_CHP_T[t] * p.P_CHP_max_ for t in d.T),
                 "CHP_minimal_part_load_1",
@@ -676,8 +707,9 @@ class CHP(Component):
                 "CHP_minimal_part_load_2",
             )
 
-        c.P_EL_source_T["CHP"] = lambda t: v.P_CHP_OC_T[t]
-        c.dQ_heating_source_TH["CHP"] = lambda t, h: v.dQ_CHP_T[t] if h == 2 else 0
+        c.dQ_heating_source_TH["CHP"] = (
+            lambda t, h: v.dQ_CHP_T[t] if h == self.H_level_target else 0
+        )
         c.P_EG_sell_T["CHP"] = lambda t: v.P_CHP_FI_T[t]
         c.F_fuel_F["CHP"] = lambda f: v.F_CHP_TF.sum("*", f) * p.k__dT_
         c.C_TOT_op_["CHP_OC"] = (
@@ -698,6 +730,7 @@ class HOB(Component):
 
     dQ_CAPx: float = 0
     allow_new: bool = True
+    H_level_target: str = "90/60"
 
     def param_func(self, sc: Scenario):
         sc.param("dQ_HOB_CAPx_", data=self.dQ_CAPx, doc="Existing capacity", unit="kW_th")
@@ -717,7 +750,9 @@ class HOB(Component):
         m.addConstrs((v.dQ_HOB_T[t] == v.F_HOB_TF.sum(t, "*") * p.eta_HOB_ for t in d.T), "HOB_bal")
         m.addConstrs((v.dQ_HOB_T[t] <= cap for t in d.T), "HOB_limit_heat_flow")
 
-        c.dQ_heating_source_TH["HOB"] = lambda t, h: v.dQ_HOB_T[t] if h == 2 else 0
+        c.dQ_heating_source_TH["HOB"] = (
+            lambda t, h: v.dQ_HOB_T[t] if h == self.H_level_target else 0
+        )
         c.F_fuel_F["HOB"] = lambda f: v.F_HOB_TF.sum("*", f) * p.k__dT_
 
         if sc.consider_invest:
@@ -734,17 +769,17 @@ class TES(Component):
 
     allow_new: bool = True
 
-    def param_func(self, sc: Scenario):
+    def dim_func(self, sc: Scenario):
         d = sc.dims
 
-        if sc.has_thermal_entities:
-            L = []
-            if hasattr(d, "N"):
-                L += [f"N{n}" for n in d.N]
-            if hasattr(d, "H"):
-                L += [f"H{h}" for h in d.H]
-            sc.dim("L", data=L, doc="Thermal demand temperature levels (inlet / outlet) in °C")
+        L = []
+        if hasattr(d, "N"):
+            L += d.N
+        if hasattr(d, "H"):
+            L += d.H
+        sc.dim("L", data=L, doc="Thermal demand temperature levels (inlet / outlet) in °C")
 
+    def param_func(self, sc: Scenario):
         sc.param("Q_TES_CAPx_L", fill=0, doc="Existing capacity", unit="kWh_th")
         sc.param("eta_TES_time_", data=0.995, doc="Storing efficiency")
         sc.param("k_TES_inPerCap_", data=0.5, doc="Ratio loading power / capacity")
@@ -791,8 +826,8 @@ class TES(Component):
 
         # only sink here, since dQ_TES_in_TL is also defined for negative
         # values to reduce number of variables:
-        c.dQ_cooling_sink_TN["TES"] = lambda t, n: v.dQ_TES_in_TL[t, f"N{n}"]
-        c.dQ_heating_sink_TH["TES"] = lambda t, h: v.dQ_TES_in_TL[t, f"H{h}"]
+        c.dQ_cooling_sink_TN["TES"] = lambda t, n: v.dQ_TES_in_TL[t, n]
+        c.dQ_heating_sink_TH["TES"] = lambda t, h: v.dQ_TES_in_TL[t, h]
 
         if sc.consider_invest:
             m.addConstrs((v.Q_TES_CAPn_L[l] <= p.z_TES_L[l] * 1e5 for l in d.L), "TES_limit_capn")
@@ -828,10 +863,11 @@ class BEV(Component):
     allow_V2X: bool = False
     allow_smart: bool = False
 
+    def dim_func(self, sc: Scenario):
+        sc.dim("B", data=[1, 2], doc="BEV batteries")
+
     def param_func(self, sc: Scenario):
         p = sc.params
-        d = sc.dims
-        sc.dim("B", data=[1, 2], doc="BEV batteries")
         sc.param("E_BEV_Cap1Bat_B", fill=self.E_CAPx, doc="Capacity of one battery", unit="kWh_el")
         sc.param("n_BEV_nBats_B", fill=10, doc="Number of batteries")
         sc.param(
@@ -864,7 +900,7 @@ class BEV(Component):
             fill=0.7,
             doc="Maximum charging power per capacity",
             src="@Figgener_2021",
-        )
+        )  # NOTE: Similar for powered industrial trucks: "a 25 V lithium-ion battery is fully charged in only 80 minutes" https://www.mfgabelstapler.de/2019/02/22/vorteile-von-lithium-ionen-batterien-fuer-gabelstapler
         sc.param(
             "k_BEV_v2xPerCap_B",
             fill=0.7,
@@ -886,7 +922,7 @@ class BEV(Component):
 
         if sc.params.P_BEV_drive_TB.sum() == 0:
             logger.warning("P_BEV_drive_TB is all zero. Please set data")
-        if sc.params.y_BEV_avail_TB.sum() == 1:
+        if sc.params.y_BEV_avail_TB.mean() == 1:
             logger.warning("y_BEV_avail_TB is all one. Please set data")
 
         m.addConstrs(
