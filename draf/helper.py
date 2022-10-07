@@ -415,3 +415,17 @@ def get_mean(data: Union[int, float, pd.Series]) -> float:
         return float(data)
     except TypeError:
         return data.mean()
+
+
+def get_TES_volume(kWh: float, kWh_per_cubicmeter=65) -> float:
+    """Returns the volume of a given thermal energy storage (TES) in m³.
+
+    Pressurized Thermal Storages (>130 MWh) store 60-65 kWh/m³ [1].
+    Other sources state that TES can store up to 80 kWh/m³ [2].
+    We assume 65 kWh/m³.
+    [1]: Stadler (2020) Wärmespeicher in NRW https://enerko.de/wp-content/uploads/2020/08/EnergieAgentur.NRW-Waermespeicher-in-NRW.pdf
+    [2]: Wesselak (2017) Handbuch Regenerative Energietechnik https://doi.org/10.1007/978-3-662-53073-3
+    """
+    cubicmeters = kWh / kWh_per_cubicmeter
+    return cubicmeters
+

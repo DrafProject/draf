@@ -2,7 +2,7 @@
 
 <br>
 
-[![APEN](https://img.shields.io/badge/Paper-doi.org/h3s2-brightgreen)][draf demo paper]
+[![paper](https://img.shields.io/badge/Paper-doi.org/h3s2-brightgreen)][draf demo paper]
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![python](https://img.shields.io/badge/python-3.9-blue?logo=python&logoColor=white)](https://github.com/DrafProject/draf)
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1)](https://pycqa.github.io/isort/)

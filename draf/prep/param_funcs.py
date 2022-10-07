@@ -99,7 +99,7 @@ def c_TES_inv_(estimated_size=100, temp_spread=40) -> ParDat:
 
 
 def c_HOB_inv_() -> ParDat:
-    """ "CAPEX for gas boiler Vitoplex 300 with 620 kWh_th"""
+    """CAPEX for gas boiler Vitoplex 300 with 620 kW_th"""
     thermal_capa_in_kW_th = 620
     cost_factor_for_pipes_etc = 1.5
     main_component_costs = pd.Series({"Heizkessel": 18216, "Weishaupt Gebläsebrenner": 5399})

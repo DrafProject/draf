@@ -1,4 +1,5 @@
 import logging
+import warnings
 from collections import OrderedDict
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
@@ -12,6 +13,7 @@ import plotly.graph_objs as go
 import seaborn as sns
 from IPython.core.display import HTML, display
 from ipywidgets import interact, widgets
+from pandas.api.types import is_numeric_dtype
 from pandas.io.formats.style import Styler as pdStyler
 
 from draf import helper as hp
@@ -45,17 +47,20 @@ class CsPlotter(BasePlotter):
     def tables(self):
         cs = self.cs
         funcs = {
-            "1D params ": ("p_table", "table fa-lg"),
-            "1D variables ": ("v_table", "table fa-lg"),
+            "Parameters ": ("p_table", "table fa-lg"),
+            "Variables ": ("v_table", "table fa-lg"),
             "Investments ": ("invest_table", "money fa-lg"),
             "Capacities ": ("capa_table", " fa-cubes fa-lg"),
+            "TES capa ": ("capa_TES_table", " fa-cubes fa-lg"),
             "Yields ": ("yields_table", " fa-eur fa-lg"),
             "eGrid ": ("eGrid_table", " fa-plug fa-lg"),
             "eFlex ": ("eFlex_table", " fa-balance-scale"),
             "Pareto ": ("pareto_table", " fa-arrows-h fa-lg"),
             "BES ": ("bes_table", "fa-solid fa-battery-half fa-lg"),
-            "Time ": ("time_table", " fa-clock-o fa-lg"),
+            "Calc. time ": ("time_table", " fa-clock-o fa-lg"),
+            "Collectors ": ("collector_table", "table fa-lg"),
         }
+
         ui = widgets.ToggleButtons(
             options={k: v[0] for k, v in funcs.items()},
             description="Table:",
@@ -63,31 +68,35 @@ class CsPlotter(BasePlotter):
             # for icons see https://fontawesome.com/v4.7/icons/
         )
 
-        @interact(table=ui, gradient=True)
-        def f(table, gradient):
+        @interact(table=ui, gradient=True, caption=True)
+        def f(table, gradient, caption):
             kw = dict()
             if table in ("p_table", "v_table"):
                 what, func = table.split("_")
                 kw.update(what=what)
             else:
                 func = table
-            kw.update(gradient=gradient)
+            kw.update(gradient=gradient, caption=caption)
             try:
-                display(getattr(cs.plot, func)(**kw))
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=RuntimeWarning)
+                    display(getattr(cs.plot, func)(**kw))
             except (AttributeError, KeyError) as e:
                 display(HTML("<h2>⚠️ No data</h2>"))
                 print(e)
 
-    def pareto_table(self, gradient: bool = False) -> pdStyler:
+    def pareto_table(self, gradient: bool = False, caption: bool = False) -> pdStyler:
         cs = self.cs
         df = cs.pareto
-        styled_df = df.style.set_table_styles(get_leftAlignedIndex_style()).format(
+        s = df.style.set_table_styles(get_leftAlignedIndex_style()).format(
             {v: "{:,.0f} " + f"{cs.REF_scen.get_unit(v)}" for v in cs.obj_vars}
         )
 
         if gradient:
-            styled_df = styled_df.background_gradient(cmap="OrRd")
-        return styled_df
+            s = s.background_gradient(cmap="OrRd")
+        if caption:
+            s = s.set_caption("Pareto table")
+        return s
 
     def _get_internal_rates_of_return(self, base_years: int = 15) -> pd.Series:
         cs = self.cs
@@ -102,7 +111,9 @@ class CsPlotter(BasePlotter):
         # https://github.com/epri-dev/StorageVET/blob/576a01dec9effa174c944c56a88f748da5072bff/storagevet/Finances.py#L610
         return pd.Series(data, payback_period.index)
 
-    def yields_table(self, gradient: bool = False, nyears_for_irr: int = 15) -> pdStyler:
+    def yields_table(
+        self, gradient: bool = False, nyears_for_irr: int = 15, caption: bool = False
+    ) -> pdStyler:
         """Returns a styled pandas table with cost and carbon savings, and avoidance cost."""
         cs = self.cs
         df = pd.DataFrame(
@@ -136,7 +147,7 @@ class CsPlotter(BasePlotter):
             return f"color: {color}"
 
         if gradient:
-            styled_df = (
+            s = (
                 df.style.background_gradient(subset=["Total annualized"], cmap="Greens")
                 .background_gradient(subset=["Absolute savings"], cmap="Reds")
                 .background_gradient(subset=["Relative savings"], cmap="Blues")
@@ -144,28 +155,27 @@ class CsPlotter(BasePlotter):
             )
 
         else:
-            styled_df = df.style.applymap(color_negative_red)
+            s = df.style.applymap(color_negative_red)
 
-        return (
-            styled_df.format(
-                {
-                    ("Total annualized", "Costs"): "{:,.0f} k€",
-                    ("Total annualized", "Emissions"): "{:,.0f} t",
-                    ("Absolute savings", "Costs"): "{:,.0f} k€",
-                    ("Absolute savings", "Emissions"): "{:,.0f} t",
-                    ("Relative savings", "Costs"): "{:,.2%}",
-                    ("Relative savings", "Emissions"): "{:,.2%}",
-                    ("", "C_inv"): "{:,.0f} k€",
-                    ("", "C_invAnn"): "{:,.0f} k€/a",
-                    ("", "C_op"): "{:,.0f} k€/a",
-                    ("", "EAC"): "{:,.0f} €/t",
-                    ("", "PP"): "{:,.1f} a",
-                    ("", "DPP"): "{:,.1f} a",
-                    ("", "IRR"): "{:,.1%}",
-                }
-            )
-            .set_table_styles(get_leftAlignedIndex_style() + get_multiColumnHeader_style(df))
-            .set_caption(
+        s = s.format(
+            {
+                ("Total annualized", "Costs"): "{:,.0f} k€",
+                ("Total annualized", "Emissions"): "{:,.0f} t",
+                ("Absolute savings", "Costs"): "{:,.0f} k€",
+                ("Absolute savings", "Emissions"): "{:,.0f} t",
+                ("Relative savings", "Costs"): "{:,.2%}",
+                ("Relative savings", "Emissions"): "{:,.2%}",
+                ("", "C_inv"): "{:,.0f} k€",
+                ("", "C_invAnn"): "{:,.0f} k€/a",
+                ("", "C_op"): "{:,.0f} k€/a",
+                ("", "EAC"): "{:,.0f} €/t",
+                ("", "PP"): "{:,.1f} a",
+                ("", "DPP"): "{:,.1f} a",
+                ("", "IRR"): "{:,.1%}",
+            }
+        ).set_table_styles(get_leftAlignedIndex_style() + get_multiColumnHeader_style(df))
+        if caption:
+            s = s.set_caption(
                 "<u>Legend</u>:"
                 ", <b>C_inv</b>: Investment Costs"
                 ", <b>C_invAnn</b>: Annualized Investment Costs"
@@ -177,21 +187,23 @@ class CsPlotter(BasePlotter):
                 "</br>"
                 f"<u>Note</u>: <b>{cs.REF_scen.params.k__r_:.1%}</b> discount rate assumed."
             )
-        )
+        return s
 
-    def bes_table(self, gradient: bool = False) -> pdStyler:
+    def bes_table(self, gradient: bool = False, caption: bool = False) -> pdStyler:
         data = [
             ("CAPn", "{:,.0f} kWh", lambda df, cs: cs.get_ent("E_BES_CAPn_")),
             (
                 "W_out",
                 "{:,.0f} MWh/a",
-                lambda df, cs: [sc.gte(sc.get_ent("P_BES_out_T")) / 1e3 for sc in cs.scens_list],
+                lambda df, cs: [sc.gte(sc.get_ent("P_BES_out_T")) / 1e3 for sc in cs.scens],
             ),
             ("Charging_cycles", "{:,.0f}", lambda df, cs: df["W_out"] / (df["CAPn"] / 1e3)),
         ]
-        return self.base_table(data=data, gradient=gradient)
+        return self.base_table(data, gradient, caption, caption_text="BES table")
 
-    def eGrid_table(self, gradient: bool = False, pv: bool = False) -> pdStyler:
+    def eGrid_table(
+        self, gradient: bool = False, pv: bool = False, caption: bool = False
+    ) -> pdStyler:
         data = [
             ("P_max", "{:,.0f} kW", lambda df, cs: cs.get_ent("P_EG_buyPeak_")),
             ("P_max_reduction", "{:,.0f} kW", lambda df, cs: cs.get_diff("P_EG_buyPeak_")),
@@ -200,11 +212,7 @@ class CsPlotter(BasePlotter):
                 "{:,.1%}",
                 lambda df, cs: df["P_max_reduction"] / df["P_max"].iloc[0],
             ),
-            (
-                "t_use",
-                "{:,.0f} h",
-                lambda df, cs: [sc.get_EG_full_load_hours() for sc in cs.scens_list],
-            ),
+            ("t_use", "{:,.0f} h", lambda df, cs: [sc.get_EG_full_load_hours() for sc in cs.scens]),
             (
                 "t_use_diff_rel",
                 "{:,.1%}",
@@ -213,12 +221,12 @@ class CsPlotter(BasePlotter):
             (
                 "W_buy",
                 "{:,.2f} GWh/a",
-                lambda df, cs: [sc.gte(sc.res.P_EG_buy_T) / 1e6 for sc in cs.scens_list],
+                lambda df, cs: [sc.gte(sc.res.P_EG_buy_T) / 1e6 for sc in cs.scens],
             ),
             (
                 "W_sell",
                 "{:,.2f} GWh/a",
-                lambda df, cs: [sc.gte(sc.res.P_EG_sell_T) / 1e6 for sc in cs.scens_list],
+                lambda df, cs: [sc.gte(sc.res.P_EG_sell_T) / 1e6 for sc in cs.scens],
             ),
         ]
 
@@ -227,20 +235,20 @@ class CsPlotter(BasePlotter):
                 (
                     "W_pv_own",
                     "{:,.2f} MWh/a",
-                    lambda df, cs: [sc.gte(sc.res.P_PV_OC_T) / 1e3 for sc in cs.scens_list],
+                    lambda df, cs: [sc.gte(sc.res.P_PV_OC_T) / 1e3 for sc in cs.scens],
                 )
             )
 
-        return self.base_table(data=data, gradient=gradient)
+        return self.base_table(data, gradient, caption, caption_text="eGrid table")
 
-    def eFlex_table(self, gradient: bool = False) -> pdStyler:
+    def eFlex_table(self, gradient: bool = False, caption: bool = True) -> pdStyler:
         data = [
             (
                 "avg P_devAbs",
                 "{:,.0f} kW",
                 lambda df, cs: [
                     ((sc.res.P_EG_buy_T - cs.REF_scen.res.P_EG_buy_T).abs()).mean()
-                    for sc in cs.scens_list
+                    for sc in cs.scens
                 ],
             ),
             (
@@ -253,7 +261,7 @@ class CsPlotter(BasePlotter):
                 "{:,.3f}",
                 lambda df, cs: [
                     (sc.res.P_EG_buy_T - cs.REF_scen.res.P_EG_buy_T).corr(sc.params.c_EG_RTP_T)
-                    for sc in cs.scens_list
+                    for sc in cs.scens
                 ],
             ),
             (
@@ -267,7 +275,7 @@ class CsPlotter(BasePlotter):
                 lambda df, cs: df["avg P_devAbs (%)"] * -df["corr (P_dev,c_RTP)"],
             ),
         ]
-        return self.base_table(data=data, gradient=gradient).set_caption(
+        caption_text = (
             "<b>Legend</b>: <code>avg P_devAbs</code>: mean absolute deviation of the scenarios'"
             " purchased power and the one of the reference case study. <code>corr"
             " (P_dev,c_RTP)</code>: Pearson correlation coefficient between the deviation of the"
@@ -275,8 +283,15 @@ class CsPlotter(BasePlotter):
             " prices. <code>abs_flex_score</code> / <code>rel_flex_score</code>: Column 1/2"
             " multiplied with column 3."
         )
+        return self.base_table(data, gradient, caption, caption_text)
 
-    def base_table(self, data: List[Tuple[str, str, Callable]], gradient: bool = False):
+    def base_table(
+        self,
+        data: List[Tuple[str, str, Callable]],
+        gradient: bool = False,
+        caption: bool = False,
+        caption_text: Optional[str] = None,
+    ):
         cs = self.cs
         df = pd.DataFrame(index=cs.scens_ids)
 
@@ -285,11 +300,13 @@ class CsPlotter(BasePlotter):
 
         format_dict = {name: fmt for name, fmt, func in data}
 
-        styled_df = df.style.format(format_dict).set_table_styles(get_leftAlignedIndex_style())
+        s = df.style.format(format_dict).set_table_styles(get_leftAlignedIndex_style())
 
         if gradient:
-            styled_df = styled_df.background_gradient(cmap="OrRd")
-        return styled_df
+            s = s.background_gradient(cmap="OrRd")
+        if caption:
+            s = s.set_caption(caption_text)
+        return s
 
     def pareto(
         self,
@@ -500,7 +517,7 @@ class CsPlotter(BasePlotter):
         """Returns an interactive heatmap widget that enables browsing through time series.
 
         Args:
-            what: Selects between Variables ('v') and Parameters ('p').
+            what: `p`for parameters and `v` or `r` for variables.
             dim: Dimensions to filter.
             select: Tuple of indexers for data with additional dimension(s) besides the time.
             cmap: Color scale.
@@ -636,7 +653,7 @@ class CsPlotter(BasePlotter):
         p = sc.params
 
         if not hasattr(cs.REF_scen.res, "C_TOT_op_") or not hasattr(cs.REF_scen.res, "C_TOT_inv_"):
-            for scen in cs.scens_list:
+            for scen in cs.scens:
                 scen.res.C_TOT_op_ = scen.res.C_TOT_
                 scen.res.C_TOT_inv_ = 0
 
@@ -735,7 +752,7 @@ class CsPlotter(BasePlotter):
     def table(
         self,
         what: str = "p",
-        show_mean: bool = False,
+        only_scalars: bool = False,
         show_unit: bool = True,
         show_doc: bool = True,
         show_src: bool = False,
@@ -746,22 +763,37 @@ class CsPlotter(BasePlotter):
         gradient: bool = False,
         filter_func: Optional[Callable] = None,
         only_ref: bool = False,
-        precision: int = 0,
+        number_format: str = "{:n}",
         caption: bool = False,
         clickable_urls: bool = False,
     ) -> pdStyler:
-        """Creates a table with all scalars.
+        """Creates a table with all entities.
+        For multi-dimensional entities, the mean is displayed.
 
         Args:
-            what: (p)arameters or (v)ariables.
+            what: `p`for parameters and `v` or `r` for variables.
             show_unit: If units are shown.
             show_doc: If entity docs are shown.
+            number_format: How numerical data are formatted. e.g. `"{:n}"` or `"{:,.0f}"`
         """
-        # TODO: optionally add non-scalar params with mean values
         # FIXME: prevent clickable_urls from switching off highlight_diff
         cs = self.cs
         d = {cs.REF_scen.id: cs.REF_scen} if only_ref else cs.scens_dic
-        tmp_list = [pd.Series(sc.get_var_par_dic(what)[""], name=name) for name, sc in d.items()]
+
+        if only_scalars:
+            tmp_list = [
+                pd.Series(sc.get_var_par_dic(what)[""], name=name) for name, sc in d.items()
+            ]
+        else:
+            tmp_dic = dict(p="params", r="res", v="res")
+            tmp_list = [
+                pd.Series(
+                    {k: hp.get_mean(i) for k, i in getattr(sc, tmp_dic[what]).get_all().items()},
+                    name=name,
+                )
+                for name, sc in d.items()
+            ]
+
         df = pd.concat(tmp_list, axis=1)
 
         if filter_func is not None:
@@ -795,32 +827,51 @@ class CsPlotter(BasePlotter):
             return ["font-weight: bold" if v else "" for v in other_than_REF]
 
         left_aligner = list(df.dtypes[df.dtypes == object].index)
-
-        styled_df = (
-            df.style.format(precision=precision, thousands=",")
+        s = (
+            df.style.format({n: number_format if is_numeric_dtype(df[n]) else "{:s}" for n in df})
             .apply(highlight_diff1, subset=df.columns[1:])
             .apply(highlight_diff2, subset=df.columns[1:])
             .set_properties(subset=left_aligner, **{"text-align": "left"})
             .set_table_styles([dict(selector="th", props=[("text-align", "left")])])
         )
         if caption:
-            styled_df = styled_df.set_caption(
-                "Scalar values where <b>bold</b> numbers indicate deviation from"
-                " <code>REF</code>-scenario."
+            s = s.set_caption(
+                "<b>Bold</b> numbers indicate deviation from"
+                " <code>REF</code>-scenario. For multi-dimensional entities, the mean is displayed."
             )
-
         if gradient:
-            styled_df = styled_df.background_gradient(cmap="OrRd", axis=1)
-
+            s = s.background_gradient(cmap="OrRd", axis=1)
         if clickable_urls:
-            return HTML(styled_df.data.to_html(render_links=True, escape=False))
+            return HTML(s.data.to_html(render_links=True, escape=False))
         else:
-            return styled_df
+            return s
+
+    def collector_table(self, gradient: bool = True, caption: bool = False):
+        cs = self.cs
+        df = pd.DataFrame(
+            {k: pd.DataFrame(sc.collector_values).T.stack() for k, sc in cs.scens_dic.items()}
+        )
+
+        def highlight_diff1(s):
+            other_than_REF = s == df.iloc[:, 0]
+            return ["color: lightgray" if v else "" for v in other_than_REF]
+
+        def highlight_diff2(s):
+            other_than_REF = s != df.iloc[:, 0]
+            return ["font-weight: bold" if v else "" for v in other_than_REF]
+
+        df.index.names = ["Collector", "Component"]
+        s = df.style.format("{:n}").apply(highlight_diff1).apply(highlight_diff2)
+        if gradient:
+            s = s.background_gradient(cmap="OrRd", axis=1)
+        if caption:
+            s = s.set_caption("Collector table")
+        return s
 
     @hp.copy_doc(ScenPlotter.describe, start="Args:")
     def describe(self, **kwargs) -> None:
         """Prints a description of all Parameters and Results for all scenarios."""
-        for sc in self.cs.scens_list:
+        for sc in self.cs.scens:
             sc.plot.describe(**kwargs)
 
     def describe_interact(self, **kwargs):
@@ -861,7 +912,7 @@ class CsPlotter(BasePlotter):
         sns.despine()
 
     def time_table(
-        self, gradient: bool = False, caption: bool = False, precision: int = 0
+        self, gradient: bool = False, caption: bool = False, number_format="{:.3n} s"
     ) -> pdStyler:
         cs = self.cs
         df = pd.DataFrame(
@@ -872,16 +923,14 @@ class CsPlotter(BasePlotter):
                 "Solve": pd.Series(cs.get_ent("t__solve_")),
             }
         )
-        styled_df = df.style.format(precision=precision).set_table_styles(
-            get_leftAlignedIndex_style()
-        )
+        s = df.style.format(number_format).set_table_styles(get_leftAlignedIndex_style())
         if caption:
-            styled_df = styled_df.set_caption("Time in seconds")
+            s = s.set_caption("Calculation time (seconds)")
         if gradient:
-            styled_df = styled_df.background_gradient(cmap="OrRd", axis=None)
-        return styled_df
+            s = s.background_gradient(cmap="OrRd")
+        return s
 
-    def invest_table(self, gradient: bool = False) -> pdStyler:
+    def invest_table(self, gradient: bool = False, caption: bool = False) -> pdStyler:
         cs = self.cs
         l = dict(
             C_TOT_inv_="Investment costs (k€)", C_TOT_invAnn_="Annualized investment costs (k€/a)"
@@ -895,12 +944,16 @@ class CsPlotter(BasePlotter):
             }
         ).unstack(0)
 
-        styled_df = df.style.format("{:,.0f}").set_table_styles(
+        s = df.style.format("{:,.0f}").set_table_styles(
             get_leftAlignedIndex_style() + get_multiColumnHeader_style(df)
         )
+        if caption:
+            s = s.set_caption(
+                "Investment costs and annualized investment costs per scenario and component."
+            )
         if gradient:
-            styled_df = styled_df.background_gradient(cmap="OrRd")
-        return styled_df
+            s = s.background_gradient(cmap="OrRd")
+        return s
 
     def invest(self, annualized: bool = True) -> go.Figure:
         cs = self.cs
@@ -987,18 +1040,37 @@ class CsPlotter(BasePlotter):
         return fig
 
     def capa_table(self, gradient: bool = False, caption: bool = False) -> pdStyler:
-        df = pd.DataFrame(
-            {which: self._get_capa_for_all_scens(which).stack() for which in ["CAPx", "CAPn"]}
-        ).unstack()
+        df = (
+            pd.DataFrame(
+                {which: self._get_capa_for_all_scens(which).stack() for which in ["CAPx", "CAPn"]}
+            )
+            .unstack()
+            .reindex(self.cs.scens_ids)
+        )
 
-        styled_df = df.style.format(precision=0, thousands=",").set_table_styles(
+        s = df.style.format(precision=0, thousands=",").set_table_styles(
             get_leftAlignedIndex_style() + get_multiColumnHeader_style(df)
         )
         if gradient:
-            styled_df = styled_df.background_gradient(cmap="OrRd")
+            s = s.background_gradient(cmap="OrRd")
         if caption:
-            styled_df = styled_df.set_caption("Existing (CAPx) and new (CAPn) capacity ")
-        return styled_df
+            s = s.set_caption("Existing (CAPx) and new (CAPn) capacity")
+        return s
+
+    def capa_TES_table(self, gradient: bool = False, caption: bool = False) -> pdStyler:
+        cs = self.cs
+        energy = cs.get_ent("Q_TES_CAPn_L").T.stack()
+        volume = energy.apply(hp.get_TES_volume)
+        df = pd.DataFrame({"Energy (kWh)": energy, "Volume (m³)": volume}).unstack()
+
+        s = df.style.format(precision=0, thousands=",").set_table_styles(
+            get_leftAlignedIndex_style() + get_multiColumnHeader_style(df)
+        )
+        if gradient:
+            s = s.background_gradient(cmap="OrRd")
+        if caption:
+            s = s.set_caption("New TES capacity for different temperature levels.")
+        return s
 
     def _get_capa_for_all_scens(self, which: str) -> pd.DataFrame:
         """'which' can be 'CAPn' or 'CAPx'"""
@@ -1011,7 +1083,7 @@ class CsPlotter(BasePlotter):
         """Returns correlation coefficients between two entities for all scenarios."""
         d = dict()
         cs = self.cs
-        for sc in cs.scens_list:
+        for sc in cs.scens:
             ser1 = sc.get_entity(ent1)
             ser2 = sc.get_entity(ent2)
             d[sc.id] = ser1.groupby(level=0).sum().corr(ser2.groupby(level=0).sum())
