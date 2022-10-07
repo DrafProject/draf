@@ -195,14 +195,14 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             2: optimality,
             3: bound.
         """
-        for sc in self.scens_list:
+        for sc in self.scens:
             for k, v in kwargs.items():
                 sc.mdl.setParam(k, v)
 
         return self
 
     def activate_vars(self) -> None:
-        for sc in self.scens_list:
+        for sc in self.scens:
             sc._activate_vars()
 
     def add_REF_scen(self, name="REF", doc="Reference scenario", **scenario_kwargs) -> Scenario:
@@ -366,7 +366,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         # pickled. We could use dill (https://stackoverflow.com/a/25353243, but dill has
         # other problems (https://github.com/uqfoundation/dill/issues/354). However they can
         # be deepcopied, so they are removed here rather than in __getstate__:
-        for sc in self.scens_list:
+        for sc in self.scens:
             if hasattr(sc, "components"):
                 delattr(sc, "components")
 
@@ -412,7 +412,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         if show_doc:
             s += f"{ent_name}: {self.any_scen.get_doc(ent_name)}\n\n"
 
-        for sc in self.scens_list:
+        for sc in self.scens:
             s += f"{sc.id}: {sc.get_ent_info(ent_name, **kwargs)}"
 
         return s
@@ -445,7 +445,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             nCE.append(sc.res.CE_TOT_)
             delattr(self.scens, str(i))
 
-        for sc in self.scens_list:
+        for sc in self.scens:
             sc.params.k_PTO_C_ = 1e3 / np.array(nC).mean()
             sc.params.k_PTO_CE_ = 1e3 / np.array(nCE).mean()
             logger.info(

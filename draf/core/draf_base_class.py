@@ -41,3 +41,9 @@ class DrafBaseClass:
     def get_all(self) -> Dict:
         """Returns a Dict with all public attributes from this container."""
         return {k: v for k, v in self.__dict__.items() if not (k.startswith("_"))}
+
+    def __iter__(self):
+        return iter(self.get_all().values())
+
+    def __len__(self):
+        return len(self.get_all())
