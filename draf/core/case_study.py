@@ -219,6 +219,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         based_on_last: bool = False,
         components: Optional[List[Component]] = None,
         custom_model: Optional[Callable] = None,
+        update_dims: Optional[Dict] = None,
     ) -> Scenario:
         """Add a Scenario with a name, a describing doc-string and a link to a model.
 
@@ -257,6 +258,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 mdl_language=self.mdl_language,
                 obj_vars=self.obj_vars,
                 custom_model=custom_model,
+                update_dims=update_dims,
             )
         else:
             if components is not None:
@@ -266,6 +268,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             sc.id = id
             sc.name = name
             sc.doc = doc
+            sc.custom_model = custom_model
 
         setattr(self.scens, id, sc)
         return sc
@@ -555,7 +558,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
 
     def get_entity_dict(self, ent_name: str) -> Dict:
         """Returns the data of an entity for all scenarios."""
-        return {sc.id: sc.get_ent(ent_name) for sc in self.scens_list}
+        return {sc.id: sc.get_ent(ent_name) for sc in self.scens}
 
     def get_collector_values(self, collector_name: str):
         return pd.DataFrame(

@@ -61,6 +61,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         consider_invest: bool = False,
         mdl_language="gp",
         obj_vars=("C_TOT_", "CE_TOT_"),
+        update_dims: Optional[Dict] = None,
     ):
         self.id = id
         self.name = name
@@ -103,7 +104,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 ), f"The component at position {i} is invalid."
             if len(components) > 1:
                 components = sorted(components, key=lambda k: k.order)
-            self.add_components(components)
+            self.add_components(components, update_dims)
 
     def __getstate__(self) -> Dict:
         """Remove objects with dependencies for serialization with pickle."""
@@ -111,6 +112,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         state.pop("mdl", None)
         state.pop("plot", None)
         state.pop("prep", None)
+        state.pop("custom_model", None)
         return state
 
     def __setstate__(self, state) -> None:
@@ -334,12 +336,16 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self._update_time_param("t__params_", "Time to build params", self._get_time_diff())
         return self
 
-    def add_components(self, components: List):
+    def add_components(self, components: List, update_dims: Optional[Dict] = None):
         self._set_time_trace()
         logger.info(f"Set params for scenario {self.id}")
 
         for comp in components:
             comp.dim_func(sc=self)
+
+        if update_dims is not None:
+            for k, v in update_dims.items():
+                self.dim(name=k, data=v, update=True)
 
         for comp in components:
             logger.debug(f" ⤷ component {comp.__class__.__name__}")
@@ -388,8 +394,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             model_func_list += [comp.model_func for comp in self.components]
         if custom_model_func is not None:
             model_func_list.insert(custom_model_func_loc, custom_model_func)
-        if self.custom_model is not None:
-            model_func_list.append(self.custom_model)
+        if hasattr(self, "custom_model"):
+            if self.custom_model is not None:
+                model_func_list.append(self.custom_model)
 
         # Execute all model functions
         for model_func in model_func_list:
@@ -908,6 +915,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         doc: str = "",
         unit: str = "",
         infer=False,
+        update=False,
     ) -> None:
         """Add a dimension with coordinates to the scenario. Name must be a single capital letter."""
 
@@ -917,7 +925,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             doc, unit, data = self._infer_dimension_from_name(name)
 
         assert data is not None, f"No data provided for {name}. Infer with `infer=True`"
-        self.dims._meta[name] = dict(doc=doc, unit=unit)
+        if not update:
+            self.dims._meta[name] = dict(doc=doc, unit=unit)
         setattr(self.dims, name, data)
         return data
 
