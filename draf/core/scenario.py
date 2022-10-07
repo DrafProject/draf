@@ -509,6 +509,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             keep_vars: If the variable objects are kept after optimization run.
             postprocess_func: Function which is executed with the results container object as
                 argument.
+            which_solver: Choose solver. Only applicable when using Pyomo.
+            solver_params: Set solver params such as MIPGap, MIPFocus or LogFile.
         """
         for k, v in self.params.get_all().items():
             warn_if_data_contains_nan(data=v, name=k)
@@ -739,6 +741,21 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             dims=dims,
             is_scalar=is_scalar,
         )
+
+    def update_var_bound(self, name: str, lb: Optional[float] = None, ub: Optional[float] = None):
+        if lb is not None:
+            self.vars._meta[name].update(lb=lb)
+        if ub is not None:
+            self.vars._meta[name].update(ub=ub)
+        return self
+
+    def update_upper_bound(self, name: str, upper_bound: float):
+        self.vars._meta[name].update(ub=upper_bound)
+        return self
+
+    def update_lower_bound(self, name: str, lower_bound: float):
+        self.vars._meta[name].update(lb=lower_bound)
+        return self
 
     def _infer_dimension_from_name(self, name: str) -> Tuple[str, str, Union[float, pd.Series]]:
         if name == "T":
