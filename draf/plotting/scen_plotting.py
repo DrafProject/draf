@@ -55,7 +55,7 @@ class ScenPlotter(BasePlotter):
         """Display all entities unstacked to the first dimensions.
 
         Args:
-            what: 'v' for Variables, 'p' for Parameters.
+            what: 'v' for variables, 'p' for parameters.
         """
         dims_dic = self.sc._get_entity_store(what=what)._to_dims_dic(unstack_to_first_dim=True)
         for dim, data in dims_dic.items():
@@ -64,6 +64,30 @@ class ScenPlotter(BasePlotter):
             max_rows = 300 if dim == "" else 24
             with pd.option_context("display.max_rows", max_rows):
                 display(data)
+
+    def collector_table(
+        self, font_size: float = 7.0, divide_all_numbers_by: float = 1.0, gradient: bool = False
+    ):
+        """Return table with collectors and components."""
+        sc = self.sc
+        df = pd.DataFrame(sc.collector_values).div(divide_all_numbers_by).T.sort_index(axis=1)
+        df = df[df.count().sort_values(ascending=False).index]
+        df.index = pd.MultiIndex.from_tuples(
+            [(i, sc.get_unit(i)) for i in df.index], names=["Name", "Unit"]
+        )
+        s = (
+            df.style.format("{:,.0f}", na_rep="")
+            .applymap(lambda x: "background-color: transparent" if pd.isnull(x) else "")
+            .set_table_styles(
+                [
+                    {"selector": "th", "props": f"font-size:{font_size}pt;"},
+                    {"selector": "td", "props": f"font-size:{font_size}pt;"},
+                ]
+            )
+        )
+        if gradient:
+            s = s.background_gradient(cmap="OrRd")
+        return s
 
     def collectors(
         self,
@@ -392,7 +416,7 @@ class ScenPlotter(BasePlotter):
         Attention: the figure might be very big.
 
         Args:
-            what: 'v' for Variables, 'p' for Parameters.
+            what: `p`for parameters and `v` or `r` for variables.
             dated: If index has datetimes.
         """
         if df is None:
@@ -471,7 +495,7 @@ class ScenPlotter(BasePlotter):
             which_dims: Specify which dimensions to plot. e.g. 'TS'
             t_start: Start time step
             t_end: End time step
-            what: 'v' for Variables, 'p' for Parameters.
+            what: `p`for parameters and `v` or `r` for variables.
             **pltargs: e.g.: drawstyle = 'steps-post' or kind = 'bar'
 
         Example:
@@ -791,7 +815,7 @@ class ScenPlotter(BasePlotter):
 
     def ts_balance(
         self,
-        data: Dict[str, List[str]],
+        data: Dict[str, List],
         data_ylabel: str,
         data_conversion_factor: float,
         addon_ts: str,
@@ -800,13 +824,26 @@ class ScenPlotter(BasePlotter):
         colors: Dict[str, str],
         ts_slicer: Union[str, slice] = slice(None),
     ) -> go.Figure:
+        """Plot time series as stacked balance.
+
+        Args:
+            data: A dictionary with the keys `pos` and `neg`. The values can be strings or
+            Tuples with a string and a pandas series.
+            addon_ts: An additional time series e.g. the electricity price.
+            colors: Colors that refer to the strings in `data`.
+            ts_slicer: A time slicer, e.g. `2019-04-30` to pick only one day.
+        """
+
         sc = self.sc
 
         fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.02)
 
         for direction in data:
-            for ent_name in data[direction]:
-                ser = sc.dated(sc.get_entity(ent_name))[ts_slicer]
+            for x in data[direction]:
+                ent_ser = sc.get_entity(x) if isinstance(x, str) else x[1]
+                ent_name = x if isinstance(x, str) else x[0]
+                component = hp.get_component(x) if isinstance(x, str) else x[0]
+                ser = sc.dated(ent_ser)[ts_slicer]
                 values = ser.values if direction == "pos" else -ser.values
                 fig.add_trace(
                     go.Scatter(
@@ -814,7 +851,7 @@ class ScenPlotter(BasePlotter):
                         y=values * data_conversion_factor,
                         legendgroup=direction,
                         line=dict(shape="hv", width=0),
-                        fillcolor=colors[hp.get_component(ent_name)],
+                        fillcolor=colors.get(component, "red"),
                         mode="lines",
                         name=ent_name,
                         showlegend=True,
