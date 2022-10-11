@@ -476,13 +476,7 @@ class WT(Component):
         if sc.consider_invest:
             sc.param("P_WT_max_", data=1e5, doc="Maximum installed capacity", unit="kW_peak")
             sc.param("z_WT_", data=int(self.allow_new), doc="If new capacity is allowed")
-            sc.param(
-                "c_WT_inv_",
-                data=1000,
-                doc="CAPEX",
-                unit="€/kW_el",
-                src="https://ens.dk/sites/ens.dk/files/Analyser/technology_data_catalogue_for_el_and_dh.pdf",
-            )
+            sc.param("c_WT_inv_", data=1682, doc="CAPEX", unit="€/kWh_el", src="https://windeurope.org/newsroom/press-releases/europe-invested-41-bn-euros-in-new-wind-farms-in-2021")
             sc.param(
                 "k_WT_RMI_",
                 data=0.01,
