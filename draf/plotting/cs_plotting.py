@@ -316,6 +316,8 @@ class CsPlotter(BasePlotter):
         c_dict: Dict = None,
         label_verbosity: int = 1,
         do_title: bool = True,
+        start_x_with_0=True,
+        start_y_with_0=True,
     ) -> go.Figure:
         """Plots the Pareto points in an scatter plot.
 
@@ -327,7 +329,12 @@ class CsPlotter(BasePlotter):
                 e.g. {"FLAT": "green", "TOU": "blue", "RTP": "red"}
             label_verbosity: Choose between 1: "id", 2: "name", 3: "doc".
             do_title: If title is shown.
+            start_x_with_0, start_y_with_0: Set zero as lower bound for the x or y axis.
         """
+        # workaround to prevent "Loading [MathJax]/extensions/MathMenu.js":
+        # see https://github.com/plotly/plotly.py/issues/3469#issuecomment-994907721
+        py.io.kaleido.scope.mathjax = None
+
         cs = self.cs
         pareto = cs.pareto.copy()
         scens_list = cs.scens_list
@@ -373,6 +380,12 @@ class CsPlotter(BasePlotter):
                 layout = hp.optimize_plotly_layout_for_reveal_slides(layout)
 
             fig = go.Figure(data=data, layout=layout)
+            if start_c_with_0:
+                ymax = fig.data[0].y.max() * 1.1
+                fig.update_yaxes(range=[0, ymax])
+            if start_ce_with_0:
+                xmax = fig.data[0].x.max() * 1.1
+                fig.update_xaxes(range=[0, xmax])
             return fig
 
         else:
