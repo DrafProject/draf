@@ -37,6 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Fix disappearing collector values and solving times, when solving scenarios in parallel.
 - Fix missing registration of feed-in (FI) in `P_EL_source_T` for component templates `PV` and `CHP`.
+- `dQ_amb_source_` is now "Thermal energy flow to ambient".
 
 ### Changed
 

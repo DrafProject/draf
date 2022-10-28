@@ -572,8 +572,8 @@ class HP(Component):
     def param_func(self, sc: Scenario):
         p = sc.params
 
-        sc.collector("dQ_amb_sink_", doc="Thermal energy flow to ambient", unit="kW_th")
-        sc.collector("dQ_amb_source_", doc="Thermal energy flow from ambient", unit="kW_th")
+        sc.collector("dQ_amb_source_", doc="Thermal energy flow to ambient", unit="kW_th")
+        sc.collector("dQ_amb_sink_", doc="Thermal energy flow from ambient", unit="kW_th")
 
         if self.time_dependent_amb:
             sc.prep.T__amb_T()
@@ -676,8 +676,8 @@ class HP(Component):
         c.P_EL_sink_T["HP"] = lambda t: v.P_HP_TEC.sum(t, "*", "*")
         c.dQ_cooling_sink_TN["HP"] = lambda t, n: v.dQ_HP_Eva_TEC.sum(t, n, "*")
         c.dQ_heating_source_TH["HP"] = lambda t, h: v.dQ_HP_Cond_TEC.sum(t, "*", h)
-        c.dQ_amb_source_["HP"] = v.dQ_HP_Eva_TEC.sum("*", "E_amb", "*") * p.k__dT_
-        c.dQ_amb_sink_["HP"] = v.dQ_HP_Eva_TEC.sum("*", "*", "C_amb") * p.k__dT_
+        c.dQ_amb_sink_["HP"] = v.dQ_HP_Eva_TEC.sum("*", "E_amb", "*") * p.k__dT_
+        c.dQ_amb_source_["HP"] = v.dQ_HP_Cond_TEC.sum("*", "*", "C_amb") * p.k__dT_
 
         if sc.consider_invest:
             m.addConstr((v.dQ_HP_CAPn_ <= p.z_HP_ * 1e6), "HP_limit_capn")
