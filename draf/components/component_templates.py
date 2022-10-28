@@ -472,6 +472,7 @@ class WT(Component):
 
     P_CAPx: float = 0
     allow_new: bool = True
+    pay_network_tariffs: bool = True
 
     def param_func(self, sc: Scenario):
         sc.param("P_WT_CAPx_", data=self.P_CAPx, doc="Existing capacity", unit="kW_peak")
@@ -481,13 +482,24 @@ class WT(Component):
             doc="Wind profile",
             unit="kW_el",
         )
+        sc.param(
+            "y_WT_pnt_",
+            data=int(self.pay_network_tariffs),
+            doc="If `c_EG_addon_` is paid on own wind energy consumption (e.g. for off-site PPA)",
+        )
         sc.var("P_WT_FI_T", doc="Feed-in", unit="kW_el")
         sc.var("P_WT_OC_T", doc="Own consumption", unit="kW_el")
 
         if sc.consider_invest:
             sc.param("P_WT_max_", data=1e5, doc="Maximum installed capacity", unit="kW_peak")
             sc.param("z_WT_", data=int(self.allow_new), doc="If new capacity is allowed")
-            sc.param("c_WT_inv_", data=1682, doc="CAPEX", unit="€/kWh_el", src="https://windeurope.org/newsroom/press-releases/europe-invested-41-bn-euros-in-new-wind-farms-in-2021")
+            sc.param(
+                "c_WT_inv_",
+                data=1682,
+                doc="CAPEX",
+                unit="€/kW_peak",
+                src="https://windeurope.org/newsroom/press-releases/europe-invested-41-bn-euros-in-new-wind-farms-in-2021",
+            )
             sc.param(
                 "k_WT_RMI_",
                 data=0.01,
@@ -512,6 +524,15 @@ class WT(Component):
         )
         c.P_EL_source_T["WT"] = lambda t: v.P_WT_FI_T[t] + v.P_WT_OC_T[t]
         c.P_EG_sell_T["WT"] = lambda t: v.P_WT_FI_T[t]
+
+        if p.y_WT_pnt_:
+            c.C_TOT_op_["WT"] = (
+                p.k__dT_
+                * p.k__PartYearComp_
+                * v.P_WT_OC_T.sum()
+                * p.c_EG_addon_
+                * conv("€", "k€", 1e-3)
+            )
 
         if sc.consider_invest:
             m.addConstr(v.P_WT_CAPn_ <= p.z_WT_ * p.P_WT_max_, "WT_limit_capn")
