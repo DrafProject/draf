@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 100
-experimental-string-processing = true
+preview = true
 skip-magic-trailing-comma = true
 exclude = '''
 /(
