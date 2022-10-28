@@ -441,13 +441,6 @@ class PV(Component):
             src="https://www.dachvermieten.net/wieviel-qm-dachflaeche-fuer-1-kw-kilowatt",
         )
         sc.param("A_PV_avail_", data=self.A_avail_, doc="Area available for new PV", unit="m²")
-        sc.param(
-            "c_PV_OC_",
-            data=0.4 * 0.0688,
-            doc="Renewable Energy Law (EEG) levy on own consumption",
-            unit="€/kWh_el",
-            src="@BMWI_2020",
-        )
 
         if sc.consider_invest:
             sc.param("z_PV_", data=int(self.allow_new), doc="If new capacity is allowed")
@@ -464,9 +457,6 @@ class PV(Component):
         )
         c.P_EL_source_T["PV"] = lambda t: v.P_PV_FI_T[t] + v.P_PV_OC_T[t]
         c.P_EG_sell_T["PV"] = lambda t: v.P_PV_FI_T[t]
-        c.C_TOT_op_["PV_OC"] = (
-            p.k__dT_ * p.k__PartYearComp_ * p.c_PV_OC_ * v.P_PV_OC_T.sum() * conv("€", "k€", 1e-3)
-        )
 
         if sc.consider_invest:
             m.addConstr(v.P_PV_CAPn_ <= p.z_PV_ * p.A_PV_avail_ / p.A_PV_PerPeak_, "PV_limit_capn")
@@ -731,13 +721,6 @@ class CHP(Component):
         )
         sc.param(from_db=db.funcs.eta_CHP_el_(fuel="ng"))
         sc.param(from_db=db.funcs.eta_CHP_th_(fuel="ng"))
-        sc.param(
-            "c_CHP_OC_",
-            data=0.4 * 0.0688,
-            doc="Renewable Energy Law (EEG) levy on own consumption",
-            unit="€/kWh_el",
-            src="@BMWI_2020",
-        )
         sc.var("dQ_CHP_T", doc="Producing heat flow", unit="kW_th")
         sc.var("F_CHP_TF", doc="Consumed fuel flow", unit="kW")
         sc.var("P_CHP_FI_T", doc="Feed-in", unit="kW_el")
@@ -790,9 +773,6 @@ class CHP(Component):
         )
         c.P_EG_sell_T["CHP"] = lambda t: v.P_CHP_FI_T[t]
         c.F_fuel_F["CHP"] = lambda f: v.F_CHP_TF.sum("*", f) * p.k__dT_
-        c.C_TOT_op_["CHP_OC"] = (
-            p.k__PartYearComp_ * p.k__dT_ * p.c_CHP_OC_ * conv("€", "k€", 1e-3) * v.P_CHP_OC_T.sum()
-        )
 
         if sc.consider_invest:
             m.addConstr((v.P_CHP_CAPn_ <= p.z_CHP_ * 1e6), "CHP_limit_new_capa")

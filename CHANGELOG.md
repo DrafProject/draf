@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Removed
 
 - Remove `sc.has_thermal_entities` property.
+- Remove German EEG levy on own consumption for PV and CHP.
 
 ### Fixed
 
