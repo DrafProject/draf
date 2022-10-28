@@ -30,6 +30,8 @@ class Main(Component):
         sc.collector("dQ_cooling_sink_TN", doc="Cooling energy flow sinks", unit="kW_th")
         sc.collector("dQ_heating_source_TH", doc="Heating energy flow sources", unit="kW_th")
         sc.collector("dQ_heating_sink_TH", doc="Heating energy flow sinks", unit="kW_th")
+        sc.collector("dH_hydrogen_source_T", doc="Hydrogen energy flow sources", unit="kW")
+        sc.collector("dH_hydrogen_sink_T", doc="Hydrogen energy flow sinks", unit="kW")
         sc.collector("C_TOT_", doc="Total costs", unit="k€/a")
         sc.collector("C_TOT_op_", doc="Total operating costs", unit="k€/a")
         sc.collector("CE_TOT_", doc="Total carbon emissions", unit="kgCO2eq/a")
@@ -95,6 +97,15 @@ class Main(Component):
             ),
             "electricity_balance",
         )
+        if c.dH_hydrogen_source_T:
+            m.addConstrs(
+                (
+                    quicksum(x(t) for x in c.dH_hydrogen_source_T.values())
+                    == quicksum(x(t) for x in c.dH_hydrogen_sink_T.values())
+                    for t in d.T
+                ),
+                "hydrogen_balance",
+            )
 
         if hasattr(d, "N"):
             m.addConstrs(
@@ -1045,6 +1056,147 @@ class BEV(Component):
 
 
 @dataclass
+class Elc(Component):
+    """Electrolyzer"""
+
+    dQ_CAPx: float = 0
+    allow_new: bool = True
+
+    def param_func(self, sc: Scenario):
+        sc.param("P_Elc_CAPx_", data=self.dQ_CAPx, doc="Existing capacity", unit="kW_el")
+        sc.param(from_db=db.eta_Elc_)
+        sc.var("P_Elc_T", doc="Consuming power", unit="kW_el")
+
+        if sc.consider_invest:
+            sc.param(from_db=db.N_Elc_)
+            sc.param("z_Elc_", data=int(self.allow_new), doc="If new capacity is allowed")
+            sc.param(from_db=db.c_Elc_inv_)
+            sc.param(from_db=db.k_Elc_RMI_)
+            sc.var("P_Elc_CAPn_", doc="New capacity", unit="kW_el")
+
+    def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
+        cap = p.P_Elc_CAPx_ + v.P_Elc_CAPn_ if sc.consider_invest else p.P_Elc_CAPx_
+        m.addConstrs((v.P_Elc_T[t] <= cap for t in d.T), "Elc_limit")
+        c.P_EL_sink_T["Elc"] = lambda t: v.P_Elc_T[t]
+        c.dH_hydrogen_source_T["Elc"] = lambda t: p.eta_Elc_ * v.P_Elc_T[t]
+
+        if sc.consider_invest:
+            m.addConstr((v.P_Elc_CAPn_ <= p.z_Elc_ * 1e6), "Elc_limit_new_capa")
+            C_inv_ = v.P_Elc_CAPn_ * p.c_Elc_inv_ * conv("€", "k€", 1e-3)
+            c.C_TOT_inv_["Elc"] = C_inv_
+            c.C_TOT_invAnn_["Elc"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_Elc_)
+            c.C_TOT_RMI_["Elc"] = C_inv_ * p.k_Elc_RMI_
+
+
+@dataclass
+class H2S(Component):
+    """Hydrogen Storage"""
+
+    H_CAPx: float = 0
+    allow_new: bool = True
+
+    def param_func(self, sc: Scenario):
+        sc.param("H_H2S_CAPx_", data=self.H_CAPx, doc="Existing capacity", unit="kWh_el")
+        sc.param("k_H2S_ini_", data=0.9, doc="Initial and final energy filling share")
+        sc.param(from_db=db.eta_H2S_ch_)
+        sc.param(from_db=db.eta_H2S_dis_)
+        sc.param("k_H2S_inPerCap_", data=0.7, doc="Maximum charging power per capacity")
+        sc.param("k_H2S_outPerCap_", data=0.7, doc="Maximum charging power per capacity")
+        sc.var("H_H2S_T", doc="Hydrogen energy stored", unit="kWh_el")
+        sc.var("dH_H2S_in_T", doc="Charging power", unit="kW_el")
+        sc.var("dH_H2S_out_T", doc="Discharging power", unit="kW_el")
+
+        if sc.consider_invest:
+            sc.param(from_db=db.k_H2S_RMI_)
+            sc.param(from_db=db.N_H2S_)
+            sc.param("z_H2S_", data=int(self.allow_new), doc="If new capacity is allowed")
+            sc.param(from_db=db.c_H2S_inv_)
+            sc.var("H_H2S_CAPn_", doc="New capacity", unit="kWh_el")
+
+    def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
+        cap = p.H_H2S_CAPx_ + v.H_H2S_CAPn_ if sc.consider_invest else p.H_H2S_CAPx_
+        m.addConstrs(
+            (v.dH_H2S_in_T[t] <= p.k_H2S_inPerCap_ * cap for t in d.T), "H2S_limit_charging_power"
+        )
+        m.addConstrs(
+            (v.dH_H2S_out_T[t] <= p.k_H2S_outPerCap_ * cap for t in d.T),
+            "H2S_limit_discharging_power",
+        )
+        m.addConstrs((v.H_H2S_T[t] <= cap for t in d.T), "H2S_limit_cap")
+        m.addConstr((v.H_H2S_T[d.T[-1]] == p.k_H2S_ini_ * cap), "H2S_last_timestep")
+        m.addConstrs(
+            (
+                v.H_H2S_T[t]
+                == (p.k_H2S_ini_ * cap if t == d.T[0] else v.H_H2S_T[t - 1])
+                + (v.dH_H2S_in_T[t] * p.eta_H2S_ch_ - v.dH_H2S_out_T[t] / p.eta_H2S_dis_) * p.k__dT_
+                for t in d.T
+            ),
+            "H2S_balance",
+        )
+        c.dH_hydrogen_source_T["H2S"] = lambda t: v.dH_H2S_out_T[t]
+        c.dH_hydrogen_sink_T["H2S"] = lambda t: v.dH_H2S_in_T[t]
+        if sc.consider_invest:
+            m.addConstr((v.H_H2S_CAPn_ <= p.z_H2S_ * 1e6), "H2S_limit_new_capa")
+            C_inv_ = v.H_H2S_CAPn_ * p.c_H2S_inv_ * conv("€", "k€", 1e-3)
+            c.C_TOT_inv_["H2S"] = C_inv_
+            c.C_TOT_invAnn_["H2S"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_H2S_)
+            c.C_TOT_RMI_["H2S"] = C_inv_ * p.k_H2S_RMI_
+
+
+@dataclass
+class FC(Component):
+    """Fuel Cell
+
+    Hydrogen balance:
+    FC   <-- |
+    Elc  --> |
+    H2S  <-> |
+    """
+
+    P_CAPx: float = 0
+    allow_new: bool = True
+    H_level_target: str = "70/40"
+
+    def param_func(self, sc: Scenario):
+        sc.param("P_FC_CAPx_", data=self.P_CAPx, doc="Existing capacity", unit="kW_el")
+        sc.param(from_db=db.eta_FC_el_)
+        sc.param(from_db=db.eta_FC_th_)
+        sc.var("dQ_FC_T", doc="Producing heat flow", unit="kW_th")
+        sc.var("dH_FC_T", doc="Consumed hydrogen flow", unit="kW")
+        sc.var("P_FC_FI_T", doc="Feed-in", unit="kW_el")
+        sc.var("P_FC_OC_T", doc="Own consumption", unit="kW_el")
+        sc.var("P_FC_T", doc="Producing electrical power", unit="kW_el")
+
+        if sc.consider_invest:
+            sc.param("z_FC_", data=int(self.allow_new), doc="If new capacity is allowed")
+            sc.param(from_db=db.c_FC_inv_)
+            sc.param(from_db=db.k_FC_RMI_)
+            sc.param(from_db=db.N_FC_)
+            sc.var("P_FC_CAPn_", doc="New capacity", unit="kW_el")
+
+    def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
+        m.addConstrs((v.P_FC_T[t] == p.eta_FC_el_ * v.dH_FC_T[t] for t in d.T), "FC_elec_balance")
+        m.addConstrs((v.dQ_FC_T[t] == p.eta_FC_th_ * v.dH_FC_T[t] for t in d.T), "FC_heat_balance")
+        cap = p.P_FC_CAPx_ + v.P_FC_CAPn_ if sc.consider_invest else p.P_FC_CAPx_
+        m.addConstrs((v.P_FC_T[t] <= cap for t in d.T), "FC_limit_elecPower")
+        m.addConstrs(
+            (v.P_FC_T[t] == v.P_FC_FI_T[t] + v.P_FC_OC_T[t] for t in d.T),
+            "FC_feedIn_vs_ownConsumption",
+        )
+        c.P_EL_source_T["FC"] = lambda t: v.P_FC_FI_T[t] + v.P_FC_OC_T[t]
+        c.dQ_heating_source_TH["FC"] = lambda t, h: v.dQ_FC_T[t] if h == self.H_level_target else 0
+        c.dH_hydrogen_sink_T["FC"] = lambda t: v.dH_FC_T[t] * p.k__dT_
+        c.P_EG_sell_T["FC"] = lambda t: v.P_FC_FI_T[t]
+
+        if sc.consider_invest:
+            m.addConstr((v.P_FC_CAPn_ <= p.z_FC_ * 1e6), "FC_limit_new_capa")
+            C_inv_ = v.P_FC_CAPn_ * p.c_FC_inv_ * conv("€", "k€", 1e-3)
+            c.C_TOT_inv_["FC"] = C_inv_
+            c.C_TOT_invAnn_["FC"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_FC_)
+            c.C_TOT_RMI_["FC"] = C_inv_ * p.k_FC_RMI_
+
+
+@dataclass
 class pDem(Component):
     """Product demand and product balance
 
@@ -1228,6 +1380,9 @@ order_restrictions = [
     ("eDem", {}),
     ("EG", {"PV", "CHP", "WT"}),  # EG collects P_EG_sell_T
     ("Fuel", {"HOB", "CHP"}),  # Fuel collects F_fuel_F
+    ("FC", {}),
+    ("H2S", {}),
+    ("Elc", {}),
     ("BES", {}),
     ("BEV", {}),
     ("PV", {}),

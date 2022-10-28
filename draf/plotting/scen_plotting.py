@@ -29,6 +29,7 @@ COLORS = {
     "Q": "hsla(10, 50%, 70%, 0.7)",  #  high temperature thermal energy
     "C": "hsla(209, 57%, 84%, 0.7)",  # low temperature thermal energy
     "M": "hsla(24, 100%, 80%, 0.7)",  # medium temperature thermal energy
+    "H": "hsla(250, 83%, 56%, 0.7)",  # hydrogen
 }
 
 
@@ -89,6 +90,17 @@ class ScenPlotter(BasePlotter):
             s = s.background_gradient(cmap="OrRd")
         return s
 
+    def correlation_table(self, gradient: bool = False, caption: bool = False):
+        df = self.sc.get_flat_T_df().corr().dropna(axis=0, how="all").dropna(axis=1, how="all")
+        df.columns = [str(i) for i in range(len(df.columns))]
+        df.index = [f"{c}_{i}" for c, i in zip(df.columns, df.index)]
+        s = df.style.format("{:.2f}", na_rep="").set_sticky(axis=0).set_sticky(axis=1)
+        if gradient:
+            s = s.background_gradient(cmap="OrRd")
+        if caption:
+            s = s.set_caption("Table of Pearson correlation factors for all time series.")
+        return s
+
     def collectors(
         self,
         filter_etype: Optional[str] = None,
@@ -112,12 +124,13 @@ class ScenPlotter(BasePlotter):
             .reset_index()
             .rename(columns={"level_0": "collector", "level_1": "comp", 0: "value"})
         )
-        if filter_etype is not None:
+        if filter_etype is not None and filter_etype != "":
             df = df[df["collector"].apply(lambda s: s.split("_")[0] == filter_etype)]
 
         df["doc"] = df["collector"].apply(sc.get_doc)
+        # df["etype"] = df["collector"].apply(hp.get_etype)
         df["unit"] = df["collector"].replace(units)
-        df["desc"] = df["doc"] + " (" + df["unit"] + ")"
+        df["desc"] = "<b>" + df["collector"] + "</b> - " + df["doc"] + " (" + df["unit"] + ")"
 
         if use_plt:
             self._plt_collector_plot(df)
@@ -382,7 +395,7 @@ class ScenPlotter(BasePlotter):
         if not show_zero:
             df = df.loc[:, (df != 0).any(axis=0)]
 
-        df = df.sort_index(1)
+        df = df.sort_index(axis=1)
         y_scaler = 0.24 * len(df.columns)
         fig, ax = plt.subplots(1, figsize=(12, 0.4 + y_scaler))
         sns.violinplot(

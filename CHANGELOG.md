@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add link to draf demo paper and its case studies.
 - Add `maxsell` and `maxbuy` to `EG` component template.
 - Add wind turbine (`WT`) component.
+- Add hydrogen components (`FC`, `Elc`, `H2S`).
 - Add `H_level_target` to thermal generation components (`HOB`, `CHP`, `P2H`, `HP`).
 - Add `cs.plot.collector_table()`.
 - Add caption to `cs.plot.tables()`.
