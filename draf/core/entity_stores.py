@@ -302,14 +302,20 @@ class Results(EntityStore):
         try:
             source_ser = self.get(source)
 
-            if target_neg is not None:
-                setattr(self, target_neg, -source_ser.where(cond=source_ser < 0, other=0))
+            if target_neg is None:
+                if source_ser.min() < -0.1:
+                    logger.warning(
+                        f"Significant negative values (between {source_ser.min():n} and 0) of the"
+                        f" entity '{source}' were clipped"
+                    )
 
-                self._copy_meta(
-                    source_ent=source,
-                    target_ent=target_neg,
-                    which_metas=["etype", "comp", "unit", "dims"],
-                )
+            else:
+                ser = -source_ser.where(cond=source_ser < 0, other=0)
+                ser.name = target_neg
+                setattr(self, target_neg, ser)
+
+                which_metas = ["etype", "comp", "unit", "dims"]
+                self._copy_meta(source_ent=source, target_ent=target_neg, which_metas=which_metas)
 
                 if isinstance(doc_target, str):
                     self._set_meta(target_neg, meta_type="doc", value=doc_target)
