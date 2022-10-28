@@ -8,16 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Add `cs.plot()` which interactively provides most important plots and tables.
+- Add `cs.plot.collector_table()` and `cs.plot.collector_balance()`.
+- Add `cs.plot.heatmap_all_T()` interactive heatmap plotting that consideres multi-dimensional time series.
+- Add caption to `cs.plot.tables()`.
+- Add option to provide series in `sc.plot.ts_balance()`.
+- Add `only_scalars` and `number_format` arguments to `cs.plot.table()`.
+- Add `cs.plot.capa_TES_table()`.
 - Add link to draf demo paper and its case studies.
 - Add `maxsell` and `maxbuy` to `EG` component template.
 - Add wind turbine (`WT`) component.
 - Add hydrogen components (`FC`, `Elc`, `H2S`).
 - Add `H_level_target` to thermal generation components (`HOB`, `CHP`, `P2H`, `HP`).
-- Add `cs.plot.collector_table()`.
-- Add caption to `cs.plot.tables()`.
-- Add option to provide series in `sc.plot.ts_balance()`.
-- Add `only_scalars` and `number_format` arguments to `cs.plot.table()`.
-- Add `cs.plot.capa_TES_table()`.
 - Add `draf.helper.get_TES_volume()`.
 - Add functionality to update dimensions with dictionary through `cs.add_scen()`.
 - Add `sc.update_var_bound()`, `sc.update_upper_bound()`, `sc.update_lower_bound()`.

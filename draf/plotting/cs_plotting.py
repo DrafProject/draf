@@ -44,26 +44,49 @@ class CsPlotter(BasePlotter):
         """For serialization with pickle."""
         return None
 
+    def __call__(self):
+        funcs = {"Tables": self.tables, "Plots": self.plots}
+
+        @interact(what=widgets.ToggleButtons(options=funcs.keys(), description=" "))
+        def f(what):
+            return funcs[what]()
+
+    def plots(self):
+        funcs = {
+            "Pareto": self.pareto,
+            "Sankey": self.sankey,
+            "Heatmap": self.heatmap_all_T,
+            "Collectors": self.collectors,
+            "Violin_T": self.violin_T,
+            "Times": self.times,
+            "Annual el.": self.collector_balance,
+        }
+
+        @interact(what=widgets.ToggleButtons(options=funcs.keys(), description=" "))
+        def f(what):
+            return funcs[what]()
+
     def tables(self):
         cs = self.cs
         funcs = {
+            "Yields ": ("yields_table", " fa-eur fa-lg"),
+            "Capacities ": ("capa_table", " fa-cubes fa-lg"),
+            "Investments ": ("invest_table", "money fa-lg"),
+            "TES capa ": ("capa_TES_table", " fa-cubes fa-lg"),
             "Parameters ": ("p_table", "table fa-lg"),
             "Variables ": ("v_table", "table fa-lg"),
-            "Investments ": ("invest_table", "money fa-lg"),
-            "Capacities ": ("capa_table", " fa-cubes fa-lg"),
-            "TES capa ": ("capa_TES_table", " fa-cubes fa-lg"),
-            "Yields ": ("yields_table", " fa-eur fa-lg"),
             "eGrid ": ("eGrid_table", " fa-plug fa-lg"),
             "eFlex ": ("eFlex_table", " fa-balance-scale"),
             "Pareto ": ("pareto_table", " fa-arrows-h fa-lg"),
             "BES ": ("bes_table", "fa-solid fa-battery-half fa-lg"),
             "Calc. time ": ("time_table", " fa-clock-o fa-lg"),
-            "Collectors ": ("collector_table", "table fa-lg"),
+            "Collectors ": ("collector_table", " fa fa-bus"),
+            "Correlations ": ("correlation_table", " fa fa-connectdevelop"),
         }
 
         ui = widgets.ToggleButtons(
             options={k: v[0] for k, v in funcs.items()},
-            description="Table:",
+            description=" ",
             icons=[v[1] for v in funcs.values()],
             # for icons see https://fontawesome.com/v4.7/icons/
         )
@@ -177,13 +200,13 @@ class CsPlotter(BasePlotter):
         if caption:
             s = s.set_caption(
                 "<u>Legend</u>:"
-                ", <b>C_inv</b>: Investment Costs"
-                ", <b>C_invAnn</b>: Annualized Investment Costs"
-                ", <b>C_op</b>: Operating Costs"
-                ", <b>EAC</b>: Emissions Avoidance Costs"
-                ", <b>PP</b>: Payback Period"
-                ", <b>DPP</b>: Discounted Payback Period"
-                f", <b>IRR</b>: Internal Rate of Return for {nyears_for_irr} years"
+                "<b>C_inv</b>: Investment Costs, "
+                "<b>C_invAnn</b>: Annualized Investment Costs, "
+                "<b>C_op</b>: Operating Costs, "
+                "<b>EAC</b>: Emissions Avoidance Costs, "
+                "<b>PP</b>: Payback Period, "
+                "<b>DPP</b>: Discounted Payback Period, "
+                f"<b>IRR</b>: Internal Rate of Return for {nyears_for_irr} years"
                 "</br>"
                 f"<u>Note</u>: <b>{cs.REF_scen.params.k__r_:.1%}</b> discount rate assumed."
             )
@@ -239,7 +262,15 @@ class CsPlotter(BasePlotter):
                 )
             )
 
-        return self.base_table(data, gradient, caption, caption_text="eGrid table")
+        caption_text = (
+            "<u>Legend</u>: "
+            "<b>P_max</b>: Peak load, "
+            "<b>P_max_reduction</b>: Peak load reduction compared to REF, "
+            "<b>t_use</b>: Full load hours, "
+            "<b>W_buy / W_sell</b>: Bought / sold electricity."
+        )
+
+        return self.base_table(data, gradient, caption, caption_text=caption_text)
 
     def eFlex_table(self, gradient: bool = False, caption: bool = True) -> pdStyler:
         data = [
@@ -276,13 +307,14 @@ class CsPlotter(BasePlotter):
             ),
         ]
         caption_text = (
-            "<b>Legend</b>: <code>avg P_devAbs</code>: mean absolute deviation of the scenarios'"
-            " purchased power and the one of the reference case study. <code>corr"
-            " (P_dev,c_RTP)</code>: Pearson correlation coefficient between the deviation of the"
-            " scenarios' purchased power and the one of the reference case study, and the real time"
-            " prices. <code>abs_flex_score</code> / <code>rel_flex_score</code>: Column 1/2"
-            " multiplied with column 3."
+            "<u>Legend</u>: <b>avg P_devAbs</b>: mean absolute deviation of the scenarios'"
+            " purchased power and the one of the reference case study, <b>corr (P_dev,c_RTP)</b>:"
+            " Pearson correlation coefficient between the deviation of the scenarios' purchased"
+            " power and the one of the reference case study, and the real time"
+            " prices.<b>abs_flex_score</b> (<b>rel_flex_score</b>): Column 1 (2) multiplied with"
+            " negated values of column 3."
         )
+
         return self.base_table(data, gradient, caption, caption_text)
 
     def base_table(
@@ -370,20 +402,27 @@ class CsPlotter(BasePlotter):
             data = [trace]
             layout = go.Layout(
                 hovermode="closest",
-                title=get_pareto_title(pareto, units).replace("\n", "<br>") if do_title else "",
+                title=dict(
+                    text=get_pareto_title(pareto, units)
+                    .replace("\n", "<br>")
+                    .replace("CO2eq", "CO<sub>2</sub>eq")
+                    if do_title
+                    else "",
+                    font_size=15,
+                ),
                 xaxis=dict(title=xlabel),
                 yaxis=dict(title=ylabel),
-                margin=dict(l=5, r=5, b=5),
+                margin=dict(l=5, r=5, b=5, t=35),
             )
 
             if self.optimize_layout_for_reveal_slides:
                 layout = hp.optimize_plotly_layout_for_reveal_slides(layout)
 
             fig = go.Figure(data=data, layout=layout)
-            if start_c_with_0:
+            if start_y_with_0:
                 ymax = fig.data[0].y.max() * 1.1
                 fig.update_yaxes(range=[0, ymax])
-            if start_ce_with_0:
+            if start_x_with_0:
                 xmax = fig.data[0].x.max() * 1.1
                 fig.update_xaxes(range=[0, xmax])
             return fig
@@ -550,7 +589,7 @@ class CsPlotter(BasePlotter):
         @interact(scen_id=cs.scens_ids, ent=sc.get_var_par_dic(what)[dim].keys())
         def update(scen_id, ent):
             with fig.batch_update():
-                sc = getattr(cs.scens, scen_id)
+                sc = cs.scens.get(scen_id)
                 ser = sc.get_var_par_dic(what)[dim][ent]
                 title_addon_if_select = ""
 
@@ -572,20 +611,90 @@ class CsPlotter(BasePlotter):
                 heatmap.data[0].z = data
                 heatmap.layout.yaxis.tickformat = "%H:%M"
                 if show_info:
-                    unit = "-" if sc.get_unit(ent) == "" else sc.get_unit(ent)
-                    heatmap.layout.title = (
-                        f"<span style='font-size:medium;'>{grey('Scenario:')} <b>{scen_id}</b> ◦"
-                        f" {sc.doc}<br>{grey(' ⤷ Entity:')} <b>{ent}</b>{title_addon_if_select} ◦"
-                        f" {sc.get_doc(ent)}<br>{grey('    ⤷ Stats:')} ∑ <b>{data.sum():,.2f}</b> ◦"
-                        f" Ø <b>{data.mean():,.2f}</b> ◦ min <b>{data.min():,.2f}</b> ◦ max"
-                        f" <b>{data.max():,.2f}</b>  (<b>{unit}</b>)</span>"
+                    heatmap.layout.title = self._get_heatmap_info_title(
+                        sc, ent, title_addon_if_select, data
                     )
 
         return fig
 
+    def _get_heatmap_info_title(self, sc, ent, title_addon_if_select, data):
+        base_ent = ent.split("[")[0]
+        unit = "-" if sc.get_unit(base_ent) == "" else sc.get_unit(base_ent)
+        scen_id = sc.id
+        return (
+            f"<span style='font-size:medium;'>{grey('Scenario:')} <b>{scen_id}</b> ◦"
+            f" {sc.doc}<br>{grey(' ⤷ Entity:')} <b>{ent}</b>{title_addon_if_select} ◦"
+            f" {sc.get_doc(base_ent)}<br>{grey('    ⤷ Stats:')} ∑ <b>{data.sum():,.2f}</b> ◦"
+            f" Ø <b>{data.mean():,.2f}</b> ◦ min <b>{data.min():,.2f}</b> ◦ max"
+            f" <b>{data.max():,.2f}</b>  (<b>{unit}</b>)</span>"
+        )
+
+    def heatmap_all_T(self, cmap: str = "OrRd", show_info: bool = True) -> go.Figure:
+        """Returns an interactive heatmap widget that enables browsing through time series.
+
+        Args:
+            cmap: Color scale.
+            show_info: If additional information such as Scenario, Entity, Stats are displayed.
+        """
+        cs = self.cs
+        sc = cs.any_scen
+        layout = go.Layout(
+            title=None,
+            xaxis=dict(title=f"Days of year {cs.year}"),
+            yaxis=dict(title="Time of day"),
+            margin=dict(b=5, l=5, r=5),
+        )
+        fig = go.FigureWidget(layout=layout)
+        heatmap = fig.add_heatmap(colorscale=cmap)
+        data_dic = {sc.id: sc.get_flat_T_df() for sc in cs.scens}
+        entity_list = sorted(data_dic[cs.any_scen.id].columns)
+        ts = widgets.Dropdown(options=entity_list, description="time series")
+
+        @interact(scenario=data_dic.keys(), ts=ts)
+        def update(scenario, ts):
+            with fig.batch_update():
+                ser = data_dic[scenario][ts]
+                data = ser.values.reshape((cs.steps_per_day, -1), order="F")[:, :]
+                idx = cs.dated(ser).index
+                heatmap.data[0].x = pd.date_range(start=idx[0], end=idx[-1], freq="D")
+                heatmap.data[0].y = pd.date_range(
+                    start="0:00", freq=cs.freq, periods=cs.steps_per_day
+                )
+                heatmap.data[0].z = data
+                heatmap.layout.yaxis.tickformat = "%H:%M"
+                if show_info:
+                    heatmap.layout.title = self._get_heatmap_info_title(
+                        sc=sc, ent=ts, title_addon_if_select="", data=data
+                    )
+
+        return fig
+
+    def collectors(self) -> go.Figure:
+        cs = self.cs
+
+        @interact(scenario=cs.scens_ids, filter_etype="P", auto_convert_units=False)
+        def f(scenario, filter_etype, auto_convert_units):
+            sc = cs.scens.get(scenario)
+            display(
+                sc.plot.collectors(filter_etype=filter_etype, auto_convert_units=auto_convert_units)
+            )
+
+    def heatmap(self):
+        cs = self.cs
+
+        @interact(
+            what=widgets.ToggleButtons(options=["Parameters", "Variables"], description="show")
+        )
+        def f(what):
+            plot = cs.plot.heatmap_interact(what={"Parameters": "p", "Variables": "r"}[what])
+            display(plot)
+
     def sankey(self) -> go.Figure:
-        @interact(sc=self.cs.scens_dic)
-        def f(sc):
+        cs = self.cs
+
+        @interact(scenario=cs.scens_ids)
+        def f(scenario):
+            sc = cs.scens.get(scenario)
             display(sc.plot.sankey())
 
     def sankey_interact(self, string_builder_func: Optional[Callable] = None) -> go.Figure:
@@ -644,6 +753,54 @@ class CsPlotter(BasePlotter):
                 sankey["data"][0].valuesuffix = "MWh"
 
         return fig
+
+    def collector_balance(
+        self,
+        sink="P_EL_sink_T",
+        source="P_EL_source_T",
+        ylabel="Electricity consumption (GWh/a)",
+        factor=1e-6,
+    ):
+        cs = self.cs
+
+        sinks = cs.get_collector_values(sink)
+        if source is not None:
+            sources = cs.get_collector_values(source)
+            df = pd.concat([sinks, -sources])
+        else:
+            df = sinks
+        df = df * factor
+        fig, ax = plt.subplots(figsize=(6, 2.5))
+        ax.axvline(x=0, color="k", linestyle="-", alpha=0.5, lw=0.5)
+        df.T.plot.barh(stacked=True, ax=ax, cmap="tab20_r", width=0.7)
+        ax.set_xlabel(ylabel)
+        # plt.yticks(rotation=20, ha="right")
+
+        # sort legend
+        handles, labels = ax.get_legend_handles_labels()
+        if source is not None:
+            nsinks = len(sinks.index)
+            nsources = len(sources.index)
+            order = list(range(nsinks))[::-1] + list(range(nsinks, nsources + nsinks))
+            order = order[::-1]
+            handles = [handles[idx] for idx in order]
+            labels = [labels[idx] for idx in order]
+        else:
+            handles, labels = handles[::-1], labels[::-1]
+        ax.invert_yaxis()
+        ax.legend(
+            handles,
+            labels,
+            loc="lower center",
+            bbox_to_anchor=(0.5, 0.95),
+            frameon=False,
+            ncol=8,
+            columnspacing=0.8,
+            handletextpad=0.2,
+            handlelength=0.8,
+        )
+
+        sns.despine()
 
     def big_plot(self, string_builder_func, sc: "Scenario" = None, sort: bool = True) -> go.Figure:
         """Experimental: Builds a big plot containing other subplots.
@@ -846,6 +1003,7 @@ class CsPlotter(BasePlotter):
             .apply(highlight_diff2, subset=df.columns[1:])
             .set_properties(subset=left_aligner, **{"text-align": "left"})
             .set_table_styles([dict(selector="th", props=[("text-align", "left")])])
+            .set_sticky(axis=1)
         )
         if caption:
             s = s.set_caption(
@@ -874,12 +1032,19 @@ class CsPlotter(BasePlotter):
             return ["font-weight: bold" if v else "" for v in other_than_REF]
 
         df.index.names = ["Collector", "Component"]
-        s = df.style.format("{:n}").apply(highlight_diff1).apply(highlight_diff2)
+        s = df.style.format("{:.3n}").apply(highlight_diff1).apply(highlight_diff2)
         if gradient:
             s = s.background_gradient(cmap="OrRd", axis=1)
         if caption:
             s = s.set_caption("Collector table")
+        s = s.set_sticky(axis=1)
         return s
+
+    def correlation_table(self, gradient, caption):
+        @interact(scenario=self.cs.scens_ids)
+        def f(scenario):
+            sc = self.cs.scens.get(scenario)
+            return sc.plot.correlation_table(gradient=gradient, caption=caption)
 
     @hp.copy_doc(ScenPlotter.describe, start="Args:")
     def describe(self, **kwargs) -> None:
@@ -888,12 +1053,10 @@ class CsPlotter(BasePlotter):
             sc.plot.describe(**kwargs)
 
     def describe_interact(self, **kwargs):
-        cs = self.cs
-
-        def f(sc_name):
-            cs.scens_dic[sc_name].plot.describe(**kwargs)
-
-        interact(f, sc_name=cs.scens_ids)
+        @interact(scenario=self.cs.scens_ids)
+        def f(scenario):
+            sc = self.cs.scens.get(scenario)
+            sc.plot.describe(**kwargs)
 
     def times(self, yscale: str = "linear", stacked: bool = True) -> None:
         """Barplot of the calculation times (Params, Vars, Model, Solve).
@@ -1113,6 +1276,14 @@ class CsPlotter(BasePlotter):
         ax.set_xlabel("Correlation coefficient")
         sns.despine()
 
+    def violin_T(self):
+        cs = self.cs
+
+        @interact(scenario=cs.scens_ids, show_zero=True)
+        def f(scenario, show_zero):
+            sc = cs.scens.get(scenario)
+            return sc.plot.violin_T(show_zero=show_zero)
+
 
 def _get_capa_heatmap(df) -> go.Figure:
     data = df.where(df > 0)
@@ -1197,6 +1368,6 @@ def get_pareto_title(pareto: pd.DataFrame, units) -> str:
     c_saving = pareto.iloc[0, 0] - pareto.iloc[:, 0].min()
     c_saving_rel = 100 * (pareto.iloc[0, 0] - pareto.iloc[:, 0].min()) / pareto.iloc[0, 0]
     return (
-        f"Max. cost savings: {c_saving:,.2f} {units['C_TOT_']} ({c_saving_rel:.2f}%)\n"
-        f"Max. carbon savings: {ce_saving:.2f} {units['CE_TOT_']} ({ce_saving_rel:.2f}%)"
+        f"Savings: {c_saving:,.2f} {units['C_TOT_']} ({c_saving_rel:.0f}%), "
+        f"{ce_saving:.2f} {units['CE_TOT_']} ({ce_saving_rel:.0f}%)"
     )

@@ -1062,6 +1062,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         return l
 
     def _get_flat_df_of_one_entity(self, ent_name: str, data: pd.Series) -> pd.DataFrame:
+        data.name = ent_name
         dim = hp.get_dims(ent_name)
         if len(dim) == 1:
             df = data.to_frame()
@@ -1086,7 +1087,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             return c
 
         l = [self._get_flat_df_of_one_entity(n, ser) for n, ser in self.yield_all_ents() if cond(n)]
-        return pd.concat(l, 1)
+        return pd.concat(l, axis=1)
 
 
 def data_contains_nan(data: Optional[Union[int, float, list, np.ndarray, pd.Series]]) -> bool:
