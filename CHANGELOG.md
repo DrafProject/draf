@@ -38,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 
 - Rename heat downgrading component `H2H1` to `HD`.
+- Repair, maintenance and inspection (RMI) are now part of the operation expenses (OpEx). 
 
 ## [v0.2.0] - 2022-05-10
 
