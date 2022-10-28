@@ -212,6 +212,7 @@ class EG(Component):
     prepared_tariffs: Tuple = ("FLAT", "TOU", "RTP")
     selected_tariff: str = "RTP"
     consider_intensiveGridUse: bool = False
+    feedin_reduces_emissions: bool = False
     maxsell: float = 20e3
     maxbuy: float = 20e3
 
@@ -295,9 +296,18 @@ class EG(Component):
             )
             * conv("€", "k€", 1e-3)
         )
-        c.CE_TOT_["EG"] = p.k__dT_ * quicksum(
-            p.ce_EG_T[t] * (v.P_EG_buy_T[t] - v.P_EG_sell_T[t]) for t in d.T
-        )
+        if self.feedin_reduces_emissions:
+            c.CE_TOT_["EG"] = (
+                p.k__dT_
+                * p.k__PartYearComp_
+                * quicksum(p.ce_EG_T[t] * (v.P_EG_buy_T[t] - v.P_EG_sell_T[t]) for t in d.T)
+            )
+        else:
+            c.CE_TOT_["EG"] = (
+                p.k__dT_
+                * p.k__PartYearComp_
+                * quicksum(p.ce_EG_T[t] * (v.P_EG_buy_T[t]) for t in d.T)
+            )
 
     def postprocess_func(self, r: Results):
         r.make_pos_ent("P_EG_buy_T")
