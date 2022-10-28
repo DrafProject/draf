@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add `cs.scens.get()`.
 - Add option to interate over `cs.scens`.
 - Add `draf.helper.play_beep_sound()` and `play_sound` argument in `cs.optimize()`.
+- Add possibility to use a solved scenario as base scenario.
 
 ### Removed
 

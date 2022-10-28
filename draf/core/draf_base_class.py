@@ -42,6 +42,11 @@ class DrafBaseClass:
         """Returns a Dict with all public attributes from this container."""
         return {k: v for k, v in self.__dict__.items() if not (k.startswith("_"))}
 
+    def delete_all(self) -> None:
+        """Deletes all objects in the container without deleting the meta data."""
+        for k in self.get_all().keys():
+            delattr(self, k)
+
     def __iter__(self):
         return iter(self.get_all().values())
 

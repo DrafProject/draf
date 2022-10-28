@@ -264,7 +264,20 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             if components is not None:
                 raise RuntimeError("Components can only be set if based_on='None'")
 
-            sc = getattr(self.scens, based_on)._special_copy()
+            base_sc = getattr(self.scens, based_on)
+
+            # clear collectors if base scenario was already optimized.
+            if hasattr(base_sc, "res"):
+                for k, v in base_sc.collectors.get_all().items():
+                    v.clear()
+
+            sc = base_sc._special_copy()
+
+            # clear results and variables if base scenario was already optimized.
+            if hasattr(sc, "res"):
+                delattr(sc, "res")
+                sc.vars.delete_all()
+
             sc.id = id
             sc.name = name
             sc.doc = doc
@@ -374,8 +387,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 delattr(sc, "components")
 
             if hasattr(sc, "collectors"):
-                for collector_name in sc.collectors.get_all().keys():
-                    delattr(sc.collectors, collector_name)
+                sc.collectors.delete_all()
 
         try:
             with open(fp, "wb") as f:

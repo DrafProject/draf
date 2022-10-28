@@ -444,6 +444,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def _activate_gurobipy_vars(self) -> None:
         for name, metas in self.vars._meta.items():
+            if "vtype" not in metas:
+                continue  # this prevents activating variables created by `res.make_pos_ent()``
 
             kwargs = dict(lb=metas["lb"], ub=metas["ub"], name=name, vtype=metas["vtype"])
 
@@ -530,7 +532,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             logToConsole=logToConsole,
             outputFlag=outputFlag,
             show_results=show_results,
-            keep_vars=keep_vars,
             postprocess_funcs=pp_funcs,
         )
 
@@ -543,10 +544,12 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         if hasattr(self, "collectors") and solution_exists:
             self._cache_collector_values()
+        if not keep_vars:
+            self.vars.delete_all()
         return self
 
     def _optimize_gurobipy(
-        self, logToConsole, outputFlag, show_results, keep_vars, postprocess_funcs, solver_params
+        self, logToConsole, outputFlag, show_results, postprocess_funcs, solver_params
     ) -> bool:
         logger.info(f"Optimize {self.id}")
         self._set_time_trace()
@@ -563,8 +566,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         status_str = GRB_OPT_STATUS[status]
         if (status == gp.GRB.OPTIMAL) or (status == gp.GRB.TIME_LIMIT and self.mdl.SolCount > 0):
             self.res = Results(self)
-            if not keep_vars:
-                del self.vars
             for ppf in postprocess_funcs:
                 ppf(self.res)
             if status == gp.GRB.TIME_LIMIT:
@@ -594,7 +595,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         return solution_exists
 
     def _optimize_pyomo(
-        self, logToConsole, outputFlag, show_results, keep_vars, postprocess_funcs, which_solver
+        self, logToConsole, outputFlag, show_results, postprocess_funcs, which_solver
     ) -> bool:
         logger.info(f"Optimize {self.id}")
         self._set_time_trace()
@@ -607,8 +608,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self._termination_condition = tc
         if status == pyo.SolverStatus.ok:
             self.res = Results(self)
-            if not keep_vars:
-                del self.vars
             for ppf in postprocess_funcs:
                 ppf(self.res)
             if tc == pyo.TerminationCondition.maxTimeLimit:
