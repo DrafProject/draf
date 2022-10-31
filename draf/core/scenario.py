@@ -1046,6 +1046,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             "dQ_heating_source_TH": "Q {k} heat_hub {v}",
             "dQ_heating_sink_TH": "Q heat_hub {k} {v}",
             "F_fuel_F": "F FUEL {k} {v}",
+            "dQ_amb_source_": "M {k} ambient {v}",
+            "dQ_amb_sink_": "M ambient {k} {v}",
             "dH_hydrogen_source_T": "H {k} H<sub>2</sub> {v}",
             "dH_hydrogen_sink_T": "H H<sub>2</sub> {k} {v}",
         }
