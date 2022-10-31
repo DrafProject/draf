@@ -669,6 +669,9 @@ class HP(Component):
             ),
             "HP_bigM",
         )
+        if ("E_amb" in d.E) and ("C_amb" in d.C):
+            # Avoid E_amb --> C_amb HP operation occur due to negative electricity prices
+            m.addConstr((v.Y_HP_TEC.sum("*", "E_amb", "C_amb") == 0), "HP_no_Eamb_to_C_amb")
         cap = p.dQ_HP_CAPx_ + v.dQ_HP_CAPn_ if sc.consider_invest else p.dQ_HP_CAPx_
         m.addConstrs((v.dQ_HP_Cond_TEC.sum(t, "*", "*") <= cap for t in d.T), "HP_limit_cap")
         m.addConstrs((v.Y_HP_TEC.sum(t, "*", "*") <= p.n_HP_ for t in d.T), "HP_operating_mode")
