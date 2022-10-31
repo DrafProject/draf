@@ -730,6 +730,30 @@ class P2H(Component):
 
 
 @dataclass
+class DAC(Component):
+    """Direct air capture: More precisely carbon offsetting through direct air carbon capture
+    and storage. Reduces total carbon emissions for a price per unit of carbon emissions.
+    """
+
+    allow_new: bool = True
+
+    def param_func(self, sc: Scenario):
+        sc.param("z_DAC_", data=int(self.allow_new), doc="If DAC is allowed")
+        sc.param(
+            "c_DAC_",
+            data=222,
+            doc="Cost of direct air capture and storage",
+            unit="€/tCO2eq",
+            src="https://doi.org/10.1016/j.jclepro.2019.03.086",
+        )
+        sc.var("CE_DAC_", doc="Carbon emissions captured and stored by DAC", unit="kgCO2eq/a")
+
+    def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
+        c.C_TOT_op_["DAC"] = v.CE_DAC_ * p.c_DAC_ * conv("€", "k€", 1e-3) * conv("/t", "/kg", 1e-3)
+        c.CE_TOT_["DAC"] = -v.CE_DAC_
+
+
+@dataclass
 class CHP(Component):
     """Combined heat and power"""
 
@@ -1400,6 +1424,7 @@ order_restrictions = [
     ("BES", {}),
     ("BEV", {}),
     ("PV", {}),
+    ("DAC", {}),
     ("WT", {}),
     ("P2H", {}),
     ("CHP", {}),

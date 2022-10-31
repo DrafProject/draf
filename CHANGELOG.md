@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add `maxsell` and `maxbuy` to `EG` component template.
 - Add wind turbine (`WT`) component.
 - Add hydrogen components (`FC`, `Elc`, `H2S`).
+- Add direct air capture (`DAC`) component.
 - Add `H_level_target` to thermal generation components (`HOB`, `CHP`, `P2H`, `HP`).
 - Add `draf.helper.get_TES_volume()`.
 - Add functionality to update dimensions with dictionary through `cs.add_scen()`.
