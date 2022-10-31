@@ -75,7 +75,7 @@ class Main(Component):
             m.addConstr(
                 v.C_TOT_invAnn_ == quicksum(c.C_TOT_invAnn_.values()), "annualized_investment_cost"
             )
-            c.C_TOT_["op"] = v.C_TOT_RMI_
+            c.C_TOT_op_["RMI"] = v.C_TOT_RMI_
             c.C_TOT_["inv"] = v.C_TOT_invAnn_
 
             ## AUTOCOLLECTORS (currently unused) ---------------------------------------------------
