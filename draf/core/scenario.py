@@ -802,7 +802,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def update_params(self, **kwargs) -> Scenario:
         """Update multiple existing parameters.
-        e.g. sc.update_params(P_EG_dem_T=2000, c_EG_addon_=0, c_EG_peak_=0)
+        e.g. `sc.update_params(P_EG_dem_T=2000, c_EG_addon_=0, c_EG_peak_=0)``
+        If a scalar value is provided for a multi-dimensional entity all data points
+        are set with the scalar value.
         """
         for ent_name, data in kwargs.items():
 
@@ -821,6 +823,11 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 self.param(ent_name, fill=data, update=True)
 
         return self
+
+    def fix_vars(self, **kwargs) -> Scenario:
+        """Fix optimization variables e.g. `sc.fix_vars(P_PV_CAPn_=100, P_WT_CAPn_=2000)`."""
+        for ent_name, data in kwargs.items():
+            self.update_var_bound(name=ent_name, lb=data, ub=data)
 
     def param(
         self,
