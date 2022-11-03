@@ -810,7 +810,7 @@ class ScenPlotter(BasePlotter):
         img = ax.imshow(
             data,
             extent=[x_lims[0], x_lims[-1], y_lims[0], y_lims[-1]],
-            interpolation="none",
+            interpolation="None",
             aspect="auto",
             **imshow_kws,
         )

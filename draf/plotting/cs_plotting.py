@@ -77,7 +77,6 @@ class CsPlotter(BasePlotter):
             "Variables ": ("v_table", "table fa-lg"),
             "eGrid ": ("eGrid_table", " fa-plug fa-lg"),
             "eFlex ": ("eFlex_table", " fa-balance-scale"),
-            "Pareto ": ("pareto_table", " fa-arrows-h fa-lg"),
             "BES ": ("bes_table", "fa-solid fa-battery-half fa-lg"),
             "Calc. time ": ("time_table", " fa-clock-o fa-lg"),
             "Collectors ": ("collector_table", " fa fa-bus"),
@@ -150,8 +149,8 @@ class CsPlotter(BasePlotter):
                 ("Relative savings", "Emissions"): cs.get_diff("CE_TOT_")
                 / cs.REF_scen.get_entity("CE_TOT_"),
                 ("", "C_inv"): cs.get_ent("C_TOT_inv_"),
-                ("", "C_invAnn"): cs.get_ent("C_TOT_invAnn_"),
-                ("", "C_op"): cs.get_ent("C_TOT_op_"),
+                ("", "CapEx"): cs.get_ent("C_TOT_invAnn_"),
+                ("", "OpEx"): cs.get_ent("C_TOT_op_"),
                 ("", "EAC"): -cs.get_diff("C_TOT_") / cs.get_diff("CE_TOT_") * 1e6,
                 ("", "PP"): cs.get_ent("C_TOT_inv_")
                 / ((cs.get_diff("C_TOT_op_") + cs.get_diff("C_TOT_RMI_"))).replace(
@@ -170,13 +169,7 @@ class CsPlotter(BasePlotter):
             return f"color: {color}"
 
         if gradient:
-            s = (
-                df.style.background_gradient(subset=["Total annualized"], cmap="Greens")
-                .background_gradient(subset=["Absolute savings"], cmap="Reds")
-                .background_gradient(subset=["Relative savings"], cmap="Blues")
-                .background_gradient(subset=[""], cmap="Purples")
-            )
-
+            s = df.style.background_gradient(cmap="OrRd")
         else:
             s = df.style.applymap(color_negative_red)
 
@@ -189,8 +182,8 @@ class CsPlotter(BasePlotter):
                 ("Relative savings", "Costs"): "{:,.2%}",
                 ("Relative savings", "Emissions"): "{:,.2%}",
                 ("", "C_inv"): "{:,.0f} k€",
-                ("", "C_invAnn"): "{:,.0f} k€/a",
-                ("", "C_op"): "{:,.0f} k€/a",
+                ("", "CapEx"): "{:,.0f} k€/a",
+                ("", "OpEx"): "{:,.0f} k€/a",
                 ("", "EAC"): "{:,.0f} €/t",
                 ("", "PP"): "{:,.1f} a",
                 ("", "DPP"): "{:,.1f} a",
@@ -199,10 +192,10 @@ class CsPlotter(BasePlotter):
         ).set_table_styles(get_leftAlignedIndex_style() + get_multiColumnHeader_style(df))
         if caption:
             s = s.set_caption(
-                "<u>Legend</u>:"
+                "<u>Legend</u>: "
                 "<b>C_inv</b>: Investment Costs, "
-                "<b>C_invAnn</b>: Annualized Investment Costs, "
-                "<b>C_op</b>: Operating Costs, "
+                "<b>CapEx</b>: Capital Expenditures (annualized investment costs), "
+                "<b>OpEx</b>: Operating Expeses, "
                 "<b>EAC</b>: Emissions Avoidance Costs, "
                 "<b>PP</b>: Payback Period, "
                 "<b>DPP</b>: Discounted Payback Period, "
@@ -936,6 +929,7 @@ class CsPlotter(BasePlotter):
         number_format: str = "{:n}",
         caption: bool = False,
         clickable_urls: bool = False,
+        sort_by_name: bool = False,
     ) -> pdStyler:
         """Creates a table with all entities.
         For multi-dimensional entities, the mean is displayed.
@@ -995,6 +989,9 @@ class CsPlotter(BasePlotter):
         def highlight_diff2(s):
             other_than_REF = s != df.iloc[:, 0]
             return ["font-weight: bold" if v else "" for v in other_than_REF]
+
+        if sort_by_name:
+            df = df.sort_index()
 
         left_aligner = list(df.dtypes[df.dtypes == object].index)
         s = (
@@ -1109,13 +1106,16 @@ class CsPlotter(BasePlotter):
     def invest_table(self, gradient: bool = False, caption: bool = False) -> pdStyler:
         cs = self.cs
         l = dict(
-            C_TOT_inv_="Investment costs (k€)", C_TOT_invAnn_="Annualized investment costs (k€/a)"
+            C_TOT_inv_="Investment costs (k€)",
+            C_TOT_invAnn_="CapEx (=annualized investment costs) (k€/a)",
         )
         df = pd.DataFrame(
             {
                 desc: pd.DataFrame(
                     {n: sc.collector_values[which] for n, sc in cs.scens_dic.items()}
-                ).stack()
+                )
+                .sort_index(axis=0)
+                .stack()
                 for which, desc in l.items()
             }
         ).unstack(0)
@@ -1124,9 +1124,7 @@ class CsPlotter(BasePlotter):
             get_leftAlignedIndex_style() + get_multiColumnHeader_style(df)
         )
         if caption:
-            s = s.set_caption(
-                "Investment costs and annualized investment costs per scenario and component."
-            )
+            s = s.set_caption("Investment costs and CapEx per scenario and component.")
         if gradient:
             s = s.background_gradient(cmap="OrRd")
         return s
@@ -1150,7 +1148,13 @@ class CsPlotter(BasePlotter):
         )
         return fig
 
-    def capas(self, include_capx: bool = True, subplot_x_anchors=(0.79, 0.91)) -> go.Figure:
+    def capas(
+        self,
+        include_capx: bool = True,
+        subplot_x_anchors: Tuple = (0.79, 0.91),
+        c_inv: bool = False,
+        c_op: bool = False,
+    ) -> go.Figure:
         """Annotated heatmap of existing and new capacities and a barchart of according C_inv
          and C_op.
 
@@ -1169,49 +1173,57 @@ class CsPlotter(BasePlotter):
 
         fig = _get_capa_heatmap(df)
 
-        ser = pd.Series(cs.get_ent("C_TOT_inv_"))
-        unit1 = cs.REF_scen.get_unit("C_TOT_inv_")
-        ser, unit1 = hp.auto_fmt(ser, unit1)
-        fig.add_trace(
-            go.Bar(
-                y=ser.index.tolist(),
-                x=ser.values,
-                xaxis="x2",
-                yaxis="y2",
-                orientation="h",
-                marker_color="grey",
+        if c_inv:
+            ser = pd.Series(cs.get_ent("C_TOT_inv_"))
+            unit1 = cs.REF_scen.get_unit("C_TOT_inv_")
+            ser, unit1 = hp.auto_fmt(ser, unit1)
+            fig.add_trace(
+                go.Bar(
+                    y=ser.index.tolist(),
+                    x=ser.values,
+                    xaxis="x2",
+                    yaxis="y2",
+                    orientation="h",
+                    marker_color="grey",
+                )
             )
-        )
 
-        ser = pd.Series(cs.get_ent("C_TOT_op_"))
-        unit2 = cs.REF_scen.get_unit("C_TOT_op_")
-        ser, unit2 = hp.auto_fmt(ser, unit2)
-        fig.add_trace(
-            go.Bar(
-                y=ser.index.tolist(),
-                x=ser.values,
-                xaxis="x3",
-                yaxis="y3",
-                orientation="h",
-                marker_color="grey",
+        if c_op:
+            ser = pd.Series(cs.get_ent("C_TOT_op_"))
+            unit2 = cs.REF_scen.get_unit("C_TOT_op_")
+            ser, unit2 = hp.auto_fmt(ser, unit2)
+            fig.add_trace(
+                go.Bar(
+                    y=ser.index.tolist(),
+                    x=ser.values,
+                    xaxis="x3",
+                    yaxis="y3",
+                    orientation="h",
+                    marker_color="grey",
+                )
             )
-        )
 
         margin = 0.01
         domain1 = (0, subplot_x_anchors[0] - margin)
-        domain2 = (subplot_x_anchors[0] + margin, subplot_x_anchors[1] - margin)
-        domain3 = (subplot_x_anchors[1] + margin, 1)
 
         capx_adder = " (decision variables in <b>bold</b>)" if include_capx else ""
         fig.update_layout(
             margin=dict(t=5, l=5, r=5, b=5),
             xaxis=dict(domain=domain1, title=f"Capacity of component (kW or kWh){capx_adder}"),
-            xaxis2=dict(domain=domain2, anchor="y2", title=f"C_inv ({unit1})", side="top"),
-            yaxis2=dict(anchor="x2", showticklabels=False),
-            xaxis3=dict(domain=domain3, anchor="y3", title=f"C_op ({unit2})", side="top"),
-            yaxis3=dict(anchor="x3", showticklabels=False),
-            showlegend=False,
         )
+        if c_inv:
+            domain2 = (subplot_x_anchors[0] + margin, subplot_x_anchors[1] - margin)
+            fig.update_layout(
+                xaxis2=dict(domain=domain2, anchor="y2", title=f"C_inv ({unit1})", side="top"),
+                yaxis2=dict(anchor="x2", showticklabels=False),
+            )
+        if c_op:
+            domain3 = (subplot_x_anchors[1] + margin, 1)
+            fig.update_layout(
+                xaxis3=dict(domain=domain3, anchor="y3", title=f"C_op ({unit2})", side="top"),
+                yaxis3=dict(anchor="x3", showticklabels=False),
+                showlegend=False,
+            )
         fig.update_yaxes(matches="y")
         return fig
 
