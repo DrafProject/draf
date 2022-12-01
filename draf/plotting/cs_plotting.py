@@ -1,4 +1,6 @@
+import itertools
 import logging
+import math
 import warnings
 from collections import OrderedDict
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
@@ -258,7 +260,7 @@ class CsPlotter(BasePlotter):
         caption_text = (
             "<u>Legend</u>: "
             "<b>P_max</b>: Peak load, "
-            "<b>P_max_reduction</b>: Peak load reduction compared to REF, "
+            "<b>P_max_redu</b>: Peak load reduction compared to REF, "
             "<b>t_use</b>: Full load hours, "
             "<b>W_buy / W_sell</b>: Bought / sold electricity."
         )
@@ -267,6 +269,22 @@ class CsPlotter(BasePlotter):
 
     def eFlex_table(self, gradient: bool = False, caption: bool = True) -> pdStyler:
         data = [
+            (
+                "WAP",
+                "{:,.3f} €/MWh",
+                lambda df, cs: [
+                    (sc.res.P_EG_buy_T * sc.params.c_EG_T).sum() / sc.res.P_EG_buy_T.sum() * 1e3
+                    for sc in cs.scens
+                ],
+            ),
+            (
+                "WACEF",
+                "{:,.0f} tCO2eq/MWh",
+                lambda df, cs: [
+                    (sc.res.P_EG_buy_T * sc.params.ce_EG_T).sum() / sc.res.P_EG_buy_T.sum()
+                    for sc in cs.scens
+                ],
+            ),
             (
                 "avg P_devAbs",
                 "{:,.0f} kW",
@@ -298,12 +316,21 @@ class CsPlotter(BasePlotter):
                 "{:,.1%}",
                 lambda df, cs: df["avg P_devAbs (%)"] * -df["corr (P_dev,c_RTP)"],
             ),
+            (
+                "corr (P_dev,ce_EG)",
+                "{:,.3f}",
+                lambda df, cs: [
+                    (sc.res.P_EG_buy_T - cs.REF_scen.res.P_EG_buy_T).corr(sc.params.ce_EG_T)
+                    for sc in cs.scens
+                ],
+            ),
         ]
         caption_text = (
-            "<u>Legend</u>: <b>avg P_devAbs</b>: mean absolute deviation of the scenarios'"
-            " purchased power and the one of the reference case study, <b>corr (P_dev,c_RTP)</b>:"
-            " Pearson correlation coefficient between the deviation of the scenarios' purchased"
-            " power and the one of the reference case study, and the real time"
+            "<u>Legend</u>: <b>WAP</b>: Weighted average price of electricity, <b>WACEF</b>:"
+            " Weighted average carbon emission factor, <b>avg P_devAbs</b>: mean absolute deviation"
+            " of the scenarios' purchased power and the one of the reference case study, <b>corr"
+            " (P_dev,c_RTP)</b>: Pearson correlation coefficient between the deviation of the"
+            " scenarios' purchased power and the one of the reference case study, and the real time"
             " prices.<b>abs_flex_score</b> (<b>rel_flex_score</b>): Column 1 (2) multiplied with"
             " negated values of column 3."
         )
@@ -753,6 +780,7 @@ class CsPlotter(BasePlotter):
         source="P_EL_source_T",
         ylabel="Electricity consumption (GWh/a)",
         factor=1e-6,
+        nlabel_rows=2,
     ):
         cs = self.cs
 
@@ -769,6 +797,9 @@ class CsPlotter(BasePlotter):
         ax.set_xlabel(ylabel)
         # plt.yticks(rotation=20, ha="right")
 
+        def flip(items, ncol):
+            return itertools.chain(*[items[i::ncol] for i in range(ncol)])
+
         # sort legend
         handles, labels = ax.get_legend_handles_labels()
         if source is not None:
@@ -781,13 +812,15 @@ class CsPlotter(BasePlotter):
         else:
             handles, labels = handles[::-1], labels[::-1]
         ax.invert_yaxis()
+
+        ncol = math.ceil(len(handles) / nlabel_rows)
         ax.legend(
-            handles,
-            labels,
+            flip(handles, ncol),
+            flip(labels, ncol),
             loc="lower center",
             bbox_to_anchor=(0.5, 0.95),
             frameon=False,
-            ncol=8,
+            ncol=ncol,
             columnspacing=0.8,
             handletextpad=0.2,
             handlelength=0.8,
@@ -1227,7 +1260,9 @@ class CsPlotter(BasePlotter):
         fig.update_yaxes(matches="y")
         return fig
 
-    def capa_table(self, gradient: bool = False, caption: bool = False) -> pdStyler:
+    def capa_table(
+        self, gradient: bool = False, caption: bool = False, show_zero_cols: bool = True
+    ) -> pdStyler:
         df = (
             pd.DataFrame(
                 {which: self._get_capa_for_all_scens(which).stack() for which in ["CAPx", "CAPn"]}
@@ -1235,6 +1270,9 @@ class CsPlotter(BasePlotter):
             .unstack()
             .reindex(self.cs.scens_ids)
         )
+        if not show_zero_cols:
+            df = df.loc[:, (df != 0).any(axis=0)]
+            df = df.dropna(axis=1)
 
         s = df.style.format(precision=0, thousands=",").set_table_styles(
             get_leftAlignedIndex_style() + get_multiColumnHeader_style(df)
