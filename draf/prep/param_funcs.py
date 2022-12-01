@@ -68,11 +68,19 @@ def c_HP_inv_(estimated_size=100) -> ParDat:
 
     Formula:
         1520.7 * estimated_size ** -.363
+
+    Source:
+        Wolf_2017 (https://doi.org/10.18419/opus-9593)
+
+    Other sources:
+        high temperature HP data, but only specific equipment cost --> (100-400 €/kW_th) @Kosmadakis.2020 (https://doi.org/10.1016/j.enconman.2020.113488)
+        large scale HPs (3MW_th) --> (670-950 €/kW_th) @DanishEA_2022 (https://ens.dk/en/our-services/projections-and-models/technology-data/technology-data-generation-electricity-and)
+        (0.5 MW-10 MW) --> (490-1100 €/kW_th) @Sandvall_2017 (https://doi.org/10.1016/j.esr.2017.10.003)
+        Air-sourced heat pump --> (387-1089 €/kW_th) @Petkov_2020 (https://doi.org/10.1016/j.apenergy.2020.115197)
+        (>0.1 MW) --> (300-900 €/kW_th) @Meyers_2018 (https://doi.org/10.1016/j.solener.2018.08.011)
     """
     assert 0 < estimated_size < 200
     value = 1520.7 * estimated_size**-0.363
-
-    # see also Kosmadakis.2020 (https://doi.org/hsn7) for newer data
 
     return ParDat(name="c_HP_inv_", data=value, doc="CAPEX", src="@Wolf_2017", unit="€/kW_el")
 

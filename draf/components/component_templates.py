@@ -499,7 +499,7 @@ class WT(Component):
                 doc="CAPEX",
                 unit="€/kW_peak",
                 src="https://windeurope.org/newsroom/press-releases/europe-invested-41-bn-euros-in-new-wind-farms-in-2021",
-            )
+            )  # or 1118.77 €/kWp invest and 27 years operation life for onshore wind https://github.com/PyPSA/technology-data/blob/4eaddec90f429246445f08476b724393dde753c8/outputs/costs_2020.csv
             sc.param(
                 "k_WT_RMI_",
                 data=0.01,
@@ -965,7 +965,6 @@ class HD(Component):
 class BEV(Component):
     """Battery electric Vehicle"""
 
-    E_CAPx: float = 100
     allow_V2X: bool = False
     allow_smart: bool = False
 
@@ -974,14 +973,7 @@ class BEV(Component):
 
     def param_func(self, sc: Scenario):
         p = sc.params
-        sc.param("E_BEV_Cap1Bat_B", fill=self.E_CAPx, doc="Capacity of one battery", unit="kWh_el")
-        sc.param("n_BEV_nBats_B", fill=10, doc="Number of batteries")
-        sc.param(
-            "E_BEV_CAPx_B",
-            fill=p.E_BEV_Cap1Bat_B * p.n_BEV_nBats_B,
-            doc="Capacity of all batteries",
-            unit="kWh_el",
-        )
+        sc.param("E_BEV_CAPx_B", fill=1000, doc="Capacity of all batteries", unit="kWh_el")
         sc.param(
             "eta_BEV_time_",
             data=1.0,
