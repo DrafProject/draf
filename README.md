@@ -11,6 +11,7 @@
 **d**emand **r**esponse **a**nalysis **f**ramework (`draf`) is an analysis and decision support framework for local multi-energy hubs focusing on demand response.
 It uses the power of ([mixed integer]) [linear programming] optimization, [`pandas`], [`Plotly`], [`Matplotlib`], [`elmada`], [`GSEE`] and more to help users along the energy system analysis process.
 The software is described and demonstrated in the open-access [draf demo paper].
+`draf` runs on Windows, macOS, and Linux.
 
 ## Features
 
@@ -20,7 +21,7 @@ The software is described and demonstrated in the open-access [draf demo paper].
   - `DemandAnalyzer` - Analyze energy demand profiles
   - `PeakLoadAnalyzer` - Analyze peak loads or run simple battery simulation
 - **Easily parameterizable [component templates](draf/components/component_templates.py):**
-  - battery energy storage (BES), battery electric vehicle (BEV), combined heat and power (CHP), heat pump (HP), power-to-heat (P2H), photovoltaic (PV), thermal energy storage (TES), and more.
+  - battery energy storage (`BES`), battery electric vehicle (`BEV`), combined heat and power (`CHP`), heat-only boiler (`HOB`), heat pump (`HP`), power-to-heat (`P2H`), photovoltaic (`PV`), wind turbine (`WT`), thermal energy storage (`TES`), fuel cell (`FC`), electrolyzer (`Elc`), hydrogen storage (`H2S`), production process (`PP`), product storage (`PS`), direct air capture (`DAC`), and more.
   - Sensible naming conventions for parameters and variables, see section [Naming conventions](#naming-conventions).
 - **Parameter preparation tools:**
   - `TimeSeriesPrepper` - For time series data
@@ -42,19 +43,18 @@ The software is described and demonstrated in the open-access [draf demo paper].
 
 ## Quick start
 
-`draf` runs on Windows, macOS, and Linux.
-For the usage of Gurobi, a valid Gurobi license is required.
-
 1. Install [miniconda] or [anaconda]
 
-1. Clone the source repository:
+1. Open a terminal in the directory where you want to place `draf` in.
+
+1. Clone `draf`:
 
    ```sh
    git clone https://github.com/DrafProject/draf
    cd draf
    ```
 
-1. Create and activate a conda environment based on environment.yml including a full editable local version of `draf`:
+1. Create and activate the `draf` conda environment (based on environment.yml including a full editable local version of `draf`):
 
    ```sh
    conda env create
@@ -73,9 +73,21 @@ For the usage of Gurobi, a valid Gurobi license is required.
    jupyter notebook
    ```
 
+1. (optional) To use Gurobi (fast optimization), install a valid Gurobi license (its [free for academics](https://www.gurobi.com/academia/academic-program-and-licenses)).
+
+1. (optional) To use the latest electricity prices and carbon emission factors from [`elmada`], request an [ENTSO-E API key] and set it to elmada:
+
+    ```py
+    # Python code that you have to run only once:
+    import elmada
+    elmada.set_api_keys(entsoe="YOUR_ENTSOE_KEY")
+    ```
+
+1. Start modeling
+
 1. Have a look at the [examples](examples).
   Start with the [`minimal`](examples/minimal.py) example.
-  For more advanced modeling have a look at the [draf_demo_case_studies].
+  For more advanced modeling look at the [draf_demo_case_studies].
 
 ## For users
 
@@ -153,6 +165,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [draf_demo_case_studies]: https://github.com/DrafProject/draf_demo_case_studies
 [DWD]: https://www.dwd.de
 [Energy System Analysis Research Group]: https://www.h-ka.de/en/ikku/energy-system-analysis
+[ENTSO-E API key]: https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation
 [Karlsruhe University of Applied Sciences]: https://www.h-ka.de/en
 [LGPL v3]: https://www.gnu.org/licenses/lgpl-3.0.de.html
 [linear programming]: https://en.wikipedia.org/wiki/Linear_programming
