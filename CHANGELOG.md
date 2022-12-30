@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Add `sc.execute_model_func(model_func)`.
 - Add `cs.plot()` which interactively provides most important plots and tables.
 - Add `cs.plot.collector_table()` and `cs.plot.collector_balance()`.
 - Add `cs.plot.heatmap_all_T()` interactive heatmap plotting that consideres multi-dimensional time series.

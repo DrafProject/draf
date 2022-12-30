@@ -270,18 +270,77 @@ class CsPlotter(BasePlotter):
     def eFlex_table(self, gradient: bool = False, caption: bool = True) -> pdStyler:
         data = [
             (
-                "WAP",
-                "{:,.3f} €/MWh",
+                "W_buy",
+                "{:,.2f} GWh/a",
+                lambda df, cs: [sc.res.P_EG_buy_T.sum() / 1e6 for sc in cs.scens],
+            ),
+            (
+                "WAP_buy",
+                "{:,.0f} €/MWh",
                 lambda df, cs: [
                     (sc.res.P_EG_buy_T * sc.params.c_EG_T).sum() / sc.res.P_EG_buy_T.sum() * 1e3
                     for sc in cs.scens
                 ],
             ),
             (
-                "WACEF",
-                "{:,.0f} tCO2eq/MWh",
+                "WACEF_buy",
+                "{:,.2f} t/MWh",
                 lambda df, cs: [
                     (sc.res.P_EG_buy_T * sc.params.ce_EG_T).sum() / sc.res.P_EG_buy_T.sum()
+                    for sc in cs.scens
+                ],
+            ),
+            (
+                "W_net",
+                "{:,.2f} GWh/a",
+                lambda df, cs: [
+                    (sc.res.P_EG_buy_T.sum() - sc.res.P_EG_sell_T.sum()) / 1e6 for sc in cs.scens
+                ],
+            ),
+            (
+                "WAP_net",
+                "{:,.0f} €/MWh",
+                lambda df, cs: [
+                    (
+                        (sc.res.P_EG_buy_T - sc.res.P_EG_sell_T)
+                        / (sc.res.P_EG_buy_T - sc.res.P_EG_sell_T).sum()
+                        * sc.params.c_EG_T
+                    ).sum()
+                    * 1e3
+                    for sc in cs.scens
+                ],
+            ),
+            (
+                "WACEF_net",
+                "{:,.2f} t/MWh",
+                lambda df, cs: [
+                    (
+                        (sc.res.P_EG_buy_T - sc.res.P_EG_sell_T)
+                        / (sc.res.P_EG_buy_T - sc.res.P_EG_sell_T).sum()
+                        * sc.params.ce_EG_T
+                    ).sum()
+                    for sc in cs.scens
+                ],
+            ),
+            (
+                "W_sell",
+                "{:,.2f} GWh/a",
+                lambda df, cs: [sc.res.P_EG_sell_T.sum() / 1e6 for sc in cs.scens],
+            ),
+            (
+                "WAP_sell",
+                "{:,.0f} €/MWh",
+                lambda df, cs: [
+                    ((sc.res.P_EG_sell_T) / (sc.res.P_EG_sell_T).sum() * sc.params.c_EG_T).sum()
+                    * 1e3
+                    for sc in cs.scens
+                ],
+            ),
+            (
+                "WACEF_sell",
+                "{:,.2f} t/MWh",
+                lambda df, cs: [
+                    ((sc.res.P_EG_sell_T) / sc.res.P_EG_sell_T.sum() * sc.params.ce_EG_T).sum()
                     for sc in cs.scens
                 ],
             ),
@@ -297,6 +356,11 @@ class CsPlotter(BasePlotter):
                 "avg P_devAbs (%)",
                 "{:,.1%}",
                 lambda df, cs: df["avg P_devAbs"] / cs.REF_scen.res.P_EG_buy_T.mean(),
+            ),
+            (
+                "corr (P,c_RTP)",
+                "{:,.3f}",
+                lambda df, cs: [sc.res.P_EG_buy_T.corr(sc.params.c_EG_RTP_T) for sc in cs.scens],
             ),
             (
                 "corr (P_dev,c_RTP)",
@@ -317,6 +381,11 @@ class CsPlotter(BasePlotter):
                 lambda df, cs: df["avg P_devAbs (%)"] * -df["corr (P_dev,c_RTP)"],
             ),
             (
+                "corr (P,ce_EG)",
+                "{:,.3f}",
+                lambda df, cs: [sc.res.P_EG_buy_T.corr(sc.params.ce_EG_T) for sc in cs.scens],
+            ),
+            (
                 "corr (P_dev,ce_EG)",
                 "{:,.3f}",
                 lambda df, cs: [
@@ -326,13 +395,14 @@ class CsPlotter(BasePlotter):
             ),
         ]
         caption_text = (
-            "<u>Legend</u>: <b>WAP</b>: Weighted average price of electricity, <b>WACEF</b>:"
-            " Weighted average carbon emission factor, <b>avg P_devAbs</b>: mean absolute deviation"
-            " of the scenarios' purchased power and the one of the reference case study, <b>corr"
-            " (P_dev,c_RTP)</b>: Pearson correlation coefficient between the deviation of the"
-            " scenarios' purchased power and the one of the reference case study, and the real time"
-            " prices.<b>abs_flex_score</b> (<b>rel_flex_score</b>): Column 1 (2) multiplied with"
-            " negated values of column 3."
+            "<u>Legend</u>: <b>WAP/WACEF</b>: Weighted average price/carbon emission factor of"
+            " purchased electricity, <b>WAP2/WACEF2</b>: same as WAP/WACEF but considering sold"
+            " electricity, <b>WAPsold</b>: Same as WAP but for sold electricity , <b>avg"
+            " P_devAbs</b>: mean absolute deviation of the scenarios' purchased power and the one"
+            " of the reference case study, <b>corr (P_dev,c_RTP)</b>: Pearson correlation"
+            " coefficient between the deviation of the scenarios' purchased power and the one of"
+            " the reference case study, and the real time prices.<b>abs_flex_score</b>"
+            " (<b>rel_flex_score</b>): Column 1 (2) multiplied with negated values of column 3."
         )
 
         return self.base_table(data, gradient, caption, caption_text)
@@ -778,7 +848,7 @@ class CsPlotter(BasePlotter):
         self,
         sink="P_EL_sink_T",
         source="P_EL_source_T",
-        ylabel="Electricity consumption (GWh/a)",
+        xlabel="Electricity consumption (GWh/a)",
         factor=1e-6,
         nlabel_rows=2,
     ):
@@ -794,7 +864,7 @@ class CsPlotter(BasePlotter):
         fig, ax = plt.subplots(figsize=(6, 2.5))
         ax.axvline(x=0, color="k", linestyle="-", alpha=0.5, lw=0.5)
         df.T.plot.barh(stacked=True, ax=ax, cmap="tab20_r", width=0.7)
-        ax.set_xlabel(ylabel)
+        ax.set_xlabel(xlabel)
         # plt.yticks(rotation=20, ha="right")
 
         def flip(items, ncol):
@@ -811,6 +881,12 @@ class CsPlotter(BasePlotter):
             labels = [labels[idx] for idx in order]
         else:
             handles, labels = handles[::-1], labels[::-1]
+
+        # remove unused labels without changing the colours
+        dismissed_labels = df[df.sum(1) == 0].index
+        h_and_ls = [(h, l) for h, l in zip(handles, labels) if l not in dismissed_labels]
+        handles, labels = zip(*h_and_ls)
+
         ax.invert_yaxis()
 
         ncol = math.ceil(len(handles) / nlabel_rows)

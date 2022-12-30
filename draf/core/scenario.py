@@ -378,10 +378,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         self._set_time_trace()
 
-        params = self.params
-        if speed_up and self.mdl_language == "gp":
-            params = self.get_tuple_dict_container(params)
-
         logger.info(f"Set model for scenario {self.id}.")
 
         # Put all model functions in the correct order
@@ -396,10 +392,19 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         # Execute all model functions
         for model_func in model_func_list:
-            model_func(sc=self, m=self.mdl, d=self.dims, p=params, v=self.vars, c=self.collectors)
+            self.execute_model_func(model_func, speed_up=speed_up)
 
         self._update_time_param("t__model_", "Time to build model", self._get_time_diff())
         return self
+
+    def execute_model_func(self, model_func, speed_up=True):
+        """Sets a model function to a scenario. The model needs to be set before."""
+        p = (
+            self.get_tuple_dict_container(self.params)
+            if speed_up and self.mdl_language == "gp"
+            else self.params
+        )
+        model_func(sc=self, m=self.mdl, d=self.dims, p=p, v=self.vars, c=self.collectors)
 
     def _update_time_param(self, ent_name: str, doc: str, time_in_seconds: float):
         try:

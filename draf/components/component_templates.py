@@ -1126,22 +1126,22 @@ class H2S(Component):
     allow_new: bool = True
 
     def param_func(self, sc: Scenario):
-        sc.param("H_H2S_CAPx_", data=self.H_CAPx, doc="Existing capacity", unit="kWh_el")
+        sc.param("H_H2S_CAPx_", data=self.H_CAPx, doc="Existing capacity", unit="kWh")
         sc.param("k_H2S_ini_", data=0.9, doc="Initial and final energy filling share")
         sc.param(from_db=db.eta_H2S_ch_)
         sc.param(from_db=db.eta_H2S_dis_)
         sc.param("k_H2S_inPerCap_", data=0.7, doc="Maximum charging power per capacity")
         sc.param("k_H2S_outPerCap_", data=0.7, doc="Maximum charging power per capacity")
-        sc.var("H_H2S_T", doc="Hydrogen energy stored", unit="kWh_el")
-        sc.var("dH_H2S_in_T", doc="Charging power", unit="kW_el")
-        sc.var("dH_H2S_out_T", doc="Discharging power", unit="kW_el")
+        sc.var("H_H2S_T", doc="Hydrogen energy stored", unit="kWh")
+        sc.var("dH_H2S_in_T", doc="Charging power", unit="kW")
+        sc.var("dH_H2S_out_T", doc="Discharging power", unit="kW")
 
         if sc.consider_invest:
             sc.param(from_db=db.k_H2S_RMI_)
             sc.param(from_db=db.N_H2S_)
             sc.param("z_H2S_", data=int(self.allow_new), doc="If new capacity is allowed")
             sc.param(from_db=db.c_H2S_inv_)
-            sc.var("H_H2S_CAPn_", doc="New capacity", unit="kWh_el")
+            sc.var("H_H2S_CAPn_", doc="New capacity", unit="kWh")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         cap = p.H_H2S_CAPx_ + v.H_H2S_CAPn_ if sc.consider_invest else p.H_H2S_CAPx_
