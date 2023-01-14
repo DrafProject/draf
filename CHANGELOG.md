@@ -4,14 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.3.0] - 2023-01-14
 
 ### Added
 
 - Add `sc.execute_model_func(model_func)`.
 - Add `cs.plot()` which interactively provides most important plots and tables.
 - Add `cs.plot.collector_table()` and `cs.plot.collector_balance()`.
-- Add `cs.plot.heatmap_all_T()` interactive heatmap plotting that consideres multi-dimensional time series.
+- Add `cs.plot.heatmap_all_T()` interactive heatmap plotting that considers multi-dimensional time series.
+- Add metrics to `cs.plot.eFlex_table()`.
 - Add caption to `cs.plot.tables()`.
 - Add option to provide series in `sc.plot.ts_balance()`.
 - Add `only_scalars` and `number_format` arguments to `cs.plot.table()`.
@@ -26,7 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add functionality to update dimensions with dictionary through `cs.add_scen()`.
 - Add `sc.update_var_bound()`, `sc.update_upper_bound()`, `sc.update_lower_bound()`.
 - Add `cs.scens.get()`.
-- Add option to interate over `cs.scens`.
+- Add option to iterate over `cs.scens`.
 - Add `draf.helper.play_beep_sound()` and `play_sound` argument in `cs.optimize()`.
 - Add possibility to use a solved scenario as base scenario.
 - Add `sc.fix_vars()`.
@@ -49,5 +50,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [v0.2.0] - 2022-05-10
 
-[Unreleased]: https://github.com/DrafProject/draf/compare/v0.2.0...HEAD
+[v0.3.0]: https://github.com/DrafProject/draf/compare/v0.2.0...v0.3.0
 [v0.2.0]: https://github.com/DrafProject/draf/releases/tag/v0.2.0
