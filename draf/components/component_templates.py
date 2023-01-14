@@ -38,7 +38,7 @@ class Main(Component):
         sc.collector("X_TOT_penalty_", doc="Penalty term for objective function", unit="Any")
 
         if sc.consider_invest:
-            sc.collector("C_TOT_RMI_", doc="Total annual maintainance cost", unit="k€/a")
+            sc.collector("C_TOT_RMI_", doc="Total annual maintenance cost", unit="k€/a")
             sc.collector("C_TOT_inv_", doc="Total investment costs", unit="k€")
             sc.collector("C_TOT_invAnn_", doc="Total annualized investment costs", unit="k€")
 
@@ -50,7 +50,7 @@ class Main(Component):
             sc.param("k__r_", data=0.06, doc="Calculatory interest rate")
             sc.var("C_TOT_inv_", doc="Total investment costs", unit="k€")
             sc.var("C_TOT_invAnn_", doc="Total annualized investment costs", unit="k€")
-            sc.var("C_TOT_RMI_", doc="Total annual maintainance cost", unit="k€")
+            sc.var("C_TOT_RMI_", doc="Total annual maintenance cost", unit="k€")
 
         sc.param("k_PTO_alpha_", data=0, doc="Pareto weighting factor")
         sc.param("k_PTO_C_", data=1, doc="Normalization factor")
@@ -1408,7 +1408,7 @@ order_restrictions = [
     ("cDem", {}),
     ("hDem", {}),
     ("eDem", {}),
-    ("EG", {"PV", "CHP", "WT"}),  # EG collects P_EG_sell_T
+    ("EG", {"PV", "CHP", "WT", "FC"}),  # EG collects P_EG_sell_T
     ("Fuel", {"HOB", "CHP"}),  # Fuel collects F_fuel_F
     ("FC", {}),
     ("H2S", {}),

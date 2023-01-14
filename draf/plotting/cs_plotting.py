@@ -275,7 +275,7 @@ class CsPlotter(BasePlotter):
                 lambda df, cs: [sc.res.P_EG_buy_T.sum() / 1e6 for sc in cs.scens],
             ),
             (
-                "WAP_buy",
+                "EWAP_buy",
                 "{:,.0f} €/MWh",
                 lambda df, cs: [
                     (sc.res.P_EG_buy_T * sc.params.c_EG_T).sum() / sc.res.P_EG_buy_T.sum() * 1e3
@@ -283,10 +283,20 @@ class CsPlotter(BasePlotter):
                 ],
             ),
             (
-                "WACEF_buy",
+                "EWACEF_buy",
                 "{:,.2f} t/MWh",
                 lambda df, cs: [
                     (sc.res.P_EG_buy_T * sc.params.ce_EG_T).sum() / sc.res.P_EG_buy_T.sum()
+                    for sc in cs.scens
+                ],
+            ),
+            (
+                "ECER_buy",
+                "{:,.0f} €/t",
+                lambda df, cs: [
+                    (sc.res.P_EG_buy_T * sc.params.c_EG_T).sum()
+                    * 1e3
+                    / (sc.res.P_EG_buy_T * sc.params.ce_EG_T).sum()
                     for sc in cs.scens
                 ],
             ),
@@ -298,7 +308,7 @@ class CsPlotter(BasePlotter):
                 ],
             ),
             (
-                "WAP_net",
+                "EWAP_net",
                 "{:,.0f} €/MWh",
                 lambda df, cs: [
                     (
@@ -311,7 +321,7 @@ class CsPlotter(BasePlotter):
                 ],
             ),
             (
-                "WACEF_net",
+                "EWACEF_net",
                 "{:,.2f} t/MWh",
                 lambda df, cs: [
                     (
@@ -328,7 +338,7 @@ class CsPlotter(BasePlotter):
                 lambda df, cs: [sc.res.P_EG_sell_T.sum() / 1e6 for sc in cs.scens],
             ),
             (
-                "WAP_sell",
+                "EWAP_sell",
                 "{:,.0f} €/MWh",
                 lambda df, cs: [
                     ((sc.res.P_EG_sell_T) / (sc.res.P_EG_sell_T).sum() * sc.params.c_EG_T).sum()
@@ -337,7 +347,7 @@ class CsPlotter(BasePlotter):
                 ],
             ),
             (
-                "WACEF_sell",
+                "EWACEF_sell",
                 "{:,.2f} t/MWh",
                 lambda df, cs: [
                     ((sc.res.P_EG_sell_T) / sc.res.P_EG_sell_T.sum() * sc.params.ce_EG_T).sum()
@@ -395,14 +405,14 @@ class CsPlotter(BasePlotter):
             ),
         ]
         caption_text = (
-            "<u>Legend</u>: <b>WAP/WACEF</b>: Weighted average price/carbon emission factor of"
-            " purchased electricity, <b>WAP2/WACEF2</b>: same as WAP/WACEF but considering sold"
-            " electricity, <b>WAPsold</b>: Same as WAP but for sold electricity , <b>avg"
-            " P_devAbs</b>: mean absolute deviation of the scenarios' purchased power and the one"
-            " of the reference case study, <b>corr (P_dev,c_RTP)</b>: Pearson correlation"
-            " coefficient between the deviation of the scenarios' purchased power and the one of"
-            " the reference case study, and the real time prices.<b>abs_flex_score</b>"
-            " (<b>rel_flex_score</b>): Column 1 (2) multiplied with negated values of column 3."
+            "<u>Legend</u>: <b>W_buy/net/sell</b>: Purchased/net/sold annual electricity,"
+            " <b>EWAP/EWACEF_buy/net/sell</b>: Energy-weighted average price/carbon emission factor"
+            " of purchased/net/sold electricity, <b>ECER_buy</b>: energy-based cost-emission ratio,"
+            " <b>avg P_devAbs</b>: mean absolute deviation of the scenarios' purchased power and"
+            " the one of the reference case study (baseline), <b>corr (P_dev,c_RTP)</b>: Pearson"
+            " correlation coefficient between purchase difference to the baseline and the real"
+            " time prices.<b>abs_flex_score</b> (<b>rel_flex_score</b>): Column 1 (2) multiplied"
+            " with negated values of column 3."
         )
 
         return self.base_table(data, gradient, caption, caption_text)
