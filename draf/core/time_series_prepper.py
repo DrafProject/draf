@@ -282,20 +282,20 @@ class TimeSeriesPrepper:
     def c_EG_addon_(
         self,
         name: str = "c_EG_addon_",
-        AbLa_surcharge=0.00006,
+        AbLa_surcharge=0.00003,
         Concession_fee=0.0011,
-        EEG_surcharge=0.0688,
+        EEG_surcharge=0,  # no longer due since 2022-07-01
         Electricity_tax=0.01537,
-        KWK_surcharge=0.0029,
-        Network_cost=0.025,
-        NEV_surcharge=0.0025,
-        Offshore_surcharge=-0.00002,
+        KWK_surcharge=0.0038,
+        Network_cost=0,  # paid per kW peak
+        NEV_surcharge=0.0027,
+        Offshore_surcharge=0.00419,
         Sales=0.01537,
     ) -> float:
-        """Add electricity price components other than wholesale prices defaults for German
-        Industry for 2017.
+        """Add electricity price components other than wholesale prices.
+        Defaults for German Industry [1].
 
-        Source for defaults: https://www.bdew.de/media/documents/190723_BDEW-Strompreisanalyse_Juli-2019.pdf page 25
+        [1]: https://www.bdew.de/media/documents/221208_BDEW-Strompreisanalyse_Dez2022_08.12.2022_korr_vx5gByn.pdf page 34
         """
 
         price_components = [
