@@ -837,7 +837,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
     def param(
         self,
         name: Optional[str] = None,
-        data: Optional[Union[int, float, list, np.ndarray, pd.Series]] = None,
+        data: Optional[Union[int, float, list, Dict, np.ndarray, pd.Series]] = None,
         doc: str = "",
         unit: str = "",
         src: str = "",
@@ -852,13 +852,13 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 single-character dimensions i.e. a solely time-dependent parameter has
                 to end with `_T` e.g. `P_eDem_T`;
                 a scalar has to end with `_` e.g. `C_TOT_inv_`.
-            data: Data is normally given as int, float or pd.Series. Lists and np.ndarrays are
-                converted to pd.Series.
-            doc: A description string.
-            fill: If a float is given here, for all relevant dimensions inferred from the name the
-                series is filled.
+            data: Data is normally given as int, float or pd.Series. Lists, Dicts and
+                np.ndarrays are accepted and converted to pd.Series. Lists and np.ndarrays 
+                must have the same length as dims.T.
+            doc: A description string for the parameter.
+            fill: If a float is given here, the series is filled for all relevant dimensions
+                inferred from the name.
             update: If True, the meta-data will not be touched, just the data changed.
-            read_kwargs: Keyword arguments handed onto the pandas read-function.
             from_db: DataBase object.
 
         """
@@ -885,6 +885,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             assert (
                 dims == dims.upper()
             ), f"Parameter `{name}` has invalid lower characters in dims string"
+            if isinstance(data, Dict):
+                data = pd.Series(data)
+
             if fill is not None:
                 assert dims != "", f"Don't use `fill` argument with scalar entity {name}."
                 data = pd.Series(data=fill, name=name, index=self._get_idx(name))

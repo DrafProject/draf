@@ -323,6 +323,9 @@ def set_component_order_by_order_restrictions(
         classes: A dictionary containing classes where the order argument is set to.
     """
     ordered_components_list = list(topological_sort(order_restrictions))
+    s = "Execution order: " + ", ".join(ordered_components_list)
+    logger.info(s)
+    print(s)
     for i, classname in enumerate(ordered_components_list):
         classes[classname].order = i
 

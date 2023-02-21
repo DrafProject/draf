@@ -20,7 +20,7 @@ class Etypes:
     # SORTING_START
     A = Alias(en="Area", de="Fläche", units=["m²"])
     C = Alias(en="Costs", de="Kosten", units=["k€/a", "k€"])
-    c = Alias(en="Specific costs", de="Spezifische Kosten", units=["€/kW", "€/kWh","€/kW_th", "€/kWh_el","€/kW_el", "€/kW_el/a", "€/kW_peak", "€/tCO2eq", "€/SU", "€/t", "€/change"])
+    c = Alias(en="Specific costs", de="Spezifische Kosten", units=["€/kW", "€/kWh", "€/kW_th", "€/kWh_el", "€/kWh_th", "€/kW_el", "€/kW_el/a", "€/kW_peak", "€/tCO2eq", "€/SU", "€/t", "€/change"])
     CE = Alias(en="Carbon emissions", de="Kohlenstoff-vergleichs-Emissionen", units=["kgCO2eq/a"])
     ce = Alias(en="Specific carbon emissions", de="Spezifische Kohlenstoff-Emissionen", units=["kgCO2eq/kWh_el", "kgCO2eq/kWh"])
     cop = Alias(en="Coefficient of performance", de="Leistungszahl")
@@ -32,7 +32,7 @@ class Etypes:
     F = Alias(en="Fuel", de="Brennstoff", units=["kW", "kWh"])
     G = Alias(en="Product", de="Produkt", units=["t"])
     H = Alias(en="Hydrogen", de="Wasserstoff", units=["kWh"])
-    k = Alias(en="A ratio", de="Ein Verhältnis", units=["", "h"])
+    k = Alias(en="A ratio", de="Ein Verhältnis", units=["", "h", "m²/kW_peak"])
     n = Alias(en="A natural number", de="Eine natürliche Zahl")
     N = Alias(en="Operation life", de="Betriebsdauer", units=["a"])
     P = Alias(en="Electrical power", de="Elektrische Leistung", units=["kW_el", "kW_peak", "kW_el/kW_peak"])
