@@ -370,7 +370,7 @@ class BES(Component):
             doc="Discharging efficiency",
             src="@Carroquino_2021",
         )
-        sc.param(from_db=db.eta_BES_time_)
+        sc.param(from_db=db.eta_BES_self_)
         sc.param(from_db=db.k_BES_inPerCap_)
         sc.param(from_db=db.k_BES_outPerCap_)
         sc.var("E_BES_T", doc="Electricity stored", unit="kWh_el")
@@ -404,7 +404,8 @@ class BES(Component):
         m.addConstrs(
             (
                 v.E_BES_T[t]
-                == (p.k_BES_ini_ * cap if t == d.T[0] else v.E_BES_T[t - 1]) * p.eta_BES_time_
+                == (p.k_BES_ini_ * cap if t == d.T[0] else v.E_BES_T[t - 1])
+                * (1 - p.eta_BES_self_ * p.k__dT_)
                 + (v.P_BES_in_T[t] * p.eta_BES_ch_ - v.P_BES_out_T[t] / p.eta_BES_dis_) * p.k__dT_
                 for t in d.T
             ),
@@ -887,7 +888,7 @@ class TES(Component):
 
     def param_func(self, sc: Scenario):
         sc.param("Q_TES_CAPx_L", fill=0, doc="Existing capacity", unit="kWh_th")
-        sc.param("eta_TES_time_", data=0.995, doc="Storing efficiency")
+        sc.param("eta_TES_self_", data=0.005, doc="Self-discharge")
         sc.param("k_TES_inPerCap_", data=0.5, doc="Ratio loading power / capacity")
         sc.param("k_TES_outPerCap_", data=0.5, doc="Ratio loading power / capacity")
         sc.param("k_TES_ini_L", fill=0.5, doc="Initial and final energy level share")
@@ -910,7 +911,7 @@ class TES(Component):
             (
                 v.Q_TES_TL[t, l]
                 == ((p.k_TES_ini_L[l] * cap(l)) if t == d.T[0] else v.Q_TES_TL[t - 1, l])
-                * p.eta_TES_time_
+                * (1 - p.eta_TES_self_ * p.k__dT_)
                 + p.k__dT_ * v.dQ_TES_in_TL[t, l]
                 for t in d.T
                 for l in d.L
@@ -975,9 +976,9 @@ class BEV(Component):
         p = sc.params
         sc.param("E_BEV_CAPx_B", fill=1000, doc="Capacity of all batteries", unit="kWh_el")
         sc.param(
-            "eta_BEV_time_",
-            data=1.0,
-            doc="Storing efficiency. Must be 1.0 for the uncontrolled charging in REF",
+            "eta_BEV_self_",
+            data=0.0,
+            doc="Self discharge. Must be 0.0 for the uncontrolled charging in REF",
         )
         sc.param(
             "eta_BEV_ch_",
@@ -1027,7 +1028,7 @@ class BEV(Component):
             (
                 v.E_BEV_TB[t, b]
                 == ((p.k_BEV_ini_B[b] * p.E_BEV_CAPx_B[b]) if t == T[0] else v.E_BEV_TB[t - 1, b])
-                * p.eta_BEV_time_
+                * (1 - p.eta_BEV_self_ * p.k__dT_)
                 + p.k__dT_
                 * (
                     v.P_BEV_in_TB[t, b] * p.eta_BEV_ch_

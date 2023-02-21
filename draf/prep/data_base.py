@@ -48,13 +48,13 @@ class DataBase:
     cop_CM_ = ParDat(name="cop_CM_", data=3.98, doc="Coefficient of performance", src="@MTA", unit="kWh_th/kW_el")
     c_EG_EEG_ = ParDat(name="c_EG_EEG_", data=0.065, doc="EEG levy", src="@BMWI_2020", unit="€/kWh_el")
     c_Elc_inv_ = ParDat(name="c_Elc_inv_", data=1295, doc="CAPEX", src="@Petkov_2020", unit="€/kW_el")
-    c_FC_inv_  = ParDat(name="c_FC_inv_", data=1684, doc="CAPEX", src="@Petkov_2020", unit="€/kW_el")
+    c_FC_inv_ = ParDat(name="c_FC_inv_", data=1684, doc="CAPEX", src="@Petkov_2020", unit="€/kW_el")
     c_Fuel_co2_ = ParDat(name="c_Fuel_co2_", data=55, doc="CO2 price for non-electricity", unit="€/tCO2eq")
     c_Fuel_F = ParDat(name="c_Fuel_F", data=pd.Series({"ng": 0.04, "bio": 0.02}), doc="Fuel cost", unit="€/kWh")
     c_H2S_inv_ = ParDat(name="c_H2S_inv_", data=10, doc="CAPEX", src="@Petkov_2020", unit="€/kWh")
     c_P2H_inv_ = ParDat(name="c_P2H_inv_", data=100, doc="CAPEX", src="@SMT_2018", unit="€/kW_th")
     eta_BES_cycle_ = ParDat(name="eta_BES_cycle_", data=0.95, doc="Cycling efficiency", src="@Carroquino_2021")
-    eta_BES_time_ = ParDat(name="eta_BES_time_", data=1 - (0.0035 + 0.024) / 2 / (30 * 24), doc="Efficiency due to self-discharge rate", src="@Redondo_2016")  # "0.35% to 2.5% per month depending on state of charge"
+    eta_BES_self_ = ParDat(name="eta_BES_self_", data=(0.0035 + 0.024) / 2 / (30 * 24), doc="Self-discharge rate per hour", src="@Redondo_2016")  # "0.35% to 2.5% per month depending on state of charge"
     eta_CHP_el_F = funcs.eta_CHP_el_F()
     eta_CHP_th_F = funcs.eta_CHP_th_F()
     eta_Elc_ = ParDat(name="eta_Elc_", data=0.71, doc="Efficiency", src="@Petkov_2020")
@@ -64,9 +64,9 @@ class DataBase:
     eta_H2S_dis_ = ParDat(name="eta_H2S_dis_", data=0.90**0.5, doc="Discharging efficiency", src="@Petkov_2020")  # 90% cycling efficiency
     eta_HOB_ = ParDat(name="eta_HOB_", data=0.9, doc="Thermal efficiency", unit="kWh_th/kWh", src="@Weber_2008")
     eta_HP_ = ParDat(name="eta_HP_", data=0.5, doc="Ratio of reaching the ideal COP", src="@KALTSCH_2020")
-    eta_P2H_ = ParDat(name="eta_P2H_",data=0.9, doc="Efficiency", src="@Wang_2018")
+    eta_P2H_ = ParDat(name="eta_P2H_", data=0.9, doc="Efficiency", src="@Wang_2018")
     eta_TES_in_ = ParDat(name="eta_TES_in_", data=0.99, doc="Loading efficiency", src="@FFE_2016")
-    eta_TES_time_ = ParDat(name="eta_TES_time_", data=0.95, doc="Storing efficiency", src="@FFE_2016")
+    eta_TES_self_ = ParDat(name="eta_TES_self_", data=0.05, doc="Self-discharge", src="@FFE_2016")
     k_BES_inPerCap_ = ParDat(name="k_BES_inPerCap_", data=0.7, doc="Maximum charging power per capacity", src="@Figgener_2021")
     k_BES_outPerCap_ = ParDat(name="k_BES_outPerCap_", data=0.7, doc="Maximum discharging power per capacity", src="@Figgener_2021")
     k_BES_RMI_ = ParDat(name="k_BES_RMI_", data=0.02, doc=Descs.RMI.en, src="@Juelch_2016")

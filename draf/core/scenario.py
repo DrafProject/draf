@@ -853,7 +853,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 to end with `_T` e.g. `P_eDem_T`;
                 a scalar has to end with `_` e.g. `C_TOT_inv_`.
             data: Data is normally given as int, float or pd.Series. Lists, Dicts and
-                np.ndarrays are accepted and converted to pd.Series. Lists and np.ndarrays 
+                np.ndarrays are accepted and converted to pd.Series. Lists and np.ndarrays
                 must have the same length as dims.T.
             doc: A description string for the parameter.
             fill: If a float is given here, the series is filled for all relevant dimensions
