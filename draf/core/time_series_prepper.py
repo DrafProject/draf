@@ -247,21 +247,32 @@ class TimeSeriesPrepper:
         )
 
     def P_PV_profile_T(
-        self, name: str = "P_PV_profile_T", use_coords: bool = True, **gsee_kw
+        self,
+        name: str = "P_PV_profile_T",
+        use_coords: bool = True,
+        overwrite_coords: Optional[Tuple] = None,
+        **gsee_kw,
     ) -> pd.Series:
         """Add a photovoltaic profile.
 
-        For Germany only: If `coords` are given as within the CaseStudy
-        a `gsee` calculation is conducted with weather data from the nearest available weather
-        station.
+        Args:
+            use_coords: For Germany only: If the `coords` of the CaseStudy should be used to
+                calculate the PV profile via `gsee`. In that case, the weather data from the
+                nearest available weather station is used.
+            overwrite_coords: Coordinates that are taken instead of the case study coordinates.
+            gsee_kw: Keywords used in the `gsee.pv.run_model` (https://gsee.readthedocs.io)
+                function.
         """
         sc = self.sc
 
-        if sc.coords is not None and use_coords:
-            logger.info(f"{sc.coords} coordinates used for PV calculation.")
-            ser = prep.get_pv_power(year=sc.year, coords=sc.coords, **gsee_kw).reset_index(
-                drop=True
-            )
+        if use_coords:
+            if sc.coords is not None:
+                coords = sc.coords
+            if overwrite_coords is not None:
+                coords = overwrite_coords
+            logger.info(f"{coords} coordinates used for PV calculation.")
+            assert coords is not None, "No coordinates given, but `use_coords=True`."
+            ser = prep.get_pv_power(year=sc.year, coords=coords, **gsee_kw).reset_index(drop=True)
         else:
             logger.warning(
                 "No coords given or usage not wanted. Year-independant backup PV profile is used."
