@@ -103,7 +103,7 @@ class TimeSeriesPrepper:
         """A Time-of-Use tariff with two prices.
         If no prices are given the according RTP tariff is taken as basis.
         """
-        holis = getattr(holidays, self.sc.country)(prov=prov)
+        holis = getattr(holidays, self.sc.country)(subdiv=prov)
         isLowTime_T = np.array(
             [
                 True

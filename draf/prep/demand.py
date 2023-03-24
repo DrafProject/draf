@@ -101,7 +101,7 @@ def get_el_SLP(
         else:
             return "Übergangszeit"
 
-    holiday_obj = getattr(holidays, country)(prov=province)
+    holiday_obj = getattr(holidays, country)(subdiv=province)
 
     def _get_day_type(date):
         is_holiday = date in holiday_obj

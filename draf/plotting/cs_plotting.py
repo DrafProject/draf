@@ -13,7 +13,8 @@ import plotly as py
 import plotly.figure_factory as ff
 import plotly.graph_objs as go
 import seaborn as sns
-from IPython.core.display import HTML, display
+from IPython import display
+from IPython.core.display import HTML
 from ipywidgets import interact, widgets
 from pandas.api.types import is_numeric_dtype
 from pandas.io.formats.style import Styler as pdStyler
