@@ -527,7 +527,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         self,
         scens: Optional[Iterable] = None,
         parallel: bool = False,
-        play_sound: bool = False,
+        play_sound: bool = True,
         **optimize_kwargs,
     ) -> CaseStudy:
         """Optimize multiple scenarios at once.

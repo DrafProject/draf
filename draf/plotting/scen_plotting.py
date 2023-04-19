@@ -389,7 +389,9 @@ class ScenPlotter(BasePlotter):
 
         return go.Figure(data=plotly_data)
 
-    def violin_T(self, etypes: Tuple = ("P", "dQ"), unit: str = "kW", show_zero: bool = False):
+    def violin_T(
+        self, etypes: Tuple = ("P", "dQ", "dH"), unit: str = "kW", show_zero: bool = False
+    ):
         df = self.sc.get_flat_T_df(lambda n: hp.get_etype(n) in etypes)
 
         if not show_zero:

@@ -859,6 +859,7 @@ class CsPlotter(BasePlotter):
         sink="P_EL_sink_T",
         source="P_EL_source_T",
         xlabel="Electricity consumption (GWh/a)",
+        cmap="tab20_r",
         factor=1e-6,
         nlabel_rows=2,
     ):
@@ -873,7 +874,7 @@ class CsPlotter(BasePlotter):
         df = df * factor
         fig, ax = plt.subplots(figsize=(6, 2.5))
         ax.axvline(x=0, color="k", linestyle="-", alpha=0.5, lw=0.5)
-        df.T.plot.barh(stacked=True, ax=ax, cmap="tab20_r", width=0.7)
+        df.T.plot.barh(stacked=True, ax=ax, cmap=cmap, width=0.7)
         ax.set_xlabel(xlabel)
         # plt.yticks(rotation=20, ha="right")
 
@@ -890,7 +891,7 @@ class CsPlotter(BasePlotter):
             handles = [handles[idx] for idx in order]
             labels = [labels[idx] for idx in order]
         else:
-            handles, labels = handles[::-1], labels[::-1]
+            handles, labels = handles[::1], labels[::1]
 
         # remove unused labels without changing the colours
         dismissed_labels = df[df.sum(1) == 0].index
@@ -1412,13 +1413,13 @@ class CsPlotter(BasePlotter):
         ax.set_xlabel("Correlation coefficient")
         sns.despine()
 
-    def violin_T(self):
+    def violin_T(self, **kwargs):
         cs = self.cs
 
         @interact(scenario=cs.scens_ids, show_zero=True)
         def f(scenario, show_zero):
             sc = cs.scens.get(scenario)
-            return sc.plot.violin_T(show_zero=show_zero)
+            return sc.plot.violin_T(show_zero=show_zero, **kwargs)
 
 
 def _get_capa_heatmap(df) -> go.Figure:
