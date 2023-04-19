@@ -6,7 +6,7 @@ __title__ = "DRAF"
 __summary__ = "Demand Response Analysis Framework"
 __uri__ = "https://github.com/DrafProject/draf"
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 __author__ = "Markus Fleschutz"
 __email__ = "mfleschutz@gmail.com"
