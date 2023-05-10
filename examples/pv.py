@@ -1,4 +1,8 @@
-"""A small script using the model pv_bes."""
+"""A small example with a fixed electricity demand (eDem), an electricity grid (EG), a
+photovoltaic system (PV), and the Main component which contains the objective function and the
+energy balances. There is no controllable component, so the operation is determined and cannot be
+optimized. That means the Solver will solve the problem in pre-solve.
+"""
 
 import draf
 from draf.components import *

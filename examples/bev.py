@@ -1,3 +1,11 @@
+"""This example optimizes the charging of battery electric vehicles (BEV).
+
+Two time series are considered:
+    `P_BEV_drive_TB`: The discharging power of BEV during its utilization.
+    `y_BEV_avail_TB`: The availability (0 or 1) for charging.
+Here, we assume that the BEV is available for charging when it is not used.
+"""
+
 import draf
 from draf.components import *
 

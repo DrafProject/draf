@@ -1,4 +1,4 @@
-"""Distributed Energy Resources (DER) and Heat Upgrading Technologies (HUT)"""
+"""Example model for Distributed Energy Resources (DER) and Heat Upgrading Technologies (HUT)"""
 
 
 import draf

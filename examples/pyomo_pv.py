@@ -1,7 +1,7 @@
 """This minimal example simulates the electricity purchase for a given demand and PV production.
-All variables are solves in the presolve. The aim of this file is to show the syntax of parameter
-& model definition. They are used by the main function to create a case-study with 2 scenarios: 
-`REF` and `REF_PV`.
+All variables are solved in the presolve. The aim of this file is to show the syntax of parameter
+& model definition when using Pyomo. They are used by the main function to create a case-study with
+two scenarios: `REF` and `REF_PV`.
 """
 
 import pyomo.environ as pyo
@@ -11,8 +11,9 @@ import draf
 from draf import Collectors, Dimensions, Params, Results, Scenario, Vars
 from draf.abstract_component import Component
 
+
 class TEST_COMP(Component):
-    
+
     def param_func(_, sc: draf.Scenario):
 
         # Total
@@ -33,7 +34,6 @@ class TEST_COMP(Component):
         # PV
         sc.param("P_PV_CAPx_", 0, "existing capacity", "kW_peak")
         sc.prep.P_PV_profile_T(use_coords=True)
-
 
     def model_func(_, sc: Scenario, m: pyo.Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
 

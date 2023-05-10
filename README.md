@@ -54,12 +54,22 @@ The software is described and demonstrated in the open-access [draf demo paper].
    cd draf
    ```
 
-1. Create and activate the `draf` conda environment (based on environment.yml including a full editable local version of `draf`):
+1. Create and activate the `draf` conda environment (`conda env create` will create a conda environment based on [environment.yml](environment.yml) which will install the newest versions of the required packages including the full editable local version of `draf`.):
 
    ```sh
    conda env create
    conda activate draf
    ```
+
+1. (optional) To use the latest electricity prices and carbon emission factors from [`elmada`], request an [ENTSO-E API key] and set it to elmada:
+
+    ```py
+    # You have to run this Python code only once (it writes to a permanent file):
+    import elmada
+    elmada.set_api_keys(entsoe="YOUR_ENTSOE_KEY")
+    ```
+
+1. (optional) To use Gurobi (fast optimization), install a valid Gurobi license (its [free for academics](https://www.gurobi.com/academia/academic-program-and-licenses)).
 
 1. (optional) Run tests:
 
@@ -73,20 +83,23 @@ The software is described and demonstrated in the open-access [draf demo paper].
    jupyter notebook
    ```
 
-1. (optional) To use Gurobi (fast optimization), install a valid Gurobi license (its [free for academics](https://www.gurobi.com/academia/academic-program-and-licenses)).
-
-1. (optional) To use the latest electricity prices and carbon emission factors from [`elmada`], request an [ENTSO-E API key] and set it to elmada:
+1. Check if the imports work:
 
     ```py
-    # Python code that you have to run only once:
+    import draf
     import elmada
-    elmada.set_api_keys(entsoe="YOUR_ENTSOE_KEY")
     ```
 
-1. Start modeling
+1. (optional) Installing the newest packages via `conda env create` might create issues. Alternatively, you could use a more specific conda environment with:
 
-1. Have a look at the [examples](examples).
-  Start with the [`minimal`](examples/minimal.py) example.
+   ```sh
+   conda env create --file environments\environment_py39all.yml
+   conda activate draf39
+   ```
+
+1. Start modeling.  Have a look at the [examples](examples).
+  Start with the [`minimal`](examples/minimal.py) if you want to write your own component.
+  Start with the [`PV`](examples/pv.py) example if you want to import existing components.
   For more advanced modeling look at the [draf_demo_case_studies].
 
 ## For users

@@ -1,8 +1,7 @@
-"""Very simple example with only one user-defined component.
+"""Minimal example with only one user-defined component.
 
 Notes:
-    - There is nothing to optimize.
-    - Most of the imports are type hints and can be omitted.
+    - The model just determines the total costs `C_TOT_`. There is nothing to "optimize".
     - param_func is DRAF syntax, the model_func is GurobiPy syntax.
     - Most of the CaseStudy functions can be chained.
 """
@@ -10,8 +9,8 @@ Notes:
 from gurobipy import GRB, Model, quicksum
 
 import draf
-from draf import Collectors, Dimensions, Params, Scenario, Vars
-from draf.abstract_component import Component
+from draf import Collectors, Dimensions, Params, Scenario, Vars  # only used for type hinting
+from draf.abstract_component import Component  # only used for type hinting
 
 
 class Minimal(Component):
@@ -20,10 +19,10 @@ class Minimal(Component):
 
         # Define the optimization variable C_TOT_:
         sc.var("C_TOT_", doc="Total costs", unit="€/a")
-        
+
         # Prepare time-dependent day-ahead market prices as parameter c_EG_RTP_T:
         sc.prep.c_EG_RTP_T()
-        
+
         # Prepare a time-dependent G1 standard load profile (Business on weekdays 08:00 - 18:00)
         # with the annual energy of 5 GWh:
         sc.prep.P_eDem_T(profile="G1", annual_energy=5e6)

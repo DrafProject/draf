@@ -1,8 +1,6 @@
-"""Flexible operation of an industrial process"""
-
-
+"""Flexible operation of an industrial process."""
 import draf
-from draf.components import *
+from draf.components import eDem, EG, PP, PS, pDem, Main
 
 
 def main():

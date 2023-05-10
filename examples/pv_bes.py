@@ -1,5 +1,7 @@
-"""A model with a Photovoltaic and a Battery Energy Storage System. It is used in the showcase
-see: https://mfleschutz.github.io/draf-showcase/#/2
+"""Optimizing the operation of a 100 kWh Battery Energy Storage (BES) considering a Photovoltaic
+(PV), a fixed electricity demand (eDem), and an existing 1 MWp Photovoltaic system.
+
+The example is used in the DRAF showcase see: https://mfleschutz.github.io/draf-showcase/#/2
 """
 
 import draf
