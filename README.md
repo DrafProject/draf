@@ -101,12 +101,9 @@ The software is described and demonstrated in the open-access [draf demo paper].
   Start with the [`minimal`](examples/minimal.py) if you want to write your own component.
   Start with the [`PV`](examples/pv.py) example if you want to import existing components.
   For more advanced modeling look at the [draf_demo_case_studies].
+  Consider the [draf_cheat_sheet](draf_cheat_sheet.md)
 
-## For users
-
-More documentation for `draf` will come in future.
-
-### Structure
+## Structure
 
 A `CaseStudy` object can contain several `Scenario` instances:
 
@@ -122,7 +119,7 @@ See [conventions.py](draf/conventions.py) for examples of types, components, and
 ## Contributing
 
 Contributions in any form are welcome!
-Please contact [Markus Fleschutz] and have a look [here](for_devs.md).
+Please contact [Markus Fleschutz].
 
 ## Citing draf
 
