@@ -101,7 +101,7 @@ The software is described and demonstrated in the open-access [draf demo paper].
   Start with the [`minimal`](examples/minimal.py) if you want to write your own component.
   Start with the [`PV`](examples/pv.py) example if you want to import existing components.
   For more advanced modeling look at the [draf_demo_case_studies].
-  Consider the [DRAF_CHEAT_SHEET.md](DRAF_CHEAT_SHEET.md)
+  Consider the [DRAF CHEAT SHEET](draf_cheat_sheet.md)
 
 ## Structure
 
