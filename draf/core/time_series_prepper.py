@@ -295,7 +295,7 @@ class TimeSeriesPrepper:
         name: str = "c_EG_addon_",
         AbLa_surcharge=0.00003,
         Concession_fee=0.0011,
-        EEG_surcharge=0,  # no longer due since 2022-07-01
+        EEG_surcharge=0,  # (German Renewable Energies Act levy) no longer due since 2022-07-01
         Electricity_tax=0.01537,
         KWK_surcharge=0.0038,
         Network_cost=0,  # paid per kW peak

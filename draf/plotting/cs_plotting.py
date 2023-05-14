@@ -283,10 +283,26 @@ class CsPlotter(BasePlotter):
                 ],
             ),
             (
+                "EWAP_buy rate",
+                "{:,.0f}%",
+                lambda df, cs: [
+                    ((sc.res.P_EG_buy_T * sc.params.c_EG_T).sum() / sc.res.P_EG_buy_T.sum()) * 100 / sc.params.c_EG_T.mean() 
+                    for sc in cs.scens
+                ],
+            ),
+            (
                 "EWACEF_buy",
                 "{:,.2f} t/MWh",
                 lambda df, cs: [
                     (sc.res.P_EG_buy_T * sc.params.ce_EG_T).sum() / sc.res.P_EG_buy_T.sum()
+                    for sc in cs.scens
+                ],
+            ),
+            (
+                "EWACEF_buy rate",
+                "{:,.0f}%",
+                lambda df, cs: [
+                    ((sc.res.P_EG_buy_T * sc.params.ce_EG_T).sum() / sc.res.P_EG_buy_T.sum()) * 100 / sc.params.ce_EG_T.mean()
                     for sc in cs.scens
                 ],
             ),
