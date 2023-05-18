@@ -78,11 +78,11 @@ class Main(Component):
             c.C_TOT_op_["RMI"] = v.C_TOT_RMI_
             c.C_TOT_["inv"] = v.C_TOT_invAnn_
 
-            ## AUTOCOLLECTORS (currently unused) ---------------------------------------------------
+            # AUTOCOLLECTORS (currently unused) ---------------------------------------------------
             # m.addConstr( (v.C_TOT_inv_ == autocollectors.C_inv_(p, v, r=p.k__r_) * conv("€", "k€", 1e-3)) )
             # m.addConstr( (v.C_TOT_invAnn_ == autocollectors.C_inv_Annual_(p, v, r=p.k__r_) * conv("€", "k€", 1e-3)) )
             # m.addConstr( (v.C_TOT_RMI_ == autocollectors.C_TOT_RMI_(p, v) * conv("€", "k€", 1e-3)), "DEF_C_TOT_RMI_", )
-            ## -------------------------------------------------------------------------------------
+            # -------------------------------------------------------------------------------------
 
         m.addConstr(v.C_TOT_ == quicksum(c.C_TOT_.values()), "total_cost_balance")
         m.addConstr(

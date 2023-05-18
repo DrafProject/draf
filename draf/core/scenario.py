@@ -761,7 +761,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.vars._meta[name].update(lb=lower_bound)
         return self
 
-    def _infer_dimension_from_name(self, name: str) -> Tuple[str, str, Union[float, pd.Series]]:
+    def _infer_dimension_from_name(self, name: str) -> Tuple[str, str, List]:
         if name == "T":
             doc = f"{self.freq} time steps"
             unit = self.freq_unit

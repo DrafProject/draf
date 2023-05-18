@@ -57,6 +57,7 @@ def get_dims(ent_name: str) -> str:
 
 
 def get_step_width(freq: str) -> float:
+    """Returns the step width in hours"""
     return int_from_freq(freq) / 60
 
 

@@ -7,6 +7,7 @@ from draf.prep.par_dat import ParDat, Source
 # This file is ignored from the black formatter.
 # Data entries are alphabetically sorted within the formatting routine.
 
+
 class SRC:
     # SORTING_START
     Arat_2017 =        Source(url="https://doi.org/10.1016/j.energy.2016.11.073", doc="Fig. 3", bib=r"@article{Arat_2017, doi={10.1016/j.energy.2016.11.073}, url={https://doi.org/10.1016/j.energy.2016.11.073}, year={2017}, month=jan, publisher={Elsevier {BV}}, volume={119}, pages={1159--1170}, author={Halit Arat and Oguz Arslan}, title={Exergoeconomic analysis of district heating system boosted by the geothermal heat pump}, journal={Energy}}")
@@ -40,6 +41,7 @@ class SRC:
     Weber_2008 =       Source(url="https://doi.org/10.5075/epfl-thesis-4018")
     Wolf_2017 =        Source(url="https://doi.org/10.18419/opus-9593", bib=r"@misc{Wolf_2017, author={Wolf, Stefan}, doi={10.18419/OPUS-9593}, keywords={620}, language={de}, publisher={Universität Stuttgart}, title={Integration von Wärmepumpen in industrielle Produktionssysteme : Potenziale und Instrumente zur Potenzialerschließung}, url={http://elib.uni-stuttgart.de/handle/11682/9610}, year={2017}}")
     # SORTING_END
+
 
 class DataBase:
     from draf.conventions import Descs, Etypes

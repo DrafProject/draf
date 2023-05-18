@@ -34,7 +34,7 @@ class DemandAnalyzer(DateTimeHandler):
         self.averages_plot()
         self.weekdays_plot()
 
-    def get_stats(self) -> None:
+    def get_stats(self) -> str:
         step_width = hp.get_step_width(self.freq)
         sum_value, sum_unit = hp.auto_fmt(self.p_el.sum() * step_width, "kWh")
         std_value, std_unit = hp.auto_fmt(self.p_el.std(), "kW")
@@ -53,7 +53,7 @@ class DemandAnalyzer(DateTimeHandler):
         header = " Metrics ".center(table_width, "-")
         return f"{header}\n{text_table}\n"
 
-    def make_text_table(self, data: List[Tuple[str]]):
+    def make_text_table(self, data: List[Tuple[str, str, str]]):
         li = []
         col_width = [max([len(word) for word in col]) for col in zip(*data)]
         for row in data:
