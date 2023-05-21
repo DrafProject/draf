@@ -9,7 +9,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 **d**emand **r**esponse **a**nalysis **f**ramework (`draf`) is an analysis and decision support framework for local multi-energy hubs focusing on demand response.
-It uses the power of ([mixed integer]) [linear programming] optimization, [`pandas`], [`Plotly`], [`Matplotlib`], [`elmada`], [`GSEE`] and more to help users along the energy system analysis process.
+It uses the power of ([mixed integer]) [linear programming] optimization, [`pandas`], [`Plotly`], [`Matplotlib`], [`elmada`], [`GSEE`], [`Jupyter`] and more to help users along the energy system analysis process.
 The software is described and demonstrated in the open-access [draf demo paper].
 `draf` runs on Windows, macOS, and Linux.
 
@@ -61,21 +61,14 @@ The software is described and demonstrated in the open-access [draf demo paper].
    conda activate draf
    ```
 
-1. (optional) To use the latest electricity prices and carbon emission factors from [`elmada`], request an [ENTSO-E API key] and set it to elmada:
-
-    ```py
-    # You have to run this Python code only once (it writes to a permanent file):
-    import elmada
-    elmada.set_api_keys(entsoe="YOUR_ENTSOE_KEY")
-    ```
-
-1. (optional) To use Gurobi (fast optimization), install a valid Gurobi license (its [free for academics](https://www.gurobi.com/academia/academic-program-and-licenses)).
-
-1. (optional) Run tests:
+1. (OPTIONAL) If the draf environment caused issues, you could install an older but more specific conda environment, e.g.:
 
    ```sh
-   pytest
+   conda env create --file environments/environment_py39all_mac.yml --force
+   conda activate draf39
    ```
+
+1. (OPTIONAL) To use Gurobi (fast optimization), install a valid Gurobi license (its [free for academics](https://www.gurobi.com/academia/academic-program-and-licenses)).
 
 1. Open Jupyter notebook:
 
@@ -90,12 +83,13 @@ The software is described and demonstrated in the open-access [draf demo paper].
     import elmada
     ```
 
-1. (optional) Installing the newest packages via `conda env create` might create issues. Alternatively, you could use a more specific conda environment with:
+1. (OPTIONAL) To use the latest electricity prices and carbon emission factors from [`elmada`], request an [ENTSO-E API key] and set it to elmada:
 
-   ```sh
-   conda env create --file environments\environment_py39all.yml
-   conda activate draf39
-   ```
+    ```py
+    # You have to run this Python code only once (it writes to a permanent file):
+    import elmada
+    elmada.set_api_keys(entsoe="YOUR_ENTSOE_KEY")
+    ```
 
 1. Start modeling.  Have a look at the [examples](examples).
   Start with the [`minimal`](examples/minimal.py) if you want to write your own component.
@@ -159,6 +153,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [`elmada`]: https://github.com/DrafProject/elmada
 [`GSEE`]: https://github.com/renewables-ninja/gsee
 [`GurobiPy`]: https://pypi.org/project/gurobipy
+[`Jupyter`]: https://jupyter.org
 [`Matplotlib`]: https://matplotlib.org
 [`pandas`]: https://pandas.pydata.org
 [`Plotly`]: https://plotly.com
