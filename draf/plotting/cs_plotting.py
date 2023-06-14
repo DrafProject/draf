@@ -1131,7 +1131,7 @@ class CsPlotter(BasePlotter):
 
         left_aligner = list(df.dtypes[df.dtypes == object].index)
         s = (
-            df.style.format({n: number_format if is_numeric_dtype(df[n]) else "{:s}" for n in df})
+            df.style.format({n: number_format if is_numeric_dtype(df[n]) else "{}" for n in df})
             .apply(highlight_diff1, subset=df.columns[1:])
             .apply(highlight_diff2, subset=df.columns[1:])
             .set_properties(subset=left_aligner, **{"text-align": "left"})
