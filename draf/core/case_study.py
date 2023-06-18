@@ -58,14 +58,18 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
     scenarios and functions.
 
     Args:
-        name: Name string of case study.
+        name: Name string of the case study.
         year: Year
         freq: Default time step. E.g. '60min'.
-        country: Country code.
+        country: Country code of the case study location. Used for the preparation of parameters
+            such as dynamic electricity prices.
         consider_invest: If investment decisionts are considered.
         doc: Documentation string of case study.
-        coords: The geographic coordinates (latitude, longitude) of the case study location.
+        coords: Geographic coordinates (lattitude, longitude) of the case study location used for
+            preparing weather-based parameters data such as photovoltaico profiles, air
+            temperatures, heat demands, etc.
         obj_vars: The names of the objective variables.
+        mdl_language: The modeling language used. Either 'gp' or 'pyo'.
     """
 
     def __init__(
@@ -303,7 +307,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 desired variations. The syntax can be taken from this example:
                 ```
                 scen_vars = [
-                    ("c_EG_T", "t", ["c_EG_RTP_T", "c_EG_TOU_T"]]),
+                    ("c_EG_KG", "t", ["c_EG_RTP_KG", "c_EG_TOU_KG"]]),
                     ("P_PV_CAPx_", "p", [0, 10, 20])
                 ]
                 ```
@@ -572,6 +576,15 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         """Returns the data of an entity for all scenarios."""
         return {sc.id: sc.get_ent(ent_name) for sc in self.scens}
 
+    def get_all_collectors(self) -> List:
+        return sorted(list({c for sc in self.scens for c in sc.collectors.get_all()}))
+
+    def get_all_collector_values(self) -> pd.DataFrame:
+        return pd.concat(
+            {c: self.get_collector_values(c) for c in list(self.any_scen.collector_values.keys())},
+            axis=0,
+        ).sort_index()
+
     def get_collector_values(self, collector_name: str):
         return pd.DataFrame(
             {k: sc.collector_values[collector_name] for k, sc in self.scens_dic.items()}
@@ -624,3 +637,22 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         for name, sc in scen_dic.items():
             if name in scens_to_import:
                 setattr(self.scens, name, sc)
+
+    def sort_scenarios(self, order: Optional[List] = None) -> CaseStudy:
+        if order is None:
+            order = sorted(self.scens_ids, key=lambda n: n.upper())
+        self.scens.__dict__ = OrderedDict({k: self.scens.__dict__[k] for k in order})
+        return self
+
+    def aggregate_temporally(self, *args, **kwargs) -> CaseStudy:
+        for sc in self.scens:
+            sc.aggregate_temporally(*args, **kwargs)
+        return self
+
+    def delete_parameters(self, entities_to_delete):
+        for sc in self.scens:
+            for ent in entities_to_delete:
+                try:
+                    delattr(sc.params, ent)
+                except AttributeError:
+                    pass

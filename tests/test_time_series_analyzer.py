@@ -1,7 +1,7 @@
 import pytest
 
 from draf.prep import get_el_SLP
-from draf.tsa import DemandAnalyzer
+from draf.time_series_analyzer import DemandAnalyzer
 
 
 @pytest.mark.slow

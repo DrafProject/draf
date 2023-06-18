@@ -17,6 +17,18 @@ class DateTimeHandler(ABC):
         e.g. 0.25 for a frequency of 15min."""
         return hp.get_step_width(self.freq)
 
+    def dt(self, k: int, g: int) -> float:
+        if hasattr(self, "segmentation"):
+            if self.segmentation:
+                # TSA was conducted WITH segmentation
+                return self.hoursPerSegment[k, g]
+            else:
+                # TSA was conducted WITHOUT segmentation
+                return self.step_width
+        else:
+            # TSA was NOT conducted
+            return self.step_width
+
     @property
     def dt_info(self) -> str:
         """Get an info string of the chosen time horizon of the case study."""
@@ -32,6 +44,10 @@ class DateTimeHandler(ABC):
     def steps_per_day(self):
         steps_per_hour = 60 / hp.int_from_freq(self.freq)
         return int(steps_per_hour * 24)
+
+    @property
+    def n_days(self):
+        return int(len(self.dtindex) / self.steps_per_day)
 
     @property
     def freq_unit(self):

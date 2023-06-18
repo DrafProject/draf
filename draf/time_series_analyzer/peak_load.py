@@ -226,7 +226,7 @@ class PeakLoadAnalyzer(DateTimeHandler):
         # Plot results
         fig, ax = plt.subplots(figsize=(10, 4))
         ax.plot(p_el, label="P_el", c="r")
-        ax.plot(p_BES_T, label="p_BES_T")
+        ax.plot(p_BES_T, label="p_BES_KG")
         ax.plot(p_eex_buy, label="P_eex_buy", c="g")
         ax.plot(load, label="load")
         ax.plot(unload, label="unload")

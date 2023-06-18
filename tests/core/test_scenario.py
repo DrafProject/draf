@@ -58,3 +58,35 @@ def test_param(sc):
     sc.param(name="c_Fuel_other-name_", from_db=db.c_Fuel_co2_)
     for ent in ["c_CHP_inv_", "eta_HP_", "c_Fuel_other-name_"]:
         isinstance(sc.params.get(ent), float)
+
+    # test conversion from T to KG dimensions
+    sc.param("c_test_KG", data=pd.Series({0: 1, 1: 2, 2: 5}))
+    multi_index_ser = pd.Series(
+        index=pd.MultiIndex.from_arrays([[0, 0, 0], [0, 1, 2]]), data=[1, 2, 5]
+    )
+    assert sc.params.c_test_KG.equals(multi_index_ser)
+
+
+def test_stack_data_from_TSA():
+    before = pd.DataFrame(
+        {
+            "P_BEV_drive_KG": [5, 2, 1],
+            "P_BEV_drive_KGB[1/2]": [5, 2, 1],
+            "P_BEV_drive_KGA[1]": [5, 2, 1],
+            "P_BEV_drive_KGAB[1, 1]": [5, 2, 1],
+            "P_BEV_drive_KGAB[1, 2]": [5, 2, 1],
+        }
+    )
+
+    expected = {
+        "P_BEV_drive_KG": pd.Series([5, 2, 1]),
+        "P_BEV_drive_KGA": pd.DataFrame({1: [5, 2, 1]}).stack(),
+        "P_BEV_drive_KGB": pd.DataFrame({"1/2": [5, 2, 1]}).stack(),
+        "P_BEV_drive_KGAB": pd.DataFrame({(1, 1): [5, 2, 1], (1, 2): [5, 2, 1]})
+        .stack([0, 1])
+        .rename("P_BEV_drive_KGAB"),
+    }
+    from draf.core.scenario import stack_data_from_TSA
+
+    for k, v in stack_data_from_TSA(before).items():
+        assert v.equals(expected[k])

@@ -7,7 +7,6 @@ import logging
 import math
 import pickle
 import time
-from optparse import Option
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
@@ -15,6 +14,7 @@ import gurobipy as gp
 import numpy as np
 import pandas as pd
 import pyomo.environ as pyo
+from tsam.timeseriesaggregation import TimeSeriesAggregation
 
 from draf import helper as hp
 from draf import paths
@@ -27,7 +27,7 @@ from draf.core.mappings import GRB_OPT_STATUS, VAR_PAR
 from draf.core.time_series_prepper import TimeSeriesPrepper
 from draf.plotting import ScenPlotter
 from draf.prep.data_base import ParDat
-from draf.tsa.demand_analyzer import DemandAnalyzer
+from draf.time_series_analyzer.demand_analyzer import DemandAnalyzer
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.WARN)
@@ -37,23 +37,42 @@ class Scenario(DrafBaseClass, DateTimeHandler):
     """An energy system configuration scenario.
 
     Args:
-        id: Scenario Id string which must not start with a number.
-        name: Scenario name string.
-        doc: Scenario documentation string.
+        id: A short unique string for the scenario. This is used to access the scenario and to label
+            scenarios in plots with many scenarios. Don't start with a number to be able to access
+            it through `cs.scens.my_id`.
+        freq: Default time step. E.g. '60min'
+        year: Year
+        country: Country code of the case study location. Used for the preparation of parameters
+            such as dynamic electricity prices.
+        name: A longer, more telling string for the scenario used for plotting.
+        doc: A detailed description of the scenario used for plotting and documentation.
+        dtindex: Pandas DateTime index for the preparation of parameters.
+        dtindex_custom: Pandas DateTime index that defines the optimization time frame.
+        t1, t2: Start and end of optimization time frame as hour of a year.
+        coords: Geographic coordinates (lattitude, longitude) of the case study location used for
+            preparing weather-based parameters data such as photovoltaico profiles, air
+            temperatures, heat demands, etc.
+        cs_name: The name of respective case study.
+        components: List of component objects. This can be either a component class or an instance of it.
+        custom_model: A `model_func` that is called within the optimization routine.
+        consider_invest: If investments should be considered.
+        mdl_language: The modeling language used. Either 'gp' or 'pyo'.
+        obj_vars: The names of the obje ctive variables.
+        update_dims: A dictionary with dimension-data pairs to update existing dimensions.
     """
 
     def __init__(
         self,
-        freq: str,
-        year: int,
-        country: str = "DE",
-        dtindex: Optional[int] = None,
-        dtindex_custom: Optional[int] = None,
-        t1: Optional[int] = None,
-        t2: Optional[int] = None,
         id: str = "",
+        year: int = 2019,
+        freq: str = "60min",
+        country: str = "DE",
         name: str = "",
         doc: str = "",
+        dtindex: Optional[pd.DatetimeIndex] = None,
+        dtindex_custom: Optional[pd.DatetimeIndex] = None,
+        t1: Optional[int] = None,
+        t2: Optional[int] = None,
         coords: Optional[Tuple[float, float]] = None,
         cs_name: str = "no_case_study",
         components: Optional[List[Union[Component, type]]] = None,
@@ -91,7 +110,21 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             self._t2 = t2
             self.freq = freq
 
-        self.dim("T", infer=True)
+        self.dim("T", data=list(range(self._t1, self._t2 + 1)), doc=f"Time steps")
+
+        # The default is to have just one period (containing all time steps) and one typical period.
+        # TSA-objects are used for consistency.
+        self.dim("I", data=list(range(1)), doc="Candidate period index")
+        self.dim("K", data=list(range(1)), doc="Typical period index")
+        self.periodsOrder = [0]  # mapping candidate periods to typical periods
+        self.periodOccurrences = [1]
+        self.dim("G", data=self.dims.T, doc="Intra-period step index")
+        self.param(
+            "n__stepsPerPeriod_",
+            data=len(self.dims.T),
+            doc="Number of time steps per typical period",
+        )
+
         self.prep.k__PartYearComp_()
         self.prep.k__dT_()
 
@@ -136,14 +169,17 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     @property
     def size(self) -> str:
+        """The file size of the scenario."""
         return hp.human_readable_size(hp.get_size(self))
 
     @property
     def _has_feasible_solution(self) -> bool:
+        """If the scenario has a feasible solution."""
         return hasattr(self, "res")
 
     @property
     def _is_optimal(self) -> bool:
+        """If the results were optimal."""
         if self.mdl_language == "gp":
             return self.mdl.Status == gp.GRB.OPTIMAL
         elif self.mdl_language == "pyo":
@@ -200,14 +236,14 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         """Return a dictionary with filtered entities.
 
         Args:
-            etype: The component part of the entity name
-            comp: The component part of the entity name, e.g. `BES`
-            desc: The description part ot the entity name, e.g. `in`
-            dims: The dimension part of the entity name, e.g. `T`
+            etype: The component part of the entity name.
+            comp: The component part of the entity name, e.g. `BES`.
+            desc: The description part ot the entity name, e.g. `in`.
+            dims: The dimension part of the entity name, e.g. `T`.
             func: Function that takes the entity name and returns a if the entity
-                should be included or not
-            params: If parameters are included
-            vars: If variable results are included
+                should be included or not.
+            params: If parameters are included.
+            vars: If variable results are included.
         """
         kwargs = dict(etype=etype, comp=comp, desc=desc, dims=dims, func=func)
         d = dict()
@@ -236,7 +272,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self._par_dic = self.params._to_dims_dic()
 
     def get_total_energy(self, data: pd.Series) -> float:
-        """Get the total energy of a power entity."""
+        """Get the total energy over the optimization time frame of a power entity with
+        the index `T`.
+        """
         try:
             return data.sum() * self.step_width
         except AttributeError as e:
@@ -254,8 +292,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
     def update_res_dic(self):
         self._res_dic = self.res._to_dims_dic()
 
-    def analyze_demand(self, data: pd.Series) -> DemandAnalyzer:
-        da = DemandAnalyzer(p_el=data, year=self.year, freq=self.freq)
+    def analyze_demand(self, time_series: pd.Series) -> DemandAnalyzer:
+        da = DemandAnalyzer(p_el=time_series, year=self.year, freq=self.freq)
         da.show_stats()
         return da
 
@@ -333,6 +371,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         return self
 
     def add_components(self, components: List, update_dims: Optional[Dict] = None):
+        """Add components to the scenario."""
         self._set_time_trace()
         logger.info(f"Set params for scenario {self.id}")
 
@@ -360,11 +399,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
          meta-informations for variables. Models of components are automatically fetched.
 
         Args:
-            custom_model_func: A model func that is additionally executed. A model func is a
-                functions that takes the arguments sc, m, d, p, v and populates the parameters
-                and variable meta data.
-            custom_model_func_loc: Location of the custom_model_func. Determines when given
-                custom_model_func is executed compared to the model_funcs of the components.
+            custom_model_func: A `model_func` that is additionally executed.
+            custom_model_func_loc: Order of the custom_model_func. Determines when given
+                custom_model_func is executed compared to the other components' `model_func`s.
             speed_up: If speed increases should be exploited by converting the parameter objects to
                 tuple-dicts before building the constraints.
         """
@@ -429,7 +466,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         return td
 
     def _instantiate_model(self) -> None:
-
         if self.mdl_language == "gp":
             self.mdl = gp.Model(name=self.id)
             self._set_default_solver_params()
@@ -505,6 +541,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         postprocess_func: Optional[Callable] = None,
         which_solver="gurobi",
         solver_params: Optional[Dict] = None,
+        scale_KG_to_T: bool = True,
     ) -> Scenario:
         """Solves the optimization problem and does postprocessing if the function is given.
         Results are stored in the Results-object of the scenario.
@@ -514,8 +551,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             outputFlag: Sets the outputFlag param to the gurobipy model.
             show_results: If the Cost and Carbon emissions are printed.
             keep_vars: If the variable objects are kept after optimization run.
-            postprocess_func: Function which is executed with the results container object as
-                argument.
+            postprocess_func: Function which is executed with the scenario as argument.
             which_solver: Choose solver. Only applicable when using Pyomo.
             solver_params: Set solver params such as MIPGap, MIPFocus or LogFile.
         """
@@ -525,21 +561,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         if not hasattr(self, "mdl"):
             self.set_model()
 
-        pp_funcs = []
-        if postprocess_func is not None:
-            pp_funcs.append(postprocess_func)
-        if hasattr(self, "components"):
-            for comp in self.components:
-                if hasattr(comp, "postprocess_func"):
-                    pp_funcs.append(comp.postprocess_func)
+        kwargs = dict(logToConsole=logToConsole, outputFlag=outputFlag, show_results=show_results)
 
-        kwargs = dict(
-            logToConsole=logToConsole,
-            outputFlag=outputFlag,
-            show_results=show_results,
-            postprocess_funcs=pp_funcs,
-        )
-
+        logger.info(f"Optimize")
         if self.mdl_language == "gp":
             assert which_solver == "gurobi"
             solution_exists = self._optimize_gurobipy(**kwargs, solver_params=solver_params)
@@ -551,11 +575,63 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             self._cache_collector_values()
         if not keep_vars:
             self.vars.delete_all()
+
+        if scale_KG_to_T:
+            logger.info(f"Scale KG data to T.")
+            self._scale_all_KG_data_to_T(self.params, self.params)
+            self._scale_all_KG_data_to_T(self.res, self.res)
+
+        pp_funcs = []
+        if postprocess_func is not None:
+            pp_funcs.append(postprocess_func)
+        if hasattr(self, "components"):
+            for comp in self.components:
+                if hasattr(comp, "postprocess_func"):
+                    pp_funcs.append(comp.postprocess_func)
+
+        for postprocess_func in pp_funcs:
+            postprocess_func(self)
+
         return self
 
-    def _optimize_gurobipy(
-        self, logToConsole, outputFlag, show_results, postprocess_funcs, solver_params
-    ) -> bool:
+    def _scale_all_KG_data_to_T(self, source, destination) -> None:
+        """`source` and `destination` can either be `params` or `res`."""
+        for k, v in source.filtered(func=lambda name: "KG" in hp.get_dims(name)).items():
+            if self.has_TSA:
+                data = self._predict_T_after_TSA(v)
+            else:
+                data = hp.from_simple_KG_to_T_format(v)
+            new_name = hp.rename_KG_to_T(k)
+            destination._meta[new_name] = source._meta[k]
+            if my_dims := destination._get_meta(new_name, "dims"):
+                destination._set_meta(new_name, "dims", my_dims.replace("KG", "T"))
+            setattr(destination, new_name, data)
+
+    def _predict_T_after_TSA(self, ser: pd.Series, rename: bool = True) -> pd.Series:
+        ndims = ser.index.nlevels
+        if ndims > 2:
+            df = ser.unstack(list(range(2, ndims)))
+            return df.apply(self._predict_T_after_TSA, rename=False).stack(list(range(ndims - 2)))
+        else:
+            name = ser.name
+            data_KG = ser.unstack().values
+            ser = pd.Series(
+                [
+                    data_KG[k, g]
+                    for k in self.periodsOrder
+                    for g, n_steps in self.timeStepsPerSegment[k].items()
+                    for _ in range(n_steps)
+                ]
+                if self.segmentation
+                else [data_KG[k, g] for k in self.periodsOrder for g in self.dims.G],
+                name=name,
+            )
+            ser = ser.rename_axis(index=["T"] + ser.index.names[1:])
+            if rename:
+                ser = hp.rename_data_from_KG_to_T(ser)
+            return ser
+
+    def _optimize_gurobipy(self, logToConsole, outputFlag, show_results, solver_params) -> bool:
         logger.info(f"Optimize {self.id}")
         self._set_time_trace()
 
@@ -571,8 +647,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         status_str = GRB_OPT_STATUS[status]
         if (status == gp.GRB.OPTIMAL) or (status == gp.GRB.TIME_LIMIT and self.mdl.SolCount > 0):
             self.res = Results(self)
-            for ppf in postprocess_funcs:
-                ppf(self.res)
             if status == gp.GRB.TIME_LIMIT:
                 logger.warning("Time-limit reached")
             if show_results:
@@ -599,9 +673,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         solution_exists = self.mdl.SolCount > 0
         return solution_exists
 
-    def _optimize_pyomo(
-        self, logToConsole, outputFlag, show_results, postprocess_funcs, which_solver
-    ) -> bool:
+    def _optimize_pyomo(self, logToConsole, outputFlag, show_results, which_solver) -> bool:
         logger.info(f"Optimize {self.id}")
         self._set_time_trace()
         solver = pyo.SolverFactory(which_solver)
@@ -613,8 +685,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self._termination_condition = tc
         if status == pyo.SolverStatus.ok:
             self.res = Results(self)
-            for ppf in postprocess_funcs:
-                ppf(self.res)
             if tc == pyo.TerminationCondition.maxTimeLimit:
                 logger.warning("Time-limit reached")
             if show_results:
@@ -657,7 +727,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def export_model(self, filetype="lp", fp=None):
         """Exports the optimization problem to a file e.g. an lp-file. If no filepath (fp) is
-        given, the file is saved in the case study's default result directory."""
+        given, the file is saved in the case study's default result directory.
+        """
         date_time = self._get_now_string()
         if fp is None:
             fp = self._res_fp / f"{date_time}_{self.id}.{filetype}"
@@ -747,6 +818,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         )
 
     def update_var_bound(self, name: str, lb: Optional[float] = None, ub: Optional[float] = None):
+        """Update upper or lower bound of an optimization variable."""
         if lb is not None:
             self.vars._meta[name].update(lb=lb)
         if ub is not None:
@@ -761,15 +833,6 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.vars._meta[name].update(lb=lower_bound)
         return self
 
-    def _infer_dimension_from_name(self, name: str) -> Tuple[str, str, List]:
-        if name == "T":
-            doc = f"{self.freq} time steps"
-            unit = self.freq_unit
-            data = list(range(self._t1, self._t2 + 1))
-        else:
-            raise AttributeError(f"No infer options available for {name}")
-        return doc, unit, data
-
     def _get_idx(self, ent_name: str) -> Union[List, pd.MultiIndex]:
         dims = hp.get_dims(ent_name)
         coords = self.get_coords(dims)
@@ -780,16 +843,19 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         return idx
 
     def get_unit(self, ent_name: str) -> Optional[str]:
+        """Get the unit metadata for a given entity."""
         return self.get_meta(ent_name=ent_name, meta_type="unit")
 
     def get_doc(self, ent_name: str) -> Optional[str]:
+        """Get the doc metadata for a given entity."""
         return self.get_meta(ent_name=ent_name, meta_type="doc")
 
     def get_src(self, ent_name: str) -> Optional[str]:
+        """Get the src metadata for a given entity."""
         return self.get_meta(ent_name=ent_name, meta_type="src")
 
     def get_meta(self, ent_name: str, meta_type: str) -> Optional[str]:
-        """Returns meta-information such as doc or unit for a given entity.
+        """Get meta-information such as doc or unit for a given entity.
 
         Note:
             Meta-information are stored as followed:
@@ -807,9 +873,11 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
     def update_params(self, **kwargs) -> Scenario:
         """Update multiple existing parameters.
-        e.g. `sc.update_params(P_EG_dem_T=2000, c_EG_addon_=0, c_EG_peak_=0)``
-        If a scalar value is provided for a multi-dimensional entity all data points
-        are set with the scalar value.
+
+        - Converts scalar value to uniform series if set to a multi-dimensional entity.
+        - Converts `.._T`-time series to the `.._KG` format.
+
+        Example usage: `sc.update_params(c_EG_peak_=0, P_EG_dem_KG=2000, c_EG_KG=c_EG_RTP_T)`
         """
         for ent_name, data in kwargs.items():
 
@@ -830,9 +898,12 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         return self
 
     def fix_vars(self, **kwargs) -> Scenario:
-        """Fix optimization variables e.g. `sc.fix_vars(P_PV_CAPn_=100, P_WT_CAPn_=2000)`."""
+        """Fix optimization variables.
+        Example: `sc.fix_vars(P_PV_CAPn_=100, P_WT_CAPn_=2000)`
+        """
         for ent_name, data in kwargs.items():
             self.update_var_bound(name=ent_name, lb=data, ub=data)
+        return self
 
     def param(
         self,
@@ -844,8 +915,9 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         fill: Optional[float] = None,
         update: bool = False,
         from_db: Optional[ParDat] = None,
+        set_param: bool = True,
     ) -> pd.Series:
-        """Add a parameter to the scenario.
+        """Add or update a parameter of the scenario.
 
         Args:
             name: The entity name. It has to end with an underscore followed by the
@@ -909,8 +981,13 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         if isinstance(data, pd.Series):
             data.rename(name, inplace=True)
 
-        setattr(self.params, name, data)
-        self.params._changed_since_last_dic_export = True
+        if hp.is_time_series_with_one_dimension_less_than_the_name(data, name):
+            data = hp.from_T_to_simple_KG_format(data)
+            assert hp.get_nDims(data=data) == hp.get_nDims(ent_name=name)
+
+        if set_param:
+            setattr(self.params, name, data)
+            self.params._changed_since_last_dic_export = True
         return data
 
     def _warn_if_unexpected_unit(self, name, unit) -> None:
@@ -931,7 +1008,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 )
 
     def collector(self, name: str, doc: str = "", unit: str = "") -> None:
-        """Add a collector to the scenario"""
+        """Add a collector to the scenario."""
         setattr(self.collectors, name, dict())
         self.collectors._meta[name] = dict(doc=doc, unit=unit)
 
@@ -941,24 +1018,22 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         data: Union[List, np.ndarray] = None,
         doc: str = "",
         unit: str = "",
-        infer=False,
         update=False,
-    ) -> None:
+    ) -> Union[List, np.ndarray]:
         """Add a dimension with coordinates to the scenario. Name must be a single capital letter."""
 
         assert len(name) == 1, f"Dimension name must be a single capital letter. '{name}' is given."
-        if infer:
-            assert data is None, "if `infer=True`, then data must be None."
-            doc, unit, data = self._infer_dimension_from_name(name)
-
-        assert data is not None, f"No data provided for {name}. Infer with `infer=True`"
+        assert data is not None, f"No data provided for dimension {name}."
         if not update:
             self.dims._meta[name] = dict(doc=doc, unit=unit)
+        if isinstance(data[0], str):
+            if data[0].isnumeric():
+                logger.warn("Please do not give numeric data as strings, as it leads to errors")
         setattr(self.dims, name, data)
         return data
 
     def print_ents(self, filter_str: str = None, only_header=True) -> None:
-        """Prints informations about all parameters and variables that contain the filter string."""
+        """Prints information about all parameters and variables that contain the filter string."""
         filter_addon = f" containing '{filter_str}'" if filter_str is not None else ""
         header = f"Entities{filter_addon} in scenario {self.id}"
         print(hp.bordered(header))
@@ -969,7 +1044,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
                 print(self._add_entity_type_prefix(ent_name, ent_info))
 
     def get_ent_info(self, ent_name: str, only_header: bool = True, show_units: bool = True) -> str:
-        """Get an printable string with concise info of an entity."""
+        """Get a printable string with concise information of an entity."""
         ent_value = self.get_entity(ent_name)
         dim = hp.get_dims(ent_name)
         unit = self.get_unit(ent_name)
@@ -1015,6 +1090,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         return d
 
     def get_EG_full_load_hours(self) -> float:
+        """Returns the full load hours of the electricity purchase from the grid."""
         return (
             self.res.P_EG_buy_T.sum()
             * self.params.k__dT_
@@ -1036,33 +1112,46 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         return {comp: self._get_BalTermValues(bal_name, term) for comp, term in collector.items()}
 
     def _get_BalTermValues(self, bal_name: str, term: Any) -> float:
+
         if callable(term):
+
+            if "KG" == hp.get_dims(bal_name)[:2]:
+
+                def weight(value, i):
+                    return value * self.dt(k=i[0], g=i[1]) * self.periodOccurrences[i[0]]
+
+            else:
+
+                def weight(value, i):
+                    return value
+
             idx = self._get_idx(bal_name)
             if isinstance(idx, pd.MultiIndex):
-                return sum(hp.get_value_from_varOrPar(term(*i)) for i in idx)
+                values = [weight(hp.get_value_from_varOrPar(term(*i)), i) for i in idx]
             else:
-                return sum(hp.get_value_from_varOrPar(term(i)) for i in idx)
+                values = [weight(hp.get_value_from_varOrPar(term(i)), i) for i in idx]
+            return sum(values)
         else:
             return hp.get_value_from_varOrPar(term)
 
     def make_sankey_string_from_collectors(self) -> str:
         templates = {
-            "P_EL_source_T": "E {k} el_hub {v}",
-            "P_EL_sink_T": "E el_hub {k} {v}",
-            "dQ_cooling_source_TN": "C {k} cool_hub {v}",
-            "dQ_cooling_sink_TN": "C cool_hub {k} {v}",
-            "dQ_heating_source_TH": "Q {k} heat_hub {v}",
-            "dQ_heating_sink_TH": "Q heat_hub {k} {v}",
+            "P_EL_source_KG": "E {k} el_hub {v}",
+            "P_EL_sink_KG": "E el_hub {k} {v}",
+            "dQ_cooling_source_KGN": "C {k} cool_hub {v}",
+            "dQ_cooling_sink_KGN": "C cool_hub {k} {v}",
+            "dQ_heating_source_KGH": "Q {k} heat_hub {v}",
+            "dQ_heating_sink_KGH": "Q heat_hub {k} {v}",
             "F_fuel_F": "F FUEL {k} {v}",
             "dQ_amb_source_": "M {k} ambient {v}",
             "dQ_amb_sink_": "M ambient {k} {v}",
-            "dH_hydrogen_source_T": "H {k} H<sub>2</sub> {v}",
-            "dH_hydrogen_sink_T": "H H<sub>2</sub> {k} {v}",
+            "dH_hydrogen_source_KG": "H {k} H<sub>2</sub> {v}",
+            "dH_hydrogen_sink_KG": "H H<sub>2</sub> {k} {v}",
         }
         header = ["type source target value"]
         rows = [
             templates[name].format(k=k, v=v)
-            for name, collector in self.get_all_collector_values().items()
+            for name, collector in self.collector_values.items()
             for k, v in collector.items()
             if name in templates
         ]
@@ -1078,33 +1167,226 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             l.append(f"{name}{x}")
         return l
 
-    def _get_flat_df_of_one_entity(self, ent_name: str, data: pd.Series) -> pd.DataFrame:
+    def _get_flat_df_of_one_entity(
+        self, ent_name: str, data: pd.Series, n_time_dims: int
+    ) -> pd.DataFrame:
         data.name = ent_name
-        dim = hp.get_dims(ent_name)
-        if len(dim) == 1:
+        dims = hp.get_dims(ent_name)
+        if len(dims) == n_time_dims:
             df = data.to_frame()
         else:
-            df = data.unstack(level=list(range(1, len(dim))))
+            df = data.unstack(level=list(range(n_time_dims, len(dims))))
             df.columns = self._get_flat_col_names(ent_name, df)
         return df
 
-    def get_flat_T_df(self, name_cond: Optional[Callable] = None) -> pd.DataFrame:
+    def get_flat_T_df(self, name_cond: Optional[Callable] = None, dims: str = "T") -> pd.DataFrame:
         """Get a Dataframe with all time-dependent entities. Additional dimensions are flattened.
+
         Args:
             name_cond: A function that takes the entity name and returns a True if the
                 entity should be kept.
+            dims: A string with the relevant time dimensions, e.g., 'T' or 'KG'.
+        """
+        return pd.concat(
+            [
+                self._get_flat_df_of_one_entity(n, ser, len(dims))
+                for n, ser in self.yield_all_ents()
+                if (dims in hp.get_dims(n) and (True if name_cond is None else name_cond(n)))
+            ],
+            axis=1,
+        )
+
+    @property
+    def has_TSA(self):
+        """If time series aggregation was conducted on the scenario."""
+        return hasattr(self, "segmentation")
+
+    def aggregate_temporally(
+        self,
+        n_typical_periods: int = 10,
+        n_steps_per_period: int = 24,
+        segmentation: bool = True,
+        n_segments_per_period: int = 5,
+        cluster_method: str = "hierarchical",
+        sort_values: bool = False,
+        store_TSA_instance: bool = False,
+        weight_dict: Optional[Dict] = None,
+        **kwargs,
+    ) -> Scenario:
+        # CREDITS: This function is heavily based on code from
+        # https://github.com/FZJ-IEK3-VSA/FINE (MIT licence)
+        """Do a time series aggregation (TSA) of all components considered in the energy
+        system model.
+        For the TSA itself, the tsam package (https://github.com/FZJ-IEK3-VSA/tsam) is used.
+        Please refer to the tsam documentation for more information.
+
+        Args:
+            n_typical_periods: (`|K|`) Number of typical periods into which the time series
+                data should be clustered. The number of time steps per period must be an integer
+                multiple of the total number of considered time steps in the energy system.
+            n_steps_per_period: Number of time steps per period
+            segmentation: If the typical periods should be further segmented to fewer time steps.
+            n_segments_per_period: (`|G|`) Number of segments per period.
+            cluster_method: Method which is used in the tsam package for TSA the
+                time series data. Examples: 'averaging', 'k_means', 'exact k_medoid' or
+                'hierarchical'.
+            sort_values: If the algorithm in the tsam package should use
+                (a) the sorted duration curves (-> True) or
+                (b) the original profiles (-> False) of the time series
+                data within a period for TSA.
+            store_TSA_instance: If the TimeSeriesAggregation instance created during TSA
+                should be stored in the Scenario instance.
+            weight_dict: Dictionary which weights the profiles. It is done by scaling
+                the time series while the normalization process. Normally all time
+                series have a scale from 0 to 1. By scaling them, the values get
+                different distances to each other and with this, they are
+                differently evaluated while the clustering process.
+            kwargs: Additional keyword arguments for the TimeSeriesAggregation instance, e.g.,
+                add extreme periods to the clustered typical periods.
         """
 
-        def cond(n):
-            c = "T" in hp.get_dims(n)
+        hp.check_TSA_input(n_typical_periods, n_steps_per_period, len(self.dtindex_custom))
+        if len(self.dtindex_custom) < len(self.dtindex) and n_typical_periods != 1:
+            logger.warn("You should not call `set_time_horizon` before temporal aggregation.")
 
-            if name_cond is not None:
-                c = c and name_cond(n)
+        if segmentation:
+            if n_segments_per_period > n_steps_per_period:
+                logger.warn(
+                    "The chosen number of segments per period exceeds the number of time steps"
+                    " per period. The number of segments per period is set to the number of time"
+                    " steps per period."
+                )
+                n_segments_per_period = n_steps_per_period
 
-            return c
+        self._set_time_trace()
+        logger.info(
+            f"\nClustering time series data with {n_typical_periods} typical periods and"
+            f" {n_steps_per_period} time steps per period"
+            + f"\nfurther clustered to {n_segments_per_period} segments per period."
+            if segmentation
+            else "."
+        )
 
-        l = [self._get_flat_df_of_one_entity(n, ser) for n, ser in self.yield_all_ents() if cond(n)]
-        return pd.concat(l, axis=1)
+        common_TSA_kwargs = dict(
+            timeSeries=self.get_flat_T_df(dims="KG").set_axis(self.dtindex_custom),
+            noTypicalPeriods=n_typical_periods,
+            clusterMethod=cluster_method,
+            sortValues=sort_values,
+            weightDict=weight_dict,
+            hoursPerPeriod=int(n_steps_per_period * self.step_width),
+            segmentation=segmentation,
+            **kwargs,
+        )
+
+        if segmentation:
+            agg = TimeSeriesAggregation(noSegments=n_segments_per_period, **common_TSA_kwargs)
+            data = pd.DataFrame(agg.clusterPeriodDict).reset_index(level=2, drop=True)
+            timeStepsPerSegment = pd.DataFrame(agg.segmentDurationDict)["Segment Duration"]
+        else:
+            agg = TimeSeriesAggregation(**common_TSA_kwargs)
+            data = pd.DataFrame(agg.clusterPeriodDict)
+
+        data = data.rename_axis(list("KG"))
+        self.update_params(**stack_data_from_TSA(data))
+
+        if segmentation:
+            self.segmentsPerPeriod = list(range(n_segments_per_period))
+            self.timeStepsPerSegment = timeStepsPerSegment
+            self.hoursPerSegment = self.step_width * self.timeStepsPerSegment
+            # Define start time hour of each segment in each typical period:
+            sst = self.segmentStartTime = self.hoursPerSegment.groupby(level=0).cumsum()
+            sst.index = sst.index.set_levels(sst.index.levels[1] + 1, level=1)
+            lvl0, lvl1 = sst.index.levels
+            sst = sst.reindex(pd.MultiIndex.from_product([lvl0, [0, *lvl1]]))
+            sst[sst.index.get_level_values(1) == 0] = 0
+
+        # Bools
+        self.segmentation = segmentation
+
+        # Pandas DataFrame
+        self.tsaAccuracyIndicators = pd.concat(
+            [agg.accuracyIndicators(), agg.totalAccuracyIndicators().rename("Total").to_frame().T],
+            axis=0,
+        )
+
+        # Lists
+        self.typicalPeriods = list(agg.clusterPeriodIdx)
+        self.timeStepsPerPeriod = list(range(n_steps_per_period))
+        n_periods = int(len(self.dtindex) / n_steps_per_period)
+        self.periods = list(range(n_periods))
+        self.interPeriodTimeSteps = list(range(n_periods + 1))
+        self.periodsOrder = agg.clusterOrder
+        self.periodOccurrences = [(self.periodsOrder == tp).sum() for tp in self.typicalPeriods]
+
+        # TSA object
+        if store_TSA_instance:
+            self.tsaInstance = agg
+
+        # Model params
+        self.dim("K", data=self.typicalPeriods, update=True)
+        self.dim(
+            "G",
+            data=list(self.segmentsPerPeriod if segmentation else self.timeStepsPerPeriod),
+            update=True,
+        )
+        self.dim("I", data=self.periods, update=True)
+        self.param(
+            "k__tsaComplexityReduction_",
+            data=len(self.dims.K) * len(self.dims.G) / len(self.dtindex),
+            doc="Factor to which the total time steps are reduced to during TSA",
+        )
+        self.param("n__typPeriods_", data=len(self.dims.K), doc="Number of typical periods")
+        self.update_params(n__stepsPerPeriod_=n_steps_per_period)
+        self.param(
+            "n__segmentsPerPeriod_",
+            data=len(self.dims.G),
+            doc="Number of segments per typical period",
+        )
+        self._update_time_param(
+            "t__TSA_", "Time to run time series aggregation", self._get_time_diff()
+        )
+
+        return self
+
+
+def turn_numeric_strings_into_int(data):
+    try:
+        return int(data)
+    except ValueError:
+        pass
+    return data
+
+
+def stack_data_from_TSA(data: pd.DataFrame) -> Dict:
+    d: Dict = dict()
+    for k, v in data.items():
+        if "[" in k:
+            splitter = k.split("[")
+            ent_name = splitter[0]
+            idx = splitter[1][:-1].split(", ")
+            # now, idx may contain numeric strings, e.g. ["1", "3", "spam"] or ["1"]
+            my_idx = (
+                tuple(turn_numeric_strings_into_int(i) for i in idx)
+                if len(idx) > 1
+                else turn_numeric_strings_into_int(idx[0])
+            )
+            if ent_name in d:
+                d[ent_name][my_idx] = v
+            else:
+                d[ent_name] = {my_idx: v}
+            assert isinstance(d[ent_name], Dict)
+        else:
+            d[k] = v
+            assert isinstance(d[k], pd.Series)
+    for k, v in d.items():
+        if isinstance(v, Dict):
+            df = pd.DataFrame(v)
+            ser = df.stack(list(range(df.columns.nlevels)))
+            v = ser.rename(k)
+        elif isinstance(v, pd.DataFrame):
+            v = v.squeeze()
+        d[k] = v
+    return d
 
 
 def data_contains_nan(data: Optional[Union[int, float, list, np.ndarray, pd.Series]]) -> bool:
@@ -1119,6 +1401,8 @@ def data_contains_nan(data: Optional[Union[int, float, list, np.ndarray, pd.Seri
         return np.isnan(np.sum(data))
     elif isinstance(data, pd.Series):
         return data.isnull().values.any()
+    else:
+        return False
 
 
 def warn_if_data_contains_nan(

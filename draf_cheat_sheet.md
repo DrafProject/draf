@@ -22,6 +22,17 @@ sc.update_params(E_BES_CAPx_=100)
 sc_new = cs.add_scen("new_scen", based_on="REF")
 sc_new.update_params(E_BES_CAPx_=500)
 
+# optional time series aggregation
+cs.aggregate_temporally(
+    n_typical_periods=10,
+    n_steps_per_period=24,
+    segmentation=True,
+    n_segments_per_period=5,
+    cluster_method="hierarchical",
+    store_TSA_instance=True,
+    weight_dict=None,
+)
+
 # solve all scenarios:
 cs.optimize()
 
@@ -35,6 +46,8 @@ cs = draf.open_latest_casestudy("my_case_study")
 # get an overview of the results:
 cs.plot()
 ```
+
+Note: Most case study functions can be chained, e.g., `cs.aggregate_temporally().optimize().save()`.
 
 ## Interactive analysis
 
@@ -53,8 +66,8 @@ cs.plot()
 
 ### On a scenario
 
-- `sc.params.c_EG_RTP_T` - access a specific parameter entity
-- `sc.res.P_EG_buy_T` - access a specific results entity
+- `sc.params.c_EG_RTP_KG` - access a specific parameter entity
+- `sc.res.P_EG_buy_KG` - access a specific results entity
 - `sc.plot.describe()` - description of all entities of this scenario
 
 ### On an entity
@@ -82,14 +95,10 @@ from draf import Collectors, Dimensions, Params, Results, Scenario, Vars
 from gurobipy import GRB, Model, quicksum
 from draf.prep import DataBase as db
 
-# short version
-class MyShortComponent:
-    def param_func(self, sc): ...
-    def model_func(self, sc, m, d, p, v, c): ...
+class MyComponent(Component):
+    """Describe your component here."""
 
-# advanced version 
-class MyAdvancedComponent(Component):
-    """Description of your own component"""
+    order = 5  # determines when this component is called compared to others
 
     def dim_func(self, sc: Scenario):
         sc.dim("F", ["ng", "bio"], doc="Types of fuel")
@@ -100,43 +109,68 @@ class MyAdvancedComponent(Component):
         sc.var("C_Fuel_ceTax_", doc="Total carbon tax on fuel", unit="k€/a")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
-        m.addConstr(v.C_Fuel_ == p.k__dT_ * v.F_fuel_F.prod(p.c_Fuel_F) * conv("€", "k€", 1e-3))
+        m.addConstr(v.C_Fuel_ == quicksum(v.F_fuel_F[f] *p.c_Fuel_F[f] for f in d.F) * conv("€", "k€", 1e-3))
         c.CE_TOT_["Fuel"] = v.CE_Fuel_
-        c.P_EL_source_T["PV"] = lambda t: v.P_PV_FI_T[t] + v.P_PV_OC_T[t]
+        c.P_EL_source_KG["PV"] = lambda t: v.P_PV_FI_KG[k, g] + v.P_PV_OC_KG[k, g]
+
+    def postprocess_func(self, sc: Scenario):
+        """This function is called after the optimization run."""
+        sc.res.make_pos_ent("P_EG_buy_KG")
 ```
 
-### param_func
+### `dims_func`
 
-- `sc.collector("P_EL_source_T", doc="...", unit="kW_el")` - add a collector
+- `sc.dim("A", data=[1, 2, 3] doc="Consumer")` - add a dimension. Access via `sc.dims.A`.
+
+### `param_func`
+
+- `sc.collector("P_EL_source_T", doc="...", unit="kW_el")` - add a collector. Access via `sc.collectors.P_EL_source_KG`.
+- `sc.var("C_TOT_", ...)` - add a variable. Access via `sc.vars.C_TOT_`.
 - `sc.var("C_TOT_", doc="Total costs", unit="k€/a", lb=-GRB.INFINITY)` - define a variable that can be negative
-- `sc.var("P_PV_FI_T", doc="Feed-in", unit="kW_el")` - define a variable with time dimension
+- `sc.var("P_PV_FI_T", doc="Feed-in", unit="kW_el")` - define a variable with time dimension. The sets for the variables are inferred by the dimension part of the variable name, e.g., the variable `"P_PV_FI_T"` has `len(sc.dims.T)` data points but the variable `"P_PV_FI_TY"` would have  `len(sc.dims.T) * len(sc.dims.Y)` data points.
 - `sc.param("c_PV_inv_", data=200, doc="Investment costs", unit="€/kW_p", src="my_data_source")`
 - `sc.param(from_db=db.c_Fuel_F)` - use data from the [draf database](draf/prep/data_base.py)
 - prepper functions (default parameter name is the function name):
-  - `sc.prep.c_EG_T()` - real-time-prices-tariffs
-  - `sc.prep.ce_EG_T()` - dynamic carbon emission factors
-  - `sc.prep.P_eDem_T(profile="G1", annual_energy=5e6)` - electricity demand with 5 GWh/a
-  - `sc.prep.dQ_hDem_T(annual_energy=2e6, target_temp=22.0, threshold_temp=15.0)` - heating demand with 2 GWh/a using weather data
-  - `sc.prep.P_PV_profile_T()` - photovoltaic profile
+  - `sc.prep.c_EG_KG()` - real-time-prices-tariffs. Access via `sc.params.c_EG_KG`.
+  - `sc.prep.ce_EG_KG()` - dynamic carbon emission factors
+  - `sc.prep.P_eDem_KG(profile="G1", annual_energy=5e6)` - electricity demand with 5 GWh/a
+  - `sc.prep.dQ_hDem_KG(annual_energy=2e6, target_temp=22.0, threshold_temp=15.0)` - heating demand with 2 GWh/a using weather data
+  - `sc.prep.P_PV_profile_KG()` - photovoltaic profile
   - `sc.prep.c_EG_addon_(AbLa_surcharge=0.00003, Concession_fee=0.0011, ...)` - electricity price components other than wholesale prices
-  - `sc.prep.T__amb_T()` - ambient air temperature from nearest weather station
+  - `sc.prep.T__amb_KG()` - ambient air temperature from nearest weather station based on the given geo coordinates
 
-### model_func
+### `model_func`
 
 - General
-  - `d.T` - time index (special dimension)
-  - `p.k__dT_` - time step (special parameter)
-  - `p.k__PartYearComp_` - weighting factor to compensate part year analysis (special parameter)
+  - `d.T` - time index
+  - `p.k__dT_` - static time step width
+  - `p.k__PartYearComp_` - weighting factor to compensate part year analysis
 - [GurobiPy Syntax](https://www.gurobi.com/documentation), e.g.:
   - `from gurobipy import GRB, Model, quicksum` - import GurobiPy objects
   - `m.setObjective((...), GRB.MINIMIZE)` - set objective
   - `m.addConstr((v.your == p.constraint * v.goes + p.here), "constr_1")` - add one constraint
-  - `m.addConstrs((v.your_T[t] == p.constraint_T[t] * v.goes_ + p.here_T[t] for t in d.T), "constr_2")` - add a set of constraints
+  - `m.addConstrs((v.your_KG[k, g] == p.constraint_KG[k, g] * v.goes_ + p.here_KG[k, g] for k in d.K for g in d.G), "constr_2")` - add a set of constraints
 - [Pyomo Syntax](http://www.pyomo.org/documentation), e.g.:
   - `import pyomo.environ as pyo` - import Pyomo
   - `pyo.Objective(expr=(...), sense=pyo.minimize)` - set objective
   - `m.constr_1 = pyo.Constraint(expr=(v.your == p.constraint * v.goes + p.here))` - add one constraint
-  - `m.constr_1 = pyo.Constraint(d.T, rule=lambda t: v.your_T[t] == p.constraint_T[t] * v.goes_ + p.here_T[t])` - add a set of constraints
+  - `m.constr_1 = pyo.Constraint(d.K, d.G, rule=lambda t: v.your_KG[k, g] == p.constraint_KG[k, g] * v.goes_ + p.here_KG[k, g])` - add a set of constraints
+
+### `postprocess_func`
+
+- `sc.res.make_pos_ent("P_EG_buy_KG")` - trim slightly negative result values that sometime occure due to numerical inaccuracies and may cause issues in plots the expect positive values.
+
+### After optimization
+
+After optimization, the values of the variable `sc.vars.P_PV_FI_T` can be accessed through `sc.res.P_PV_FI_T`.
+
+### Time series aggregation (TSA)
+
+The [dev-TSA](https://github.com/DrafProject/draf/tree/dev-TSA) branch supports time series aggregation.
+For this, `sc.aggregate_temporally()` must be called before optimization.
+A TSA-supporting model is based on typical periods (`k in d.K`) and intra-period time steps or segments (`g in d.G`) instead of the conventional time steps (`t in d.T`).
+Also dynamic time step widths (`sc.dt(k, g)`) are used instead of the static time steps (`p.k__dT_`).
+Even seasonal storages [can be modeled](https://arxiv.org/abs/1710.07593) with a few modifications.
 
 ## Helper functions
 
@@ -153,13 +187,16 @@ class MyAdvancedComponent(Component):
 In general, entity names should adhere to the following structure:
 `<Etype>_<Component>_<OptionalDescription>_<DIMENSIONS>`
 
-|Examples:|entity 1|entity 2|
-|-|-|-|
-|Entity name|`P_EG_buy_T`|`c_PV_inv_`|
-|Etype|`P`|`c`|
-|Component|`EG`|`PV`|
-|Description|`buy`|`inv`|
-|Dimension|`T`|`-`|
+In the dimensions, the `T` (time steps), respectively, the `KG` (typical days and segments) come first.
+Then the other dimensions according to the ascending alphabet
+
+|Examples:|entity 1|entity 2| entity 3|
+|-|-|-|-|
+|Entity name|`P_EG_buy_T`|`c_PV_inv_`|`c_TEST_test_KGABC`|
+|Etype|`P`|`c`|`c`|
+|Component|`EG`|`PV`|`TEST`|
+|Description|`buy`|`inv`|`test`|
+|Dimension|`T`|`-`|`KGABC`|
 
 For typical symbols, see [draf/conventions.py](draf/conventions.py).
 

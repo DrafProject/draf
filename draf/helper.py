@@ -34,7 +34,7 @@ def fits_convention(ent_name: str, data: Union[int, float, pd.Series]) -> bool:
     dims = get_dims(ent_name)
     if isinstance(data, (int, float)):
         return dims == ""
-    elif isinstance(data, pd.Series):
+    else:  # pd.Series
         return data.index.nlevels == len(dims)
 
 
@@ -326,7 +326,6 @@ def set_component_order_by_order_restrictions(
     ordered_components_list = list(topological_sort(order_restrictions))
     s = "Execution order: " + ", ".join(ordered_components_list)
     logger.info(s)
-    print(s)
     for i, classname in enumerate(ordered_components_list):
         classes[classname].order = i
 
@@ -438,3 +437,85 @@ def play_beep_sound():
     import os
 
     os.system("printf '\a'")  # https://stackoverflow.com/a/24634221
+
+
+def check_TSA_input(numberOfTypicalPeriods, numberOfTimeStepsPerPeriod, totalNumberOfTimeSteps):
+    isStrictlyPositiveInt(numberOfTypicalPeriods), isStrictlyPositiveInt(numberOfTimeStepsPerPeriod)
+    if not totalNumberOfTimeSteps % numberOfTimeStepsPerPeriod == 0:
+        raise ValueError(
+            f"The numberOfTimeStepsPerPeriod ({numberOfTimeStepsPerPeriod}) has to be an integer"
+            " divisor of the total number of time"
+            + f" steps considered in the energy system model ({totalNumberOfTimeSteps})."
+        )
+    if totalNumberOfTimeSteps < numberOfTypicalPeriods * numberOfTimeStepsPerPeriod:
+        raise ValueError(
+            "The product of the numberOfTypicalPeriods and the numberOfTimeStepsPerPeriod has to"
+            " be \n"
+            + "smaller than the total number of time steps considered in the energy system model."
+        )
+
+
+def isStrictlyPositiveInt(value):
+    """Check if the input argument is a strictly positive integer."""
+    if not type(value) == int:
+        raise TypeError("The input argument has to be an integer")
+    if not value > 0:
+        raise ValueError("The input argument has to be strictly positive")
+
+
+def get_nDims(*, data: Optional[pd.Series] = None, ent_name: Optional[str] = None) -> int:
+    if ent_name is None and data is not None:
+        return data.index.nlevels if isinstance(data.index, pd.MultiIndex) else 1
+    elif ent_name is not None and data is None:
+        return len(get_dims(ent_name))
+    else:
+        raise ValueError("Proivde `data` OR `ent_name` to this function.")
+
+
+def is_time_series_with_one_dimension_less_than_the_name(data: pd.Series, ent_name: str) -> bool:
+    if isinstance(data, pd.Series):
+        has_one_dim_less = get_nDims(data=data) == get_nDims(ent_name=ent_name) - 1
+        has_time_series_name = "KG" in get_dims(ent_name)
+        return has_one_dim_less and has_time_series_name
+    else:
+        return False
+
+
+def from_simple_KG_to_T_format(
+    data: pd.Series, rename_index: bool = True, rename: bool = False
+) -> pd.Series:
+    ser = data.reset_index(level=0, drop=True)
+    if rename_index:
+        ser = ser.rename_axis(["T"] + ser.index.names[1:])
+    if rename:
+        ser = rename_T_to_KG(ser)
+    return ser
+
+
+def from_T_to_simple_KG_format(
+    data: pd.Series, rename_index: bool = True, rename: bool = False
+) -> pd.Series:
+    ser = pd.concat({0: data})
+    if rename_index:
+        ser = ser.rename_axis(list("KG") + ser.index.names[2:])
+    if rename:
+        ser = rename_data_from_KG_to_T(ser)
+    return ser
+
+
+def rename_KG_to_T(name: str) -> str:
+    splitter = name.split("_")
+    return "_".join(splitter[:-1] + [splitter[-1].replace("KG", "T")])
+
+
+def rename_T_to_KG(name: str) -> str:
+    splitter = name.split("_")
+    return "_".join(splitter[:-1] + [splitter[-1].replace("T", "KG")])
+
+
+def rename_data_from_KG_to_T(data: pd.Series) -> pd.Series:
+    return data.rename(rename_KG_to_T(data.name))
+
+
+def rename_data_from_T_to_KG(data: pd.Series) -> pd.Series:
+    return data.rename(rename_T_to_KG(data.name))

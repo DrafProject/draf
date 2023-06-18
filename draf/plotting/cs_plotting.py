@@ -213,7 +213,7 @@ class CsPlotter(BasePlotter):
             (
                 "W_out",
                 "{:,.0f} MWh/a",
-                lambda df, cs: [sc.gte(sc.get_ent("P_BES_out_T")) / 1e3 for sc in cs.scens],
+                lambda df, cs: [sc.gte(sc.get_ent("P_BES_out_KG")) / 1e3 for sc in cs.scens],
             ),
             ("Charging_cycles", "{:,.0f}", lambda df, cs: df["W_out"] / (df["CAPn"] / 1e3)),
         ]
@@ -767,7 +767,11 @@ class CsPlotter(BasePlotter):
         fig = go.FigureWidget(layout=layout)
         heatmap = fig.add_heatmap(colorscale=cmap)
         data_dic = {sc.id: sc.get_flat_T_df() for sc in cs.scens}
-        entity_list = sorted(data_dic[cs.any_scen.id].columns)
+        entity_list = data_dic[cs.any_scen.id].columns
+
+        # https://stackoverflow.com/a/13954857:
+        entity_list = sorted(entity_list, key=lambda v: v.upper())
+
         ts = widgets.Dropdown(options=entity_list, description="time series")
 
         @interact(scenario=data_dic.keys(), ts=ts)
@@ -876,8 +880,8 @@ class CsPlotter(BasePlotter):
 
     def collector_balance(
         self,
-        sink="P_EL_sink_T",
-        source="P_EL_source_T",
+        sink="P_EL_sink_KG",
+        source="P_EL_source_KG",
         xlabel="Electricity consumption (GWh/a)",
         cmap="tab20_r",
         factor=1e-6,
@@ -1070,6 +1074,7 @@ class CsPlotter(BasePlotter):
         caption: bool = False,
         clickable_urls: bool = False,
         sort_by_name: bool = False,
+        skip_styling: bool = False,
     ) -> pdStyler:
         """Creates a table with all entities.
         For multi-dimensional entities, the mean is displayed.
@@ -1133,9 +1138,12 @@ class CsPlotter(BasePlotter):
         if sort_by_name:
             df = df.sort_index()
 
+        if skip_styling:
+            return df
+
         left_aligner = list(df.dtypes[df.dtypes == object].index)
         s = (
-            df.style.format({n: number_format if is_numeric_dtype(df[n]) else "{:s}" for n in df})
+            df.style.format({n: number_format if is_numeric_dtype(df[n]) else "{}" for n in df})
             .apply(highlight_diff1, subset=df.columns[1:])
             .apply(highlight_diff2, subset=df.columns[1:])
             .set_properties(subset=left_aligner, **{"text-align": "left"})
@@ -1156,9 +1164,7 @@ class CsPlotter(BasePlotter):
 
     def collector_table(self, gradient: bool = True, caption: bool = False):
         cs = self.cs
-        df = pd.DataFrame(
-            {k: pd.DataFrame(sc.collector_values).T.stack() for k, sc in cs.scens_dic.items()}
-        )
+        df = cs.get_all_collector_values()
 
         def highlight_diff1(s):
             other_than_REF = s == df.iloc[:, 0]
@@ -1202,16 +1208,7 @@ class CsPlotter(BasePlotter):
             yscale: 'log' makes the y-axis logarithmic. Default: 'linear'.
             stacked: If bars are stacked.
         """
-        cs = self.cs
-        df = pd.DataFrame(
-            {
-                "Params": pd.Series(cs.get_ent("t__params_")),
-                "Vars": pd.Series(cs.get_ent("t__vars_")),
-                "Model": pd.Series(cs.get_ent("t__model_")),
-                "Solve": pd.Series(cs.get_ent("t__solve_")),
-            }
-        )
-
+        df = self.time_table().data
         total_time = df.sum().sum()
         fig, ax = plt.subplots(figsize=(12, 3))
         df.plot.bar(
@@ -1234,6 +1231,7 @@ class CsPlotter(BasePlotter):
                 "Vars": pd.Series(cs.get_ent("t__vars_")),
                 "Model": pd.Series(cs.get_ent("t__model_")),
                 "Solve": pd.Series(cs.get_ent("t__solve_")),
+                "TSA": pd.Series(cs.get_ent("t__TSA_")),
             }
         )
         s = df.style.format(number_format).set_table_styles(get_leftAlignedIndex_style())
@@ -1368,12 +1366,17 @@ class CsPlotter(BasePlotter):
         return fig
 
     def capa_table(
-        self, gradient: bool = False, caption: bool = False, show_zero_cols: bool = True
+        self,
+        gradient: bool = False,
+        caption: bool = False,
+        show_zero_cols: bool = True,
+        include_CAPx: bool = True,
     ) -> pdStyler:
+        my_list = ["CAPn"]
+        if include_CAPx:
+            my_list.append("CAPx")
         df = (
-            pd.DataFrame(
-                {which: self._get_capa_for_all_scens(which).stack() for which in ["CAPx", "CAPn"]}
-            )
+            pd.DataFrame({which: self._get_capa_for_all_scens(which).stack() for which in my_list})
             .unstack()
             .reindex(self.cs.scens_ids)
         )

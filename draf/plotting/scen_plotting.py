@@ -389,15 +389,22 @@ class ScenPlotter(BasePlotter):
 
         return go.Figure(data=plotly_data)
 
-    def violin_T(
-        self, etypes: Tuple = ("P", "dQ", "dH"), unit: str = "kW", show_zero: bool = False
-    ):
-        df = self.sc.get_flat_T_df(lambda n: hp.get_etype(n) in etypes)
+    def violin_T(self, etypes: Optional[Tuple] = None, xlabel: str = "", show_zero: bool = False):
+        """Violin plot for all time-dependent parameters and variables.
+
+        Args:
+            etypes: Tuple of strings with etypes that are filtered, e.g.: ('P', 'dQ', 'dH')
+            xlabel: X-Label string.
+            show_zero: If entities are shown that have no values.
+        """
+
+        df = self.sc.get_flat_T_df(
+            name_cond=None if etypes is None else lambda n: hp.get_etype(n) in etypes
+        )
 
         if not show_zero:
             df = df.loc[:, (df != 0).any(axis=0)]
 
-        df = df.sort_index(axis=1)
         y_scaler = 0.24 * len(df.columns)
         fig, ax = plt.subplots(1, figsize=(12, 0.4 + y_scaler))
         sns.violinplot(
@@ -411,7 +418,7 @@ class ScenPlotter(BasePlotter):
             width=0.95,
         )
         ax.margins(x=0)
-        ax.set_xlabel(unit)
+        ax.set_xlabel(xlabel)
         hp.add_thousands_formatter(ax, y=False)
         sns.despine()
 

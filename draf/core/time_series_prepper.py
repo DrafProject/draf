@@ -28,7 +28,7 @@ class TimeSeriesPrepper:
         """For serialization with pickle."""
         return None
 
-    def k__PartYearComp_(self, name: str = "k__PartYearComp_") -> float:
+    def k__PartYearComp_(self, name: str = "k__PartYearComp_", set_param: bool = True) -> float:
         """Add cost weighting factor to compensate part year analysis."""
         sc = self.sc
         return self.sc.param(
@@ -36,13 +36,23 @@ class TimeSeriesPrepper:
             unit="",
             doc="Weighting factor to compensate part year analysis",
             data=len(sc.dtindex) / len(sc.dtindex_custom),
+            set_param=set_param,
         )
 
-    def k__dT_(self, name: str = "k__dT_"):
-        return self.sc.param(name=name, unit="h", doc="Time steps width", data=self.sc.step_width)
+    def k__dT_(self, name: str = "k__dT_", set_param: bool = True):
+
+        return self.sc.param(
+            name=name,
+            unit="h",
+            doc="Time steps width",
+            data=self.sc.step_width,
+            set_param=set_param,
+        )
 
     @hp.copy_doc(get_emissions, start="Args:")
-    def ce_EG_T(self, name: str = "ce_EG_T", method: str = "XEF_PP", **kwargs) -> pd.Series:
+    def ce_EG_KG(
+        self, name: str = "ce_EG_KG", method: str = "XEF_PP", set_param: bool = True, **kwargs
+    ) -> pd.Series:
         """Add dynamic carbon emission factors."""
         sc = self.sc
         return sc.param(
@@ -55,9 +65,12 @@ class TimeSeriesPrepper:
                 )
                 * hp.conv("g", "kg", 1e-3)
             ),
+            set_param=set_param,
         )
 
-    def c_EG_RTP_T(self, name: str = "c_EG_RTP_T", method: str = "hist_EP", **kwargs) -> pd.Series:
+    def c_EG_RTP_KG(
+        self, name: str = "c_EG_RTP_KG", method: str = "hist_EP", set_param: bool = True, **kwargs
+    ) -> pd.Series:
         """Add Real-time-prices-tariffs."""
         sc = self.sc
         return self.sc.param(
@@ -68,9 +81,12 @@ class TimeSeriesPrepper:
                 get_prices(year=sc.year, freq=sc.freq, method=method, country=sc.country, **kwargs)
                 / 1e3
             ),
+            set_param=set_param,
         )
 
-    def c_EG_PP_T(self, name: str = "c_EG_PP_T", method: str = "PP") -> pd.Series:
+    def c_EG_PP_KG(
+        self, name: str = "c_EG_PP_KG", method: str = "PP", set_param: bool = True
+    ) -> pd.Series:
         """Add marginal costs from PP-method. Only for Germany."""
         sc = self.sc
         return sc.param(
@@ -80,9 +96,12 @@ class TimeSeriesPrepper:
             data=sc.match_dtindex(
                 get_prices(year=sc.year, freq=sc.freq, country=sc.country, method=method)
             ),
+            set_param=set_param,
         )
 
-    def c_EG_PWL_T(self, name: str = "c_EG_PWL_T", method: str = "PWL", **kwargs) -> pd.Series:
+    def c_EG_PWL_KG(
+        self, name: str = "c_EG_PWL_KG", method: str = "PWL", set_param: bool = True, **kwargs
+    ) -> pd.Series:
         """Add marginal costs from PWL-method."""
         sc = self.sc
         return sc.param(
@@ -92,15 +111,17 @@ class TimeSeriesPrepper:
             data=sc.match_dtindex(
                 get_prices(year=sc.year, freq=sc.freq, country=sc.country, method=method, **kwargs)
             ),
+            set_param=set_param,
         )
 
-    def c_EG_TOU_T(
+    def c_EG_TOU_KG(
         self,
-        name: str = "c_EG_TOU_T",
+        name: str = "c_EG_TOU_KG",
         prices: Optional[Tuple[float, float]] = None,
         prov: str = "BW",
+        set_param: bool = True,
     ) -> pd.Series:
-        """A Time-of-Use tariff with two prices.
+        """A time-of-use tariff with two prices.
         If no prices are given the according RTP tariff is taken as basis.
         """
         holis = getattr(holidays, self.sc.country)(subdiv=prov)
@@ -116,8 +137,9 @@ class TimeSeriesPrepper:
 
         if prices is None:
             try:
-                low_price = self.sc.params.c_EG_RTP_T[isLowTime_T].mean()
-                high_price = self.sc.params.c_EG_RTP_T[isHighTime_T].mean()
+                c_EG_RTP_T = hp.from_simple_KG_to_T_format(self.sc.params.c_EG_RTP_KG)
+                low_price = c_EG_RTP_T[isLowTime_T].mean()
+                high_price = c_EG_RTP_T[isHighTime_T].mean()
             except AttributeError as err:
                 logger.error(
                     "Mean price for TOU tariff cannot be inferred"
@@ -134,16 +156,19 @@ class TimeSeriesPrepper:
             unit="€/kWh_el",
             doc=f"Time-Of-Use-tariff (calculated from Real-time-price)",
             data=low_price * isLowTime_T + high_price * isHighTime_T,
+            set_param=set_param,
         )
 
-    def c_EG_FLAT_T(self, price: Optional[float] = None, name: str = "c_EG_FLAT_T"):
+    def c_EG_FLAT_KG(
+        self, price: Optional[float] = None, name: str = "c_EG_FLAT_KG", set_param: bool = True
+    ):
         """Add a flat electricity tariff.
 
         If no price is given the according RTP tariff is taken as basis.
         """
         if price is None:
             try:
-                price = self.sc.params.c_EG_RTP_T.mean()
+                price = self.sc.params.c_EG_RTP_KG.mean()
             except AttributeError as err:
                 logger.error(
                     "Mean price for FLAT tariff cannot be inferred"
@@ -154,19 +179,21 @@ class TimeSeriesPrepper:
         return self.sc.param(
             name=name,
             unit=unit,
-            doc=f"Flat-electricity tariff (calculated from Real-time-price)",
+            doc=f"Flat electricity tariff (calculated from real-time-price)",
             fill=price,
+            set_param=set_param,
         )
 
     @hp.copy_doc(prep.get_el_SLP)
-    def P_eDem_T(
+    def P_eDem_KG(
         self,
-        name: str = "P_eDem_T",
+        name: str = "P_eDem_KG",
         profile: str = "G1",
         peak_load: Optional[float] = None,
         annual_energy: Optional[float] = None,
         offset: float = 0,
         province: Optional[str] = None,
+        set_param: bool = True,
     ) -> pd.Series:
         """Add an electricity demand"""
         sc = self.sc
@@ -187,15 +214,17 @@ class TimeSeriesPrepper:
                     province=province,
                 )
             ),
+            set_param=set_param,
         )
 
     @hp.copy_doc(prep.get_heating_demand)
-    def dQ_hDem_T(
+    def dQ_hDem_KG(
         self,
-        name: str = "dQ_hDem_T",
+        name: str = "dQ_hDem_KG",
         annual_energy: float = 1e6,
         target_temp: float = 22.0,
         threshold_temp: float = 15.0,
+        set_param: bool = True,
     ) -> pd.Series:
         """Create and add a heating demand time series using weather data nearby."""
 
@@ -217,15 +246,17 @@ class TimeSeriesPrepper:
                     threshold_temp=threshold_temp,
                 )
             ),
+            set_param=set_param,
         )
 
     @hp.copy_doc(prep.get_cooling_demand)
-    def dQ_cDem_T(
+    def dQ_cDem_KG(
         self,
-        name: str = "dQ_cDem_T",
+        name: str = "dQ_cDem_KG",
         annual_energy: float = 1e6,
         target_temp: float = 22.0,
         threshold_temp: float = 22.0,
+        set_param: bool = True,
     ) -> pd.Series:
         """Create and add a cooling demand time series using weather data nearby."""
         sc = self.sc
@@ -244,13 +275,15 @@ class TimeSeriesPrepper:
                     threshold_temp=threshold_temp,
                 )
             ),
+            set_param=set_param,
         )
 
-    def P_PV_profile_T(
+    def P_PV_profile_KG(
         self,
-        name: str = "P_PV_profile_T",
+        name: str = "P_PV_profile_KG",
         use_coords: bool = True,
         overwrite_coords: Optional[Tuple] = None,
+        set_param: bool = True,
         **gsee_kw,
     ) -> pd.Series:
         """Add a photovoltaic profile.
@@ -288,6 +321,7 @@ class TimeSeriesPrepper:
             unit="kW_el/kW_peak",
             doc="Produced PV-power for 1 kW_peak",
             data=sc.match_dtindex(ser, resample=True),
+            set_param=set_param,
         )
 
     def c_EG_addon_(
@@ -302,6 +336,7 @@ class TimeSeriesPrepper:
         NEV_surcharge=0.0027,
         Offshore_surcharge=0.00419,
         Sales=0.01537,
+        set_param: bool = True,
     ) -> float:
         """Add electricity price components other than wholesale prices.
         Defaults for German Industry [1].
@@ -326,9 +361,10 @@ class TimeSeriesPrepper:
             unit="€/kWh_el",
             doc="Electricity taxes and levies",
             data=sum(price_components),
+            set_param=set_param,
         )
 
-    def T__amb_T(self, name: str = "T__amb_T") -> pd.Series:
+    def T__amb_KG(self, name: str = "T__amb_KG", set_param: bool = True) -> pd.Series:
         """Uses coordinates to prepare ambient air temperature time series in °C."""
         sc = self.sc
         assert isinstance(sc.coords, tuple)
@@ -338,4 +374,5 @@ class TimeSeriesPrepper:
             unit="°C",
             doc=f"Ambient temperature",
             data=sc.match_dtindex(sc.resample(ser)),
+            set_param=set_param,
         )

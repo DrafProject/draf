@@ -2,6 +2,6 @@
 
 # format and sort section
 
-black draf tests
-isort draf tests
+black draf tests examples
+isort draf tests examples
 python draf/sort_sections.py

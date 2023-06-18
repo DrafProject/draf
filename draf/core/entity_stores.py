@@ -163,6 +163,15 @@ class EntityStore(DrafBaseClass):
         """Returns entity"""
         return getattr(self, name)
 
+    def _get_meta(self, ent_name: str, meta_type: str) -> Any:
+        try:
+            return self._meta[ent_name][meta_type]
+        except KeyError:
+            return None
+
+    def _set_meta(self, ent_name: str, meta_type: str, value: str) -> None:
+        self._meta.setdefault(ent_name, {})[meta_type] = value
+
 
 class Params(EntityStore):
     """Stores parameters in a convenient way together with its functions."""
@@ -183,9 +192,6 @@ class Params(EntityStore):
             ("Source", [textwrap.shorten(meta[k]["src"], width=17) for k in data.keys()]),
         ]
         return make_table(l, lead_text=f"<Params object> preview:\n")
-
-    def _set_meta(self, ent_name: str, meta_type: str, value: str) -> None:
-        self._meta.setdefault(ent_name, {})[meta_type] = value
 
     def _convert_unit(
         self,
@@ -267,15 +273,6 @@ class Results(EntityStore):
                 data.index = data.index.set_names(list(dims))
 
             setattr(self, name, data)
-
-    def _get_meta(self, ent_name: str, meta_type: str) -> Any:
-        try:
-            return self._meta[ent_name][meta_type]
-        except KeyError:
-            return None
-
-    def _set_meta(self, ent_name: str, meta_type: str, value: str) -> None:
-        self._meta.setdefault(ent_name, {})[meta_type] = value
 
     def _copy_meta(self, source_ent: str, target_ent: str, which_metas: List = None) -> None:
         if which_metas is None:

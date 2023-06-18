@@ -78,3 +78,24 @@ def test_topological_sort():
     order_restriction_with_cyclic_dependency = [("A", {"B"}), ("B", {"C"}), ("C", {"A"})]
     with pytest.raises(ValueError):
         list(hp.topological_sort(order_restriction_with_cyclic_dependency))
+
+
+def test_convert_T_KG():
+    ser_T = pd.Series({0: 1, 1: 2, 2: 5}).rename_axis(index=list("T"))
+    ser_KG = pd.Series(
+        index=pd.MultiIndex.from_arrays([[0, 0, 0], [0, 1, 2]]), data=[1, 2, 5]
+    ).rename_axis(index=list("KG"))
+    ser_TX = pd.DataFrame(dict(X1=ser_T, X2=ser_T * 2)).stack().rename_axis(index=list("TX"))
+    ser_KGX = pd.DataFrame(dict(X1=ser_KG, X2=ser_KG * 2)).stack().rename_axis(index=list("KGX"))
+    ser_TXY = pd.DataFrame(dict(Y1=ser_TX, Y2=ser_TX * 2)).stack().rename_axis(index=list("TXY"))
+    ser_KGXY = (
+        pd.DataFrame(dict(Y1=ser_KGX, Y2=ser_KGX * 2)).stack().rename_axis(index=list("KGXY"))
+    )
+
+    assert hp.from_T_to_simple_KG_format(ser_T).equals(ser_KG)
+    assert hp.from_T_to_simple_KG_format(ser_TX).equals(ser_KGX)
+    assert hp.from_T_to_simple_KG_format(ser_TXY).equals(ser_KGXY)
+
+    assert hp.from_simple_KG_to_T_format(ser_KG).equals(ser_T)
+    assert hp.from_simple_KG_to_T_format(ser_KGX).equals(ser_TX)
+    assert hp.from_simple_KG_to_T_format(ser_KGXY).equals(ser_TXY)

@@ -97,4 +97,13 @@ class Components:
     WT = Alias(en="Wind turbine", de="Windkraftanlage")
     # SORTING_END
 
+
+class Components:
+    # SORTING_START
+    G = Alias(en="Intra-period time steps", de="Intraperiodische Zeitschritte")
+    I = Alias(en="Inter-period index", de="Interperiodischer Index")
+    K = Alias(en="Typical periods", de="Typische Perioden")
+    T = Alias(en="Time steps", de="Zeitschritte")
+    # SORTING_END
+
 # fmt: on

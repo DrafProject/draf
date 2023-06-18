@@ -8,7 +8,7 @@ import seaborn as sns
 
 from draf import helper as hp
 from draf.core.datetime_handler import DateTimeHandler
-from draf.tsa.peak_load import PeakLoadAnalyzer
+from draf.time_series_analyzer.peak_load import PeakLoadAnalyzer
 
 
 class DemandAnalyzer(DateTimeHandler):
