@@ -91,6 +91,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         self.cs_name = cs_name
         self.mdl_language = mdl_language
         self.custom_model = custom_model
+        self.optimized = False
 
         self.dims = Dimensions()
         self.params = Params()
@@ -592,6 +593,8 @@ class Scenario(DrafBaseClass, DateTimeHandler):
         for postprocess_func in pp_funcs:
             postprocess_func(self)
 
+        self.optimized = True
+
         return self
 
     def _scale_all_KG_data_to_T(self, source, destination) -> None:
@@ -614,6 +617,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
             return df.apply(self._predict_T_after_TSA, rename=False).stack(list(range(ndims - 2)))
         else:
             name = ser.name
+            # Turn it into numpy array to make the list comprehension faster
             data_KG = ser.unstack().values
             ser = pd.Series(
                 [
@@ -1260,15 +1264,16 @@ class Scenario(DrafBaseClass, DateTimeHandler):
 
         self._set_time_trace()
         logger.info(
-            f"\nClustering time series data with {n_typical_periods} typical periods and"
+            f"Clustering time series data with {n_typical_periods} typical periods and"
             f" {n_steps_per_period} time steps per period"
-            + f"\nfurther clustered to {n_segments_per_period} segments per period."
+            + f" further clustered to {n_segments_per_period} segments per period."
             if segmentation
             else "."
         )
-
+        timeSeries = self.get_flat_T_df(dims="KG").set_axis(self.dtindex_custom)
+        logger.info(f"Time series used: {list(timeSeries.keys())}")
         common_TSA_kwargs = dict(
-            timeSeries=self.get_flat_T_df(dims="KG").set_axis(self.dtindex_custom),
+            timeSeries=timeSeries,
             noTypicalPeriods=n_typical_periods,
             clusterMethod=cluster_method,
             sortValues=sort_values,

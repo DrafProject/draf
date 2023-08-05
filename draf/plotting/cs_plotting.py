@@ -72,8 +72,9 @@ class CsPlotter(BasePlotter):
         cs = self.cs
         funcs = {
             "Yields ": ("yields_table", " fa-eur fa-lg"),
+            "CapEx ": ("capex_table", "money fa-lg"),
+            "OpEx ": ("opex_table", "money fa-lg"),
             "Capacities ": ("capa_table", " fa-cubes fa-lg"),
-            "Investments ": ("invest_table", "money fa-lg"),
             "TES capa ": ("capa_TES_table", " fa-cubes fa-lg"),
             "Parameters ": ("p_table", "table fa-lg"),
             "Variables ": ("v_table", "table fa-lg"),
@@ -388,27 +389,27 @@ class CsPlotter(BasePlotter):
                 lambda df, cs: df["avg P_devAbs"] / cs.REF_scen.res.P_EG_buy_T.mean(),
             ),
             (
-                "corr (P,c_RTP)",
+                "corr (P,c_EG)",
                 "{:,.3f}",
-                lambda df, cs: [sc.res.P_EG_buy_T.corr(sc.params.c_EG_RTP_T) for sc in cs.scens],
+                lambda df, cs: [sc.res.P_EG_buy_T.corr(sc.params.c_EG_T) for sc in cs.scens],
             ),
             (
-                "corr (P_dev,c_RTP)",
+                "corr (P_dev,c_EG)",
                 "{:,.3f}",
                 lambda df, cs: [
-                    (sc.res.P_EG_buy_T - cs.REF_scen.res.P_EG_buy_T).corr(sc.params.c_EG_RTP_T)
+                    (sc.res.P_EG_buy_T - cs.REF_scen.res.P_EG_buy_T).corr(sc.params.c_EG_T)
                     for sc in cs.scens
                 ],
             ),
             (
                 "abs_flex_score",
                 "{:,.1f}",
-                lambda df, cs: df["avg P_devAbs"] * -df["corr (P_dev,c_RTP)"],
+                lambda df, cs: df["avg P_devAbs"] * -df["corr (P_dev,c_EG)"],
             ),
             (
                 "rel_flex_score",
                 "{:,.1%}",
-                lambda df, cs: df["avg P_devAbs (%)"] * -df["corr (P_dev,c_RTP)"],
+                lambda df, cs: df["avg P_devAbs (%)"] * -df["corr (P_dev,c_EG)"],
             ),
             (
                 "corr (P,ce_EG)",
@@ -1241,7 +1242,7 @@ class CsPlotter(BasePlotter):
             s = s.background_gradient(cmap="OrRd")
         return s
 
-    def invest_table(self, gradient: bool = False, caption: bool = False) -> pdStyler:
+    def capex_table(self, gradient: bool = False, caption: bool = False) -> pdStyler:
         cs = self.cs
         l = dict(
             C_TOT_inv_="Investment costs (k€)",
@@ -1263,6 +1264,16 @@ class CsPlotter(BasePlotter):
         )
         if caption:
             s = s.set_caption("Investment costs and CapEx per scenario and component.")
+        if gradient:
+            s = s.background_gradient(cmap="OrRd")
+        return s
+
+    def opex_table(self, gradient: bool = False, caption: bool = False) -> pdStyler:
+        cs = self.cs
+        df = pd.DataFrame({sc.id: sc.collector_values["C_TOT_op_"] for sc in cs.scens_list}).T
+        s = df.style.format("{:,.0f}").set_table_styles(get_leftAlignedIndex_style())
+        if caption:
+            s = s.set_caption("Operating costs per scenario.")
         if gradient:
             s = s.background_gradient(cmap="OrRd")
         return s
@@ -1379,6 +1390,7 @@ class CsPlotter(BasePlotter):
             pd.DataFrame({which: self._get_capa_for_all_scens(which).stack() for which in my_list})
             .unstack()
             .reindex(self.cs.scens_ids)
+            .sort_index(axis=1)
         )
         if not show_zero_cols:
             df = df.loc[:, (df != 0).any(axis=0)]

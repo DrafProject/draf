@@ -36,7 +36,7 @@ cs.aggregate_temporally(
 # solve all scenarios:
 cs.optimize()
 
-# save the case study (including all scenarios and data) to your hard disk:
+# After optimization, save the case study (including all scenarios and data) to your hard disk:
 cs.save()
 ```
 
@@ -47,7 +47,10 @@ cs = draf.open_latest_casestudy("my_case_study")
 cs.plot()
 ```
 
-Note: Most case study functions can be chained, e.g., `cs.aggregate_temporally().optimize().save()`.
+Note:
+
+* Most case study functions can be chained, e.g., `cs.aggregate_temporally().optimize().save()`.
+* We recommend saving only after the optimization run, since some dynamic objects for the optimization cannot be pickled.
 
 ## Interactive analysis
 
@@ -199,6 +202,44 @@ Then the other dimensions according to the ascending alphabet
 |Dimension|`T`|`-`|`KGABC`|
 
 For typical symbols, see [draf/conventions.py](draf/conventions.py).
+
+### Photovoltaic data
+
+For Germany only, the `PV-prep` module can generate generate a specific PV energy generation profile (kW/kWp) using [GSEE](https://github.com/renewables-ninja/gsee) with data from the nearest with [DWD](https://www.dwd.de) weather stations that have available data for ambient air temperature and solar irradiation for that year:
+
+```python
+coords = draf.helper.address2coords("Moltkestraße 30, Karlsruhe")
+config = dict(coords=coords, year=2021)
+draf.prep.pv.get_pv_power(**config)
+
+# Output:
+2021-01-01 00:00:00    0.0
+2021-01-01 01:00:00    0.0
+                      ... 
+2021-12-31 22:00:00    0.0
+2021-12-31 23:00:00    0.0
+Length: 8760, dtype: float64
+```
+
+Shows more info on the chosen DWD weather stations:
+
+```python
+draf.prep.pv.get_nearest_stations(**config)
+
+# Output:
+#                             solar    air_temperature
+# Stations_id                  5906               4177
+# von_datum                19790101           20081101
+# bis_datum                20230531           20230625
+# Stationshoehe                  98                116
+# geoBreite                 49.5063            48.9726
+# geoLaenge                  8.5584             8.3301
+# Stationsname             Mannheim       Rheinstetten
+# Bundesland      Baden-Württemberg  Baden-Württemberg
+# distance_in_km          55.813722           6.586742
+```
+
+Shortcut: `sc.prep.P_PV_profile_KG()` generates and adds a PV profile to your scenario `sc` using `coords` and `year` from your case study.
 
 ### Naming conventions for Python objects
 

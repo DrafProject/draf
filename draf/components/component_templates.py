@@ -162,6 +162,25 @@ class cDem(Component):
 
 
 @dataclass
+class MC(Component):
+    """Mobile Cooling
+
+    A slack variable to catch unmet cooling demand.
+    The optimizer sees 10 000 €/kWh. So only chosen to prevent unmet demand.
+    The real cost of mobile cooling can be added after the model run.
+    """
+
+    cooling_levels: Optional[List] = None
+
+    def param_func(self, sc: Scenario):
+        sc.var("dQ_MC_KGN", doc="Producing heat flow", unit="kW_th")
+
+    def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
+        c.dQ_cooling_sink_KGN["MC"] = lambda k, g, n: v.dQ_MC_KGN[k, g, n]
+        c.X_TOT_penalty_["MC"] = v.dQ_MC_KGN.sum() * 10
+
+
+@dataclass
 class hDem(Component):
     """Heating demand"""
 
@@ -350,7 +369,7 @@ class BES(Component):
 
     def param_func(self, sc: Scenario):
         sc.param("E_BES_CAPx_", data=self.E_CAPx, doc="Existing capacity", unit="kWh_el")
-        sc.param("k_BES_ini_", data=0, doc="Initial and final energy filling share")
+        # sc.param("k_BES_ini_", data=0, doc="Initial and final energy filling share")
         sc.param(
             "eta_BES_ch_",
             data=db.eta_BES_cycle_.data**0.5,
@@ -366,7 +385,10 @@ class BES(Component):
         sc.param(from_db=db.eta_BES_self_)
         sc.param(from_db=db.k_BES_inPerCap_)
         sc.param(from_db=db.k_BES_outPerCap_)
-        sc.var("E_BES_KG", doc="Electricity stored", unit="kWh_el")
+        sc.var(
+            "E_BES_intra_KG", doc="Intra-period state of charge", unit="kWh_el", lb=-GRB.INFINITY
+        )
+        sc.var("E_BES_inter_I", doc="Inter-period state of charge", unit="kWh_el")
         sc.var("P_BES_in_KG", doc="Charging power", unit="kW_el")
         sc.var("P_BES_out_KG", doc="Discharging power", unit="kW_el")
 
@@ -377,13 +399,17 @@ class BES(Component):
             sc.param(from_db=db.funcs.c_BES_inv_(estimated_size=100, which="mean"))
             sc.var("E_BES_CAPn_", doc="New capacity", unit="kWh_el")
 
+    def get_SOC(self, sc, d, p, v, i, g):
+        return (v.E_BES_inter_I[d.I[-1]] if i == d.I[0] else v.E_BES_inter_I[i - 1]) * (
+            1 - p.eta_BES_self_ * sc.step_width
+        ) ** p.n__stepsPerPeriod_ + v.E_BES_intra_KG[sc.periodsOrder[i], g]
+
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         """Note: In this model does not prevent simultaneous charging and discharging,
         which can appear negativ electricity prices. To avoid this behaviour expensive binary
         variables can be introduced, e.g., like in
         AmirMansouri.2021: https://doi.org/10.1016/j.seta.2021.101376
         """
-
         cap = p.E_BES_CAPx_ + v.E_BES_CAPn_ if sc.consider_invest else p.E_BES_CAPx_
         m.addConstrs(
             (v.P_BES_in_KG[k, g] <= p.k_BES_inPerCap_ * cap for k in d.K for g in d.G),
@@ -393,21 +419,33 @@ class BES(Component):
             (v.P_BES_out_KG[k, g] <= p.k_BES_outPerCap_ * cap for k in d.K for g in d.G),
             "BES_limit_discharging_power",
         )
-        m.addConstrs((v.E_BES_KG[k, g] <= cap for k in d.K for g in d.G), "BES_limit_cap")
         m.addConstrs(
-            (v.E_BES_KG[k, d.G[-1]] == p.k_BES_ini_ * cap for k in d.K), "BES_last_timestep"
+            (self.get_SOC(sc, d, p, v, i, g) <= cap for i in d.I for g in d.G), "BES_limit_cap"
+        )
+        m.addConstrs(
+            (self.get_SOC(sc, d, p, v, i, g) >= 0 for i in d.I for g in d.G), "BES_limit_cap_0"
         )
         m.addConstrs(
             (
-                v.E_BES_KG[k, g]
-                == (p.k_BES_ini_ * cap if g == d.G[0] else v.E_BES_KG[k, g - 1])
+                v.E_BES_intra_KG[k, g]
+                == (0 if g == d.G[0] else v.E_BES_intra_KG[k, g - 1])
                 * (1 - p.eta_BES_self_ * sc.dt(k, g))
                 + (v.P_BES_in_KG[k, g] * p.eta_BES_ch_ - v.P_BES_out_KG[k, g] / p.eta_BES_dis_)
                 * sc.dt(k, g)
                 for k in d.K
                 for g in d.G
             ),
-            "BES_electricity_balance",
+            "BES_balance_intra-period",
+        )
+        m.addConstrs(
+            (
+                v.E_BES_inter_I[i]
+                == (v.E_BES_inter_I[d.I[-1]] if i == d.I[0] else v.E_BES_inter_I[i - 1])
+                * (1 - p.eta_BES_self_ * sc.step_width) ** p.n__stepsPerPeriod_
+                + v.E_BES_intra_KG[sc.periodsOrder[i], d.G[-1]]
+                for i in d.I
+            ),
+            "BES_balance_inter-period",
         )
         c.P_EL_source_KG["BES"] = lambda k, g: v.P_BES_out_KG[k, g]
         c.P_EL_sink_KG["BES"] = lambda k, g: v.P_BES_in_KG[k, g]
@@ -417,6 +455,26 @@ class BES(Component):
             c.C_TOT_inv_["BES"] = C_inv_
             c.C_TOT_invAnn_["BES"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_BES_)
             c.C_TOT_RMI_["BES"] = C_inv_ * p.k_BES_RMI_
+
+    def postprocess_func(self, sc: Scenario):
+        p, d, r = sc.params, sc.dims, sc.res
+        name = "E_BES_T"
+
+        if sc.has_TSA:
+            if sc.segmentation:
+                data = [
+                    self.get_SOC(sc, d, p, r, i, g)
+                    for i in d.I
+                    for g, n_steps in sc.timeStepsPerSegment[sc.periodsOrder[i]].items()
+                    for _ in range(n_steps)
+                ]
+        else:
+            data = [self.get_SOC(sc, d, p, r, i, g) for i in d.I for g in d.G]
+        setattr(sc.res, name, pd.Series(data, name=name))
+        sc.res._set_meta(name, "unit", "kWh")
+        sc.res._set_meta(
+            name, "doc", "Prediction of BES SOC in the T grid. Inter-segment loads not considered."
+        )
 
 
 @dataclass
@@ -685,7 +743,9 @@ class HP(Component):
         if ("E_amb" in d.E) and ("C_amb" in d.C):
             # Avoid E_amb --> C_amb HP operation occur due to negative electricity prices
             m.addConstr((v.Y_HP_KGEC.sum("*", "E_amb", "C_amb") == 0), "HP_no_Eamb_to_C_amb")
-        cap = p.dQ_HP_CAPx_ + v.dQ_HP_CAPn_ if sc.consider_invest else p.dQ_HP_CAPx_
+        cap = (
+            p.dQ_HP_CAPx_ + v.dQ_HP_CAPn_ if sc.consider_invest else p.dQ_HP_CAPx_
+        )
         m.addConstrs(
             (v.dQ_HP_Cond_KGEC.sum(k, g, "*", "*") <= cap for k in d.K for g in d.G), "HP_limit_cap"
         )
@@ -738,17 +798,22 @@ class P2H(Component):
             sc.param(from_db=db.c_P2H_inv_)
             sc.param("k_P2H_RMI_", data=0, doc=Descs.RMI.en)
             sc.var("dQ_P2H_CAPn_", doc="New capacity", unit="kW_th")
+            # sc.var("dQ_P2H_slack_", doc="Slack variable for debugging", unit="kW_th")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
-        cap = p.dQ_P2H_CAPx_ + v.dQ_P2H_CAPn_ if sc.consider_invest else p.dQ_P2H_CAPx_
+        cap = (
+            p.dQ_P2H_CAPx_ + v.dQ_P2H_CAPn_  # + v.dQ_P2H_slack_
+            if sc.consider_invest
+            else p.dQ_P2H_CAPx_
+        )
         m.addConstrs(
             (v.dQ_P2H_KG[k, g] == p.eta_P2H_ * v.P_P2H_KG[k, g] for k in d.K for g in d.G),
             "P2H_balance",
         )
         m.addConstrs((v.dQ_P2H_KG[k, g] <= cap for k in d.K for g in d.G), "P2H_limit_heat_flow")
 
-        c.dQ_heating_source_KGH["P2H"] = (
-            lambda k, g, h: v.dQ_P2H_KG[k, g] if h == self.H_level_target else 0
+        c.dQ_heating_source_KGH["P2H"] = lambda k, g, h: (
+            v.dQ_P2H_KG[k, g] if h == self.H_level_target else 0
         )
         c.P_EL_sink_KG["P2H"] = lambda k, g: v.P_P2H_KG[k, g]
 
@@ -758,6 +823,7 @@ class P2H(Component):
             c.C_TOT_inv_["P2H"] = C_inv_
             c.C_TOT_invAnn_["P2H"] = C_inv_ * get_annuity_factor(r=p.k__r_, N=p.N_P2H_)
             c.C_TOT_RMI_["P2H"] = C_inv_ * p.k_P2H_RMI_
+            # c.X_TOT_penalty_["P2H"] = v.dQ_P2H_slack_ * p.c_P2H_inv_ * conv("€", "k€", 1e-3) * 1e3
 
 
 @dataclass
@@ -860,8 +926,8 @@ class CHP(Component):
             )
 
         c.P_EL_source_KG["CHP"] = lambda k, g: v.P_CHP_FI_KG[k, g] + v.P_CHP_OC_KG[k, g]
-        c.dQ_heating_source_KGH["CHP"] = (
-            lambda k, g, h: v.dQ_CHP_KG[k, g] if h == self.H_level_target else 0
+        c.dQ_heating_source_KGH["CHP"] = lambda k, g, h: (
+            v.dQ_CHP_KG[k, g] if h == self.H_level_target else 0
         )
         c.P_EG_sell_KG["CHP"] = lambda k, g: v.P_CHP_FI_KG[k, g]
         c.F_fuel_F["CHP"] = lambda f: quicksum(
@@ -909,8 +975,8 @@ class HOB(Component):
         )
         m.addConstrs((v.dQ_HOB_KG[k, g] <= cap for k in d.K for g in d.G), "HOB_limit_heat_flow")
 
-        c.dQ_heating_source_KGH["HOB"] = (
-            lambda k, g, h: v.dQ_HOB_KG[k, g] if h == self.H_level_target else 0
+        c.dQ_heating_source_KGH["HOB"] = lambda k, g, h: (
+            v.dQ_HOB_KG[k, g] if h == self.H_level_target else 0
         )
         c.F_fuel_F["HOB"] = lambda f: quicksum(
             v.F_HOB_KGF[k, g, f] * sc.dt(k, g) * sc.periodOccurrences[k] for k in d.K for g in d.G
@@ -945,9 +1011,14 @@ class TES(Component):
         sc.param("eta_TES_self_", data=0.005, doc="Self-discharge")
         sc.param("k_TES_inPerCap_", data=0.5, doc="Ratio loading power / capacity")
         sc.param("k_TES_outPerCap_", data=0.5, doc="Ratio unloading power / capacity")
-        sc.param("k_TES_ini_L", fill=0.5, doc="Initial and final energy level share")
+        # sc.param("k_TES_ini_L", fill=0.5, doc="Initial and final energy level share")
         sc.var("dQ_TES_in_KGL", doc="Storage input heat flow", unit="kW_th", lb=-GRB.INFINITY)
-        sc.var("Q_TES_KGL", doc="Stored heat", unit="kWh_th")
+        sc.var(
+            "Q_TES_intra_KGL", doc="Intra-period state of charge", unit="kWh_th", lb=-GRB.INFINITY
+        )
+        sc.var(
+            "Q_TES_inter_IL", doc="Inter-period state of charge", unit="kWh_th", lb=-GRB.INFINITY
+        )
 
         if sc.consider_invest:
             sc.param("z_TES_L", fill=int(self.allow_new), doc="If new capacity is allowed")
@@ -956,6 +1027,11 @@ class TES(Component):
             sc.param(from_db=db.N_TES_)
             sc.var("Q_TES_CAPn_L", doc="New capacity", unit="kWh_th", ub=1e7)
 
+    def get_SOC(self, sc, d, p, v, i, g, l):
+        return (v.Q_TES_inter_IL[d.I[-1], l] if i == d.I[0] else v.Q_TES_inter_IL[i - 1, l]) * (
+            1 - p.eta_TES_self_ * sc.step_width
+        ) ** p.n__stepsPerPeriod_ + v.Q_TES_intra_KGL[sc.periodsOrder[i], g, l]
+
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         def cap(l):
             return p.Q_TES_CAPx_L[l] + (
@@ -963,19 +1039,35 @@ class TES(Component):
             )
 
         m.addConstrs(
+            (self.get_SOC(sc, d, p, v, i, g, l) <= cap(l) for i in d.I for g in d.G for l in d.L),
+            "TES_limit_cap",
+        )
+        m.addConstrs(
+            (self.get_SOC(sc, d, p, v, i, g, l) >= 0 for i in d.I for g in d.G for l in d.L),
+            "TES_limit_cap_0",
+        )
+        m.addConstrs(
             (
-                v.Q_TES_KGL[k, g, l]
-                == ((p.k_TES_ini_L[l] * cap(l)) if g == d.G[0] else v.Q_TES_KGL[k, g - 1, l])
+                v.Q_TES_intra_KGL[k, g, l]
+                == (0 if g == d.G[0] else v.Q_TES_intra_KGL[k, g - 1, l])
                 * (1 - p.eta_TES_self_ * sc.dt(k, g))
-                + sc.dt(k, g) * v.dQ_TES_in_KGL[k, g, l]
+                + v.dQ_TES_in_KGL[k, g, l] * sc.dt(k, g)
                 for k in d.K
                 for g in d.G
                 for l in d.L
             ),
-            "TES_balance",
+            "TES_balance_intra-period",
         )
         m.addConstrs(
-            (v.Q_TES_KGL[k, g, l] <= cap(l) for k in d.K for g in d.G for l in d.L), "TES_limit_cap"
+            (
+                v.Q_TES_inter_IL[i, l]
+                == (v.Q_TES_inter_IL[d.I[-1], l] if i == d.I[0] else v.Q_TES_inter_IL[i - 1, l])
+                * (1 - p.eta_TES_self_ * sc.step_width) ** p.n__stepsPerPeriod_
+                + v.Q_TES_intra_KGL[sc.periodsOrder[i], d.G[-1], l]
+                for i in d.I
+                for l in d.L
+            ),
+            "TES_balance_inter-period",
         )
         m.addConstrs(
             (
@@ -995,10 +1087,6 @@ class TES(Component):
             ),
             "TES_limit_out",
         )
-        m.addConstrs(
-            (v.Q_TES_KGL[k, d.G[-1], l] == p.k_TES_ini_L[l] * cap(l) for k in d.K for l in d.L),
-            "TES_last_timestep",
-        )
 
         # only sink here, since dQ_TES_in_KGL is also defined for negative
         # values to reduce number of variables:
@@ -1015,7 +1103,31 @@ class TES(Component):
             c.C_TOT_RMI_["TES"] = C_inv_ * p.k_TES_RMI_
 
     def postprocess_func(self, sc: Scenario):
+        p, d, r = sc.params, sc.dims, sc.res
+        name = "Q_TES_TL"
+
+        if sc.has_TSA:
+            if sc.segmentation:
+                data = {
+                    l: [
+                        self.get_SOC(sc, d, p, r, i, g, l)
+                        for i in d.I
+                        for g, n_steps in sc.timeStepsPerSegment[sc.periodsOrder[i]].items()
+                        for _ in range(n_steps)
+                    ]
+                    for l in d.L
+                }
+        else:
+            data = {l: [self.get_SOC(sc, d, p, r, i, g, l) for i in d.I for g in d.G] for l in d.L}
+        ser = pd.DataFrame(data).stack()
+        setattr(sc.res, name, ser.rename(name))
+        sc.res._set_meta(name, "unit", "kWh")
+        sc.res._set_meta(
+            name, "doc", "Prediction of BES SOC in the T grid. Inter-segment loads not considered."
+        )
+
         sc.res.make_pos_ent("dQ_TES_in_KGL", "dQ_TES_out_KGL", "Storage output heat flow")
+        sc.res.make_pos_ent("dQ_TES_in_TL", "dQ_TES_out_TL", "Storage output heat flow")
 
 
 @dataclass
@@ -1029,11 +1141,11 @@ class HD(Component):
         sc.var("dQ_HD_KG", doc="Heat down-grading", unit="kW_th")
 
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
-        c.dQ_heating_sink_KGH["HD"] = (
-            lambda k, g, h: v.dQ_HD_KG[k, g] if h == self.from_level else 0
+        c.dQ_heating_sink_KGH["HD"] = lambda k, g, h: (
+            v.dQ_HD_KG[k, g] if h == self.from_level else 0
         )
-        c.dQ_heating_source_KGH["HD"] = (
-            lambda k, g, h: v.dQ_HD_KG[k, g] if h == self.to_level else 0
+        c.dQ_heating_source_KGH["HD"] = lambda k, g, h: (
+            v.dQ_HD_KG[k, g] if h == self.to_level else 0
         )
 
 
@@ -1244,6 +1356,11 @@ class H2S(Component):
             sc.param(from_db=db.c_H2S_inv_)
             sc.var("H_H2S_CAPn_", doc="New capacity", unit="kWh")
 
+    def get_SOC(self, sc, d, p, v, i, g):
+        return (v.H_H2S_inter_I[d.I[-1]] if i == d.I[0] else v.H_H2S_inter_I[i - 1]) * (
+            1 - p.eta_H2S_self_ * sc.step_width
+        ) ** p.n__stepsPerPeriod_ + v.H_H2S_intra_KG[sc.periodsOrder[i], g]
+
     def model_func(self, sc: Scenario, m: Model, d: Dimensions, p: Params, v: Vars, c: Collectors):
         """For the modeling of the seasonal storage with aggregated time series, see Kotzur et al. [1].
         Note, the different formulas, since we define the time point t to be at the end of the time step t.
@@ -1260,27 +1377,10 @@ class H2S(Component):
             "H2S_limit_discharging_power",
         )
         m.addConstrs(
-            (
-                (v.H_H2S_inter_I[d.I[-1]] if i == d.I[0] else v.H_H2S_inter_I[i - 1])
-                * (1 - p.eta_H2S_self_ * sc.step_width) ** p.n__stepsPerPeriod_
-                + v.H_H2S_intra_KG[sc.periodsOrder[i], g]
-                <= cap
-                for i in d.I
-                for g in d.G
-            ),
-            "H2S_limit_cap",
+            (self.get_SOC(sc, d, p, v, i, g) <= cap for i in d.I for g in d.G), "H2S_limit_cap"
         )
-        # The following step is important, since H_H2S_intra_KG can be negative:
         m.addConstrs(
-            (
-                (v.H_H2S_inter_I[d.I[-1]] if i == d.I[0] else v.H_H2S_inter_I[i - 1])
-                * (1 - p.eta_H2S_self_ * sc.step_width) ** p.n__stepsPerPeriod_
-                + v.H_H2S_intra_KG[sc.periodsOrder[i], g]
-                >= 0
-                for i in d.I
-                for g in d.G
-            ),
-            "H2S_limit_cap_0",
+            (self.get_SOC(sc, d, p, v, i, g) >= 0 for i in d.I for g in d.G), "H2S_limit_cap_0"
         )
         m.addConstrs(
             (
@@ -1320,12 +1420,24 @@ class H2S(Component):
             c.C_TOT_RMI_["H2S"] = C_inv_ * p.k_H2S_RMI_
 
     def postprocess_func(self, sc: Scenario):
-        d, r = sc.dims, sc.res
+        p, d, r = sc.params, sc.dims, sc.res
         name = "H_H2S_T"
-        # `ser = r.H_H2S_inter_T + r.H_H2S_intra_T` IS NOT valid, due to time series aggregation!
-        ser = r.H_H2S_inter_I[d.I[-1]] + (r.dH_H2S_in_T - r.dH_H2S_out_T).cumsum() * sc.step_width
-        ser = ser.rename(name)
-        setattr(r, name, ser)
+
+        if sc.has_TSA:
+            if sc.segmentation:
+                data = [
+                    self.get_SOC(sc, d, p, r, i, g)
+                    for i in d.I
+                    for g, n_steps in sc.timeStepsPerSegment[sc.periodsOrder[i]].items()
+                    for _ in range(n_steps)
+                ]
+        else:
+            data = [self.get_SOC(sc, d, p, r, i, g) for i in d.I for g in d.G]
+        setattr(sc.res, name, pd.Series(data, name=name))
+        sc.res._set_meta(name, "unit", "kWh")
+        sc.res._set_meta(
+            name, "doc", "Prediction of H2S SOC in the T grid. Inter-segment loads not considered."
+        )
 
 
 @dataclass
@@ -1375,8 +1487,8 @@ class FC(Component):
             "FC_feedIn_vs_ownConsumption",
         )
         c.P_EL_source_KG["FC"] = lambda k, g: v.P_FC_FI_KG[k, g] + v.P_FC_OC_KG[k, g]
-        c.dQ_heating_source_KGH["FC"] = (
-            lambda k, g, h: v.dQ_FC_KG[k, g] if h == self.H_level_target else 0
+        c.dQ_heating_source_KGH["FC"] = lambda k, g, h: (
+            v.dQ_FC_KG[k, g] if h == self.H_level_target else 0
         )
         c.dH_hydrogen_sink_KG["FC"] = lambda k, g: v.dH_FC_KG[k, g]
         c.P_EG_sell_KG["FC"] = lambda k, g: v.P_FC_FI_KG[k, g]
@@ -1391,6 +1503,7 @@ class FC(Component):
 
 order_restrictions = [
     ("cDem", {}),
+    ("MC", {}),
     ("hDem", {}),
     ("eDem", {}),
     ("EG", {"PV", "CHP", "WT", "FC"}),  # EG collects P_EG_sell_KG

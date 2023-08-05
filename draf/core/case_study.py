@@ -282,6 +282,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
                 delattr(sc, "res")
                 sc.vars.delete_all()
 
+            sc.optimized = False
             sc.id = id
             sc.name = name
             sc.doc = doc
@@ -522,6 +523,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             setattr(sc, "params", params)
             setattr(sc, "res", res)
             setattr(sc, "collector_values", collector_values)
+            setattr(sc, "optimized", True)
 
         print(f"Finished Optimizing {len(scens)} scenarios in parallel.")
         ray.shutdown()
@@ -530,6 +532,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
     def optimize(
         self,
         scens: Optional[Iterable] = None,
+        skip_optimized_scenarios: bool = True,
         parallel: bool = False,
         play_sound: bool = True,
         **optimize_kwargs,
@@ -545,7 +548,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             hp.play_beep_sound()
 
         if scens is None:
-            scens = self.scens_list
+            scens = [i for i in self.scens_list if not (skip_optimized_scenarios and i.optimized)]
 
         if parallel:
             self._optimize_parallel(scens=scens, optimize_kwargs=optimize_kwargs)
@@ -617,7 +620,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
 
     def import_scens(
         self, other_cs: CaseStudy, exclude: List[str] = None, include: List[str] = None
-    ):
+    ) -> CaseStudy:
         """Imports scenarios including all results from another CaseStudy object.
 
         Args:
@@ -637,6 +640,7 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
         for name, sc in scen_dic.items():
             if name in scens_to_import:
                 setattr(self.scens, name, sc)
+        return self
 
     def sort_scenarios(self, order: Optional[List] = None) -> CaseStudy:
         if order is None:
@@ -649,10 +653,11 @@ class CaseStudy(DrafBaseClass, DateTimeHandler):
             sc.aggregate_temporally(*args, **kwargs)
         return self
 
-    def delete_parameters(self, entities_to_delete):
+    def delete_parameters(self, entities_to_delete) -> CaseStudy:
         for sc in self.scens:
             for ent in entities_to_delete:
                 try:
                     delattr(sc.params, ent)
                 except AttributeError:
                     pass
+        return self

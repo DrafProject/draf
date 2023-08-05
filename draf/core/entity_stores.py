@@ -51,10 +51,16 @@ class Scenarios(DrafBaseClass):
         ]
         return make_table(l, lead_text="<Scenarios object> preview:\n")
 
-    def rename(self, old_scen_id: str, new_scen_id: str) -> None:
-        sc = self.__dict__.pop(old_scen_id)
-        sc.id = new_scen_id
-        self.__dict__[new_scen_id] = sc
+    def rename(self, rename_dict: Union[Dict, Callable]) -> "Scenarios":
+
+        if isinstance(rename_dict, Callable):
+            rename_dict = {k: rename_dict(k) for k in self.__dict__.keys()}
+
+        for old_name, new_name in rename_dict.items():
+            sc = self.__dict__.pop(old_name)
+            sc.id = new_name
+            self.__dict__[new_name] = sc
+        return self
 
     def get(self, scen_id) -> "Scenario":
         return getattr(self, scen_id)
