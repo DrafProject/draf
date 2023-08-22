@@ -17,12 +17,20 @@ logger.setLevel(level=logging.WARN)
 
 
 class PeakLoadAnalyzer(DateTimeHandler):
-    def __init__(self, p_el: pd.Series, year: int, freq: str, figsize=(10, 3)):
+    def __init__(
+        self,
+        p_el: pd.Series,
+        year: int,
+        freq: str,
+        figsize: Tuple = (10, 3),
+        ylabel: str = "$P_{el}$ (kW)",
+    ):
         self.p_el = p_el
         self._set_dtindex(year=year, freq=freq)
         self.figsize = figsize
         self.params = Params()
         self.set_prices()
+        self.ylabel = ylabel
 
     def set_prices(self, c_EG=0.12, c_EG_peak=50.0):
         p = self.params
@@ -83,7 +91,7 @@ class PeakLoadAnalyzer(DateTimeHandler):
             label=f"Threshold = {self.target_peakload:,.0f} kW",
             lw=1,
         )
-        ax.set(ylabel="$P_{el}$ (kW)")
+        ax.set(ylabel=self.ylabel)
         ax.set_ylim(bottom=0, top=self.p_el.max())
         ax.set_title("Load curve", fontweight="bold")
         ax.margins(y=0.0, x=0.0)
@@ -109,7 +117,7 @@ class PeakLoadAnalyzer(DateTimeHandler):
         ax.set_title("Ordered load duration curve", fontweight="bold")
         ax.plot(trimmed_peaks, c="firebrick", lw=2)
         ax.margins(y=0.0, x=0.0)
-        ax.set(ylabel="$P_{el}$ (kW)", xlabel=f"Time ({self.freq_unit})")
+        ax.set(ylabel=self.ylabel, xlabel=f"Time ({self.freq_unit})")
         ax.annotate(
             textwrap.dedent(
                 f"""\
@@ -133,7 +141,7 @@ class PeakLoadAnalyzer(DateTimeHandler):
         plt.tight_layout()
         self.trimmed_peaks.plot(markersize=5, linewidth=3, color="firebrick", ax=ax)
         ax.set_title(f"Zoom on {self.nPeaks:,.0f} highest peaks", fontweight="bold")
-        ax.set(ylabel="$P_{el}$ (kW)", xlabel=f"Time ({self.freq_unit})")
+        ax.set(ylabel=self.ylabel, xlabel=f"Time ({self.freq_unit})")
         hp.add_thousands_formatter(ax, x=False)
 
     def peak_width_bar_plot(self, ax):

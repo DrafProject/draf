@@ -20,12 +20,16 @@ class DemandAnalyzer(DateTimeHandler):
         self._set_dtindex(year=year, freq=freq)
 
     def get_peak_load_analyzer(self) -> PeakLoadAnalyzer:
-        return PeakLoadAnalyzer(self.p_el, year=self.year, freq=self.freq, figsize=(10, 2))
+        return PeakLoadAnalyzer(
+            self.p_el, year=self.year, freq=self.freq, figsize=(10, 2), ylabel=self.ylabel
+        )
 
     def show_peaks(
         self, target_percentile: int = 95, c_EG: float = 0.12, c_EG_peak: float = 50.0
     ) -> PeakLoadAnalyzer:
-        pla = PeakLoadAnalyzer(self.p_el, year=self.year, freq=self.freq, figsize=(10, 2))
+        pla = PeakLoadAnalyzer(
+            self.p_el, year=self.year, freq=self.freq, figsize=(10, 2), ylabel=self.ylabel
+        )
         pla.set_prices(c_EG=c_EG, c_EG_peak=c_EG_peak)
         pla.histo(target_percentile)
         return pla

@@ -254,7 +254,7 @@ class Scenario(DrafBaseClass, DateTimeHandler):
     def update_res_dic(self):
         self._res_dic = self.res._to_dims_dic()
 
-    def analyze_demand(self, data: pd.Series, ylabel = r"P$_\mathrm{el}$ (kW)") -> DemandAnalyzer:
+    def analyze_demand(self, data: pd.Series, ylabel=r"P$_\mathrm{el}$ (kW)") -> DemandAnalyzer:
         da = DemandAnalyzer(p_el=data, year=self.year, freq=self.freq, ylabel=ylabel)
         da.show_stats()
         return da
