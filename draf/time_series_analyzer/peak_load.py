@@ -176,7 +176,7 @@ class PeakLoadAnalyzer(DateTimeHandler):
         threshold: Optional[float] = None,
         transfer_threshold_from_histo: bool = True,
     ) -> None:
-        """Simulate an Battery Energy Storage (BES) with a given capacity and maximum power.
+        """Simulate a Battery Energy Storage (BES) with a given capacity and maximum power.
 
         Args:
             e_bes_capa: Capacity of BES in kWh
@@ -203,56 +203,59 @@ class PeakLoadAnalyzer(DateTimeHandler):
 
         p_el = self.p_el.values
 
-        p_BES_T = np.zeros(len(p_el))
-        p_eex_buy = np.zeros(len(p_el))
+        E_BES_T = np.zeros(len(p_el))
+        p_buy = np.zeros(len(p_el))
         load = np.zeros(len(p_el))
         unload = np.zeros(len(p_el))
 
         for t, val in enumerate(p_el):
             if t == 0:
-                p_BES_T[t] = 0
+                E_BES_T[t] = e_bes_capa
                 load[t] = 0
             elif val > switch_point:
-                if p_BES_T[t - 1] < (e_bes_capa - (val - switch_point)):
-                    load[t] = min(e_bes_capa - p_BES_T[t - 1], val - switch_point, p_bes_max)
+                if E_BES_T[t - 1] < (e_bes_capa - (val - switch_point)):
+                    load[t] = min(e_bes_capa - E_BES_T[t - 1], val - switch_point, p_bes_max)
                 else:
                     load[t] = 0
             elif val < switch_point:
-                unload[t] = min(p_BES_T[t - 1], switch_point - val, p_bes_max)
+                unload[t] = min(E_BES_T[t - 1], switch_point - val, p_bes_max)
 
-            p_BES_T[t] = p_BES_T[t - 1] + load[t] - unload[t]
-            p_eex_buy[t] = val - load[t] + unload[t]
+            E_BES_T[t] = E_BES_T[t - 1] + (load[t] - unload[t]) * (24 / self.steps_per_day)
+            p_buy[t] = val - load[t] + unload[t]
 
         # Plot results
-        fig, ax = plt.subplots(figsize=(10, 4))
-        ax.plot(p_el, label="P_el", c="r")
-        ax.plot(p_BES_T, label="p_BES_KG")
-        ax.plot(p_eex_buy, label="P_eex_buy", c="g")
-        ax.plot(load, label="load")
-        ax.plot(unload, label="unload")
-        ax.plot([switch_point for t in range(len(p_el))], label="switch point")
-        ax.plot([p_eex_buy.max() for t in range(len(p_el))], label="EEX_max")
+        fig, ax = plt.subplots(3, figsize=(10, 7), sharex=True, sharey=True)
+        ax[0].plot(p_el, label="P_buy (old)", c="tab:red", lw=1)
+        ax[0].plot(p_buy, label="P_buy (new)", c="tab:green", lw=1)
+        ax[0].plot([switch_point for t in range(len(p_el))], label="switch point", lw=1, c="grey")
+        ax[0].plot([p_buy.max() for t in range(len(p_el))], label="new_max", lw=1, c="k")
+        ax[1].plot(load, label="load", lw=1)
+        ax[1].plot(-unload, label="unload", lw=1)
+        ax[2].plot(E_BES_T, label="E_BES_T", lw=1)
 
         def get_success():
-            if switch_point == p_eex_buy.max():
-                return (
-                    f"reduce the maximum peak power by {self.p_el.max() - p_eex_buy.max():,.0f} kW."
-                )
+            if switch_point == p_buy.max():
+                return f"reduce the maximum peak power by {self.p_el.max() - p_buy.max():,.0f} kW."
             else:
                 return (
                     "only reduce the maximum peak power by "
-                    f"{self.p_el.max() - p_eex_buy.max():,.0f} kW instead of "
+                    f"{self.p_el.max() - p_buy.max():,.0f} kW instead of "
                     f"the wanted {self.p_el.max() - switch_point:,.0f} kW."
                 )
 
         title = (
-            f"The battery storage system with {e_bes_capa:,.0f} kWh capacity\n"
-            f" and {p_bes_max:,.0f} kW loading/unloading power "
-            f"(~{c_bes_inv * e_bes_capa:,.0f} €) could\n"
-            f"{get_success()}"
+            f"The BESS ({e_bes_capa:,.0f} kWh, {p_bes_max:,.0f} kW,"
+            f" ~{c_bes_inv * e_bes_capa:,.0f} €) could\n{get_success()}"
         )
-        ax.margins(0)
-        ax.set_title(title, y=1.03, fontsize=12, weight="bold")
+
+        for x in ax:
+            x.margins(0)
+
+        ax[0].set_ylabel("Power (kW)")
+        ax[1].set_ylabel("Power (kW)")
+        ax[2].set_ylabel("Energy (kWh)")
+
+        fig.suptitle(title, y=1.03, fontsize=12, weight="bold")
         fig.legend(ncol=1, loc="center right", bbox_to_anchor=(1.15, 0.5))
         fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=3.0)
         sns.despine()
@@ -261,4 +264,4 @@ class PeakLoadAnalyzer(DateTimeHandler):
         """Sensitivity analysis using the simulate()"""
         for e_bes_capa in np.arange(3000, 10000, 3000):
             for p_bes_max in np.arange(0, 4000, 1000):
-                self.simulate_BES(e_bes_capa=e_bes_capa, p_bes_max=p_bes_max, show_res=True)
+                self.simulate_BES(e_bes_capa=e_bes_capa, p_bes_max=p_bes_max)
