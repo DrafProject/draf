@@ -140,17 +140,18 @@ If you use `draf` for academic work please cite the [draf demo paper]:
 }
 ```
 
-## Publications using `draf`:
+## Publications using `draf`
 
-- Fleschutz et al. (2017): [Electricity Cost Reduction Potential of Industrial Processes using Real Time Pricing in a Production Planning Problem](https://www.cerc-conf.eu/wp-content/uploads/2018/06/CERC-2017-proceedings.pdf) (open access)
-- Fleschutz et al. (2021): [The effect of price-based demand response on carbon emissions in European electricity markets: The importance of adequate carbon prices](https://doi.org/10.1016/j.apenergy.2021.117040) (open access)
-- Fleschutz et al. (2022): [Demand Response Analysis Framework (DRAF): An Open-Source Multi-Objective Decision Support Tool for Decarbonizing Local Multi-Energy Systems](https://doi.org/10.3390/su14138025) (open access)
-- Fleschutz et al. (2023): [Industrial grid fees vs. demand response: A case study of a multi-use battery in a German chemical plant](https://doi.org/10.1109/EEM54602.2022.9921156)
+- Fleschutz et al. (2023): [Impact of Landing Interruptions on the Optimal Design and Operation of Green Hydrogen Hubs](https://doi.org/10.1109/ISGTEUROPE56780.2023.10408039)
 - Fleschutz et al. (2023): [From prosumer to flexumer: Case study on the value of flexibility in decarbonizing the multi-energy system of a manufacturing company](https://doi.org/10.1016/j.apenergy.2023.121430) (open access)
+- Fleschutz et al. (2022): [Industrial grid fees vs. demand response: A case study of a multi-use battery in a German chemical plant](https://doi.org/10.1109/EEM54602.2022.9921156)
+- Fleschutz et al. (2022): [Demand Response Analysis Framework (DRAF): An Open-Source Multi-Objective Decision Support Tool for Decarbonizing Local Multi-Energy Systems](https://doi.org/10.3390/su14138025) (open access)
+- Fleschutz et al. (2021): [The effect of price-based demand response on carbon emissions in European electricity markets: The importance of adequate carbon prices](https://doi.org/10.1016/j.apenergy.2021.117040) (open access)
+- Fleschutz et al. (2017): [Electricity Cost Reduction Potential of Industrial Processes using Real Time Pricing in a Production Planning Problem](https://www.cerc-conf.eu/wp-content/uploads/2018/06/CERC-2017-proceedings.pdf) (open access)
 
 ## License and status
 
-Copyright (c) 2022 Markus Fleschutz
+Copyright (c) 2017-2024 Markus Fleschutz
 
 License: [LGPL v3]
 
