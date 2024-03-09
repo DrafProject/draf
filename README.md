@@ -12,6 +12,7 @@
 It uses the power of ([mixed integer]) [linear programming] optimization, [`pandas`], [`Plotly`], [`Matplotlib`], [`elmada`], [`GSEE`], [`Jupyter`] and more to help users along the energy system analysis process.
 The software is described and demonstrated in the open-access [draf demo paper].
 `draf` runs on Windows, macOS, and Linux.
+A `draf`-version supporting time series aggregation is provided in the [dev-TSA](https://github.com/DrafProject/draf/tree/dev-TSA) branch.
 
 ## Features
 
