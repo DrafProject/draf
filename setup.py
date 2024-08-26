@@ -15,7 +15,7 @@ setup(
     url="https://github.com/mfleschutz/draf",
     license="LGPLv3",
     packages=find_packages(exclude=["tests"]),
-    python_requires=">=3.6, <3.10",
+    python_requires=">=3.6",
     install_requires=[
         "appdirs",
         "elmada",
@@ -30,6 +30,11 @@ setup(
         "seaborn",
         "tabulate",
         "tqdm",
+        "pvlib",
+        "ephem",
+        "plotly",
+        "numpy_financial",
+        "ipywidgets",
     ],
     extras_require={
         "dev": [
